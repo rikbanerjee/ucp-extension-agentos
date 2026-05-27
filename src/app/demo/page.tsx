@@ -11,6 +11,9 @@ import { validateCartLine } from '@/lib/rules/cartValidation';
 import { Panel } from '@/components/ui/Panel';
 import { JsonViewer } from '@/components/ui/JsonViewer';
 import { Badge, BadgeVariant } from '@/components/ui/Badge';
+import { DecisionCard } from '@/components/demo/DecisionCard';
+import { merchantMeta } from '@/lib/mock/merchantMeta';
+import { useView } from '@/lib/context/ViewContext';
 import { ShoppingCart, Search, Info, X, Zap, FlaskConical } from 'lucide-react';
 
 type ScenarioId = 'boutique_discovery' | 'grocery_offers' | 'fulfillment_constraints' | 'wholesale_gating' | 'bulk_tier_pricing';
@@ -131,6 +134,9 @@ export default function DemoPage() {
   // Phase 3 scaffold: inspector tab state
   // TODO: Agent reasoning format — design session needed before implementing agent trace tab
   const [inspectorTab, setInspectorTab] = useState<'payload' | 'agent_trace'>('payload');
+
+  // Business / Technical view from global context
+  const { view, setView } = useView();
 
   // Dynamically compute effective context based on selected merchant
   const effectiveContext = useMemo<PricingContext>(() => {
@@ -760,91 +766,67 @@ export default function DemoPage() {
                   }
                 };
 
+                const meta = merchantMeta[product.merchantId];
+
                 return (
                   <>
-                    <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                      <h3 className="text-sm font-semibold text-white mb-2">{product.title}</h3>
-                      <p className="text-xs text-slate-400 mb-4 pb-3 border-b border-slate-700">
-                        {product.merchantId === 'm_boutique_001' && "Discovery & Recommendation Semantics"}
-                        {product.merchantId === 'm_wholesale_002' && "Qualification & Bulk Order Semantics"}
-                        {product.merchantId === 'm_grocery_003' && "Contextual Offers & Fulfillment Semantics"}
-                      </p>
-                      
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between pb-1">
-                          <span className="text-slate-300">Visibility:</span>
-                          <span className={visibility.status === 'VISIBLE' ? 'text-emerald-400' : 'text-slate-500'}>{visibility.status}</span>
-                        </div>
-                        
-                        <div className="flex justify-between pb-1">
-                          <span className="text-slate-300">Eligibility:</span>
-                          <span className={eligibility.status === 'ELIGIBLE' ? 'text-emerald-400' : eligibility.status === 'CONDITIONAL' ? 'text-amber-400' : 'text-rose-400'}>
-                            {eligibility.status}
-                          </span>
-                        </div>
+                    {/* Business view: DecisionCard */}
+                    {view === 'business' && (
+                      <DecisionCard
+                        merchantHumanName={meta?.humanName ?? merchant.merchantName}
+                        productTitle={product.title}
+                        visibility={visibility}
+                        eligibility={eligibility}
+                        priceState={priceState}
+                        onSwitchToTechnical={() => setView('technical')}
+                      />
+                    )}
 
-                        {product.merchantId === 'm_boutique_001' && (
-                          <div className="flex justify-between pb-1">
-                            <span className="text-slate-300">Listed Price:</span>
-                            <span className="text-sky-400">${priceState.unitPrice.toFixed(2)}</span>
-                          </div>
-                        )}
-
-                        {product.merchantId === 'm_wholesale_002' && (
-                          <>
+                    {/* Technical view: existing summary + JSON */}
+                    {view === 'technical' && (
+                      <>
+                        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                          <h3 className="text-sm font-semibold text-white mb-2">{product.title}</h3>
+                          <p className="text-xs text-slate-400 mb-4 pb-3 border-b border-slate-700">
+                            {product.merchantId === 'm_boutique_001' && "Discovery & Recommendation Semantics"}
+                            {product.merchantId === 'm_wholesale_002' && "Qualification & Bulk Order Semantics"}
+                            {product.merchantId === 'm_grocery_003' && "Contextual Offers & Fulfillment Semantics"}
+                          </p>
+                          <div className="space-y-3 text-sm">
                             <div className="flex justify-between pb-1">
-                              <span className="text-slate-300">Price Source:</span>
-                              <span className="text-sky-400 capitalize">{priceState.priceSource.replace('_', ' ')}</span>
+                              <span className="text-slate-300">Visibility:</span>
+                              <span className={visibility.status === 'VISIBLE' ? 'text-emerald-400' : 'text-slate-500'}>{visibility.status}</span>
                             </div>
-                            {priceState.appliedTier && (
-                              <div className="flex justify-between pb-1">
-                                <span className="text-slate-300">Tier Applied:</span>
-                                <span className="text-emerald-400">Min {priceState.appliedTier.minQuantity} units</span>
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {product.merchantId === 'm_grocery_003' && (
-                          <>
                             <div className="flex justify-between pb-1">
-                              <span className="text-slate-300">Price Source:</span>
-                              <span className="text-sky-400 capitalize">{priceState.priceSource.replace('_', ' ')}</span>
+                              <span className="text-slate-300">Eligibility:</span>
+                              <span className={eligibility.status === 'ELIGIBLE' ? 'text-emerald-400' : eligibility.status === 'CONDITIONAL' ? 'text-amber-400' : 'text-rose-400'}>
+                                {eligibility.status}
+                              </span>
                             </div>
-                            {priceState.appliedOfferState && (
-                              <div className="flex justify-between pb-1">
-                                <span className="text-slate-300">Applied Offer:</span>
-                                <span className="text-emerald-400">{priceState.appliedOfferState}</span>
+                            <div className="flex justify-between pb-1">
+                              <span className="text-slate-300">Price:</span>
+                              <span className="text-sky-400">${priceState.unitPrice.toFixed(2)} · <span className="capitalize">{priceState.priceSource.replace('_', ' ')}</span></span>
+                            </div>
+                            {eligibility.reasons.length > 0 && (
+                              <div className="pt-2 mt-2 border-t border-slate-700">
+                                <span className="text-slate-300 block mb-1">Constraints:</span>
+                                <ul className="list-disc list-inside text-rose-400 text-xs space-y-1">
+                                  {eligibility.reasons.map((r, i) => <li key={i}>{r.message}</li>)}
+                                </ul>
                               </div>
                             )}
-                            {variant.fulfillmentConstraints && (
-                              <div className="flex justify-between pb-1">
-                                <span className="text-slate-300">Fulfillment:</span>
-                                <span className="text-amber-400 text-xs text-right max-w-[150px]">
-                                  {variant.fulfillmentConstraints.availableModes ? `Only: ${variant.fulfillmentConstraints.availableModes.join(', ')}` : ''}
-                                  {variant.fulfillmentConstraints.restrictedRegions ? ` | Restricted: ${variant.fulfillmentConstraints.restrictedRegions.join(', ')}` : ''}
-                                </span>
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {eligibility.reasons.length > 0 && (
-                          <div className="pt-2 mt-2 border-t border-slate-700">
-                            <span className="text-slate-300 block mb-1">Constraints:</span>
-                            <ul className="list-disc list-inside text-rose-400 text-xs space-y-1">
-                              {eligibility.reasons.map((r, i) => <li key={i}>{r.message}</li>)}
-                            </ul>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        </div>
+                      </>
+                    )}
 
-                    <JsonViewer 
-                      title="Raw Extension Payload" 
-                      data={payload} 
-                      className="border-slate-700"
-                    />
+                    {view === 'technical' && (
+                      <JsonViewer
+                        title="Raw Extension Payload"
+                        data={payload}
+                        className="border-slate-700"
+                      />
+                    )}
                   </>
                 );
               })()}
