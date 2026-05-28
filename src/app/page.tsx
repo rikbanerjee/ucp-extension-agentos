@@ -171,7 +171,7 @@ export default function Home() {
                 <div className="space-y-1.5">
                   <div className="flex gap-2"><span className="text-slate-500">UCP</span><span className="text-slate-300">= the standard rails</span></div>
                   <div className="flex gap-2"><span className="text-slate-500">Profile</span><span className="text-slate-300">= what the merchant declares</span></div>
-                  <div className="flex gap-2"><span className="text-emerald-400">RAOS</span><span className="text-slate-300">= how the agent interprets &amp; acts</span></div>
+                  <div className="flex gap-2"><span className="text-emerald-400">rOS</span><span className="text-slate-300">= how the agent interprets &amp; acts</span></div>
                   <div className="flex gap-2"><span className="text-sky-400">Demo</span><span className="text-slate-300">= visible proof of all three</span></div>
                 </div>
               </div>
