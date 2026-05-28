@@ -6,6 +6,7 @@ import { useView } from '@/lib/context/ViewContext';
 
 const navLinks = [
   { href: '/', label: 'Overview' },
+  { href: '/for-merchants', label: 'Get Visible to Agents', highlight: true },
   { href: '/profile', label: 'Merchant Profile' },
   { href: '/demo', label: 'Playground' },
   { href: '/guided', label: 'Guided Demo' },
@@ -25,15 +26,17 @@ export function NavBar() {
             RetailAgentOS
           </Link>
           <nav className="flex items-center gap-1 text-sm font-medium text-slate-600">
-            {navLinks.map(({ href, label }) => {
+            {navLinks.map(({ href, label, highlight }) => {
               const isActive = pathname === href;
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                  className={`px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${
                     isActive
                       ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : highlight
+                      ? 'text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50'
                       : 'hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >

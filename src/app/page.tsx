@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Layers, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, Layers, Sparkles, Store } from 'lucide-react';
 
 const merchants = [
   {
@@ -61,27 +61,33 @@ export default function Home() {
             Built on the Universal Commerce Protocol
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl leading-tight">
-            AI shopping agents are already active.
+            Make your store visible
             <br />
-            <span className="text-slate-500">Most small merchants are invisible to them.</span>
+            <span className="text-slate-500">to AI shopping agents.</span>
           </h1>
           <p className="mt-6 text-lg leading-8 text-slate-600 max-w-2xl mx-auto">
-            RetailAgentOS makes small merchants agent-ready. Declare your rules once — pricing,
-            eligibility, fulfilment, promos. Let agents understand you, reason about your context,
-            and act on your behalf.
+            AI agents are already recommending products and routing buyers to checkout.
+            RetailAgentOS helps small merchants publish their rules — pricing, eligibility,
+            fulfilment, promos — so agents understand and act on them correctly.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-4 flex-wrap gap-y-3">
             <Link
-              href="/guided"
+              href="/for-merchants"
               className="rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
+            >
+              Get visible to agents <Store className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/guided"
+              className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2"
             >
               See how it works <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/demo"
-              className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2"
+              className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors flex items-center gap-1.5"
             >
-              Open Playground <Layers className="w-4 h-4" />
+              Open Playground <Layers className="w-3.5 h-3.5" />
             </Link>
             <Link
               href="/architecture"
@@ -194,16 +200,16 @@ export default function Home() {
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link
-              href="/guided"
+              href="/for-merchants"
               className="rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-2"
             >
-              Start Guided Demo <ArrowRight className="w-4 h-4" />
+              Get visible to agents <Store className="w-4 h-4" />
             </Link>
             <Link
-              href="/vision"
-              className="rounded-md border border-white/20 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white hover:border-white/40 transition-colors"
+              href="/guided"
+              className="rounded-md border border-white/20 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white hover:border-white/40 transition-colors flex items-center gap-2"
             >
-              RetailAgentOS roadmap →
+              See a demo first <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
