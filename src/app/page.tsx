@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Zap } from 'lucide-react';
+import { ArrowRight, Building2, Package, Store, Zap } from 'lucide-react';
 import { buildLog } from '@/lib/content/buildlog';
 import AgentDemoStrip from '@/components/AgentDemoStrip';
 
@@ -97,44 +97,19 @@ export default function Home() {
 
           {/* Eyebrow */}
           <div className="px-7 pt-7 pb-5 border-b border-gray-200 text-center">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500 font-semibold flex items-center justify-center gap-1">
-              <span>⚠</span> Before RetailAgentOS
+            <p className="text-sm tracking-[0.2em] text-amber-500 font-bold flex items-center justify-center gap-2">
+              <span className="text-base">⚠</span> Today, Without RetailAgentOS
             </p>
           </div>
 
           {/* Layer 1 — The setup */}
           <div className="px-7 pt-5 pb-4 border-b border-gray-100">
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-2">The query</p>
             <p className="text-sm text-gray-600 leading-relaxed">
               An AI shopper searches for a personalized Father&apos;s Day T-shirt under $50, shipping to California.
             </p>
           </div>
 
-          {/* Layer 2 — Who's searching (AI assistant chips) */}
-          <div className="px-7 pt-4 pb-5 border-b border-gray-100">
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-3">
-              Today, AI assistants do the shopping
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {['ChatGPT', 'Gemini', 'Copilot'].map((name) => (
-                <span
-                  key={name}
-                  className="inline-flex flex-col rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs"
-                >
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-gray-700">
-                    <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
-                    {name}
-                  </span>
-                  <span className="mt-0.5 text-[10px] text-gray-400 animate-pulse">searching&hellip;</span>
-                </span>
-              ))}
-            </div>
-            <p className="mt-3 text-xs text-rose-500 font-medium">
-              &darr; by default, none of them surface you
-            </p>
-          </div>
-
-          {/* Layer 3 — What they find instead */}
+          {/* Layer 2 — What they find instead */}
           <div className="px-7 pt-4 pb-5 border-b border-gray-100">
             <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-3">What they surface instead</p>
             <div className="flex flex-wrap gap-2">
@@ -170,25 +145,30 @@ export default function Home() {
           <AgentDemoStrip />
         </div>
 
-        {/* ⚠ CRITICAL — Breadth connector */}
-        {/* The BEFORE card and demo are boutique-discovery only. Without this block,
-            cold readers assume this is just for tiny gift shops. This connector
-            signals the problem is broader before the three-merchant section proves it. */}
+        {/* Breadth connector */}
         <div className="mt-16 max-w-xl mx-auto text-center">
           <p className="text-xl font-bold text-gray-900">Discovery is just the start.</p>
-          <p className="mt-2 text-sm text-gray-500 leading-relaxed">
-            Wholesalers get mispriced. Retailers get fulfilment wrong.<br />
-            Same blind spot &mdash; different cost.
-          </p>
+          <div className="mt-8 grid grid-cols-3 gap-4">
+            {[
+              { icon: Store,     label: 'Boutique',   failure: 'Gets skipped',      iconColor: 'text-rose-400',  bg: 'bg-rose-50',   border: 'border-rose-100'  },
+              { icon: Package,   label: 'Wholesale',  failure: 'Gets misread',      iconColor: 'text-amber-400', bg: 'bg-amber-50',  border: 'border-amber-100' },
+              { icon: Building2, label: 'Big Retail', failure: 'Gets wrong action', iconColor: 'text-slate-400', bg: 'bg-slate-50',  border: 'border-slate-200' },
+            ].map(({ icon: Icon, label, failure, iconColor, bg, border }) => (
+              <div key={label} className={`rounded-xl border ${border} ${bg} px-4 py-5 flex flex-col items-center gap-2`}>
+                <Icon className={`w-6 h-6 ${iconColor}`} />
+                <p className="text-sm font-semibold text-gray-800">{label}</p>
+                <p className="text-xs text-gray-400 leading-snug">{failure}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Merchant stories */}
         <div className="mt-12">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-slate-900">Three merchants. One protocol.</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Every retail tier has a blind spot.</h2>
             <p className="mt-2 text-slate-500 text-sm max-w-xl mx-auto">
-              Same UCP foundation. Same extension vocabulary. Different rules, different outcomes &mdash;
-              all handled correctly by the agent.
+              That&apos;s exactly what RetailAgentOS is being built to fix.
             </p>
           </div>
 
@@ -222,7 +202,7 @@ export default function Home() {
         <div className="mt-20">
           <div className="text-center mb-10">
             <h2 className="text-2xl font-bold text-slate-900">How it works</h2>
-            <p className="mt-2 text-slate-500 text-sm">Three steps from declaration to commerce.</p>
+            <p className="mt-2 text-slate-500 text-sm">Three steps between a broken agent interaction and a correct one.</p>
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             {howItWorks.map(({ step, title, body }) => (

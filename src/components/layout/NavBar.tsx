@@ -7,13 +7,9 @@ import { Menu, X } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
 
 const navLinks = [
-  { href: '/', label: 'Overview' },
   { href: '/architecture', label: 'How it Works' },
-  { href: '/profile', label: 'Merchant Profile' },
-  { href: '/demo', label: 'Playground' },
   { href: '/guided', label: 'Guided Demo' },
-  { href: '/vision', label: 'RetailAgentOS' },
-  { href: '/for-merchants', label: 'Get Visible', highlight: true },
+  { href: '/for-merchants', label: 'For Merchants', highlight: true },
   { href: '/buildlog', label: 'Build Log' },
 ];
 
