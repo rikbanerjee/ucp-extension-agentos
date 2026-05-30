@@ -6,9 +6,9 @@ import Link from 'next/link'
 const QUERY = "Find me a personalized T-shirt for Father's Day gifting under $50, ships to California"
 
 const SCAN_SEQUENCE = [
-  { name: "SportswearCo",    match: false, label: "not AI-visible" },
-  { name: "LegacyLabel Inc", match: false, label: "not AI-visible" },
-  { name: "MallAnchor.com",  match: false, label: "not AI-visible" },
+  { name: "The Sportswear Brand", match: false, label: "not AI-visible" },
+  { name: "The Luxury Brand", match: false, label: "not AI-visible" },
+  { name: "BigBoxRetail.com", match: false, label: "not AI-visible" },
   { name: "TheCustomHub",    match: true,  label: "AI-visible · match" },
   { name: "Sara's Boutique", match: true,  label: "AI-visible · match" },
 ]

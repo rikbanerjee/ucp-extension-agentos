@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Store, Zap } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import { buildLog } from '@/lib/content/buildlog';
 import AgentDemoStrip from '@/components/AgentDemoStrip';
 
@@ -52,7 +52,7 @@ const howItWorks = [
 
 export default function Home() {
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto scroll-smooth">
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
 
         {/* Hero */}
@@ -67,7 +67,7 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              Building in public · {latest.week} of {latest.date} · Shipped: {latest.shipped}
+              Building in public &middot; {latest.week} of {latest.date} &middot; Shipped: {latest.shipped}
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -79,62 +79,21 @@ export default function Home() {
           <p className="text-4xl font-bold tracking-tight text-slate-500 sm:text-5xl leading-tight mt-1">
             Will it find yours?
           </p>
-
-          <p className="mt-4 mb-6 text-lg text-gray-500 max-w-md mx-auto">
-            AI agents are already shopping. Most stores are invisible to them.
+          <p className="mt-4 mb-8 text-lg text-gray-500 max-w-md mx-auto">
+            AI agents are already shopping. Most stores get skipped or misread.
           </p>
-          {/* Primary CTA */}
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/for-merchants"
+          <div className="flex justify-center">
+            <a
+              href="#demo"
               className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
             >
-              Make my store visible to AI &rarr;
-            </Link>
-          </div>
-
-          {/* Divider */}
-          <p className="mt-5 mb-3 text-xs text-gray-400 tracking-widest uppercase text-center">or, pick your path</p>
-
-          {/* Story rail */}
-          <div className="mt-2 hidden sm:grid grid-cols-3 gap-3 max-w-2xl mx-auto">
-            <Link href="/guided" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Merchant</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Watch how Sara&apos;s Boutique got found by AI</p>
-              <span className="text-xs text-green-600 font-medium hover:underline">See the guided story &rarr;</span>
-            </Link>
-            <Link href="/demo" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Builder</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Try a live agent query on a real merchant profile</p>
-              <span className="text-xs text-green-600 font-medium hover:underline">Open the playground &rarr;</span>
-            </Link>
-            <Link href="/buildlog" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m Following the Build</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">See what shipped this week and what&apos;s next</p>
-              <span className="text-xs text-green-600 font-medium hover:underline">Read the build log &rarr;</span>
-            </Link>
-          </div>
-          <div className="mt-2 flex flex-col gap-2 sm:hidden">
-            <Link href="/guided" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Merchant</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Watch how Sara&apos;s Boutique got found by AI</p>
-              <span className="text-xs text-green-600 font-medium">See the guided story &rarr;</span>
-            </Link>
-            <Link href="/demo" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Builder</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Try a live agent query on a real merchant profile</p>
-              <span className="text-xs text-green-600 font-medium">Open the playground &rarr;</span>
-            </Link>
-            <Link href="/buildlog" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m Following the Build</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">See what shipped this week and what&apos;s next</p>
-              <span className="text-xs text-green-600 font-medium">Read the build log &rarr;</span>
-            </Link>
+              Show me what AI sees &rarr;
+            </a>
           </div>
         </div>
 
         {/* Before section */}
-        <div className="mt-10 mb-8 max-w-xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="mt-10 mb-8 max-w-2xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden">
 
           {/* Eyebrow */}
           <div className="px-7 pt-7 pb-5 border-b border-gray-200 text-center">
@@ -151,47 +110,84 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Layer 2 — What the AI finds (faux result chips) */}
+          {/* Layer 2 — Who's searching (AI assistant chips) */}
           <div className="px-7 pt-4 pb-5 border-b border-gray-100">
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-3">What the agent finds</p>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-3">
+              Today, AI assistants do the shopping
+            </p>
             <div className="flex flex-wrap gap-2">
-              {['The Big Sportswear Brand', 'The Legacy Lifestyle Label', 'The Mall Anchor Store'].map((name) => (
-                <span key={name} className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-300 line-through">
+              {['ChatGPT', 'Gemini', 'Copilot'].map((name) => (
+                <span
+                  key={name}
+                  className="inline-flex flex-col rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs"
+                >
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-gray-700">
+                    <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                    {name}
+                  </span>
+                  <span className="mt-0.5 text-[10px] text-gray-400 animate-pulse">searching&hellip;</span>
+                </span>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-rose-500 font-medium">
+              &darr; by default, none of them surface you
+            </p>
+          </div>
+
+          {/* Layer 3 — What they find instead */}
+          <div className="px-7 pt-4 pb-5 border-b border-gray-100">
+            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-3">What they surface instead</p>
+            <div className="flex flex-wrap gap-2">
+              {['The Big Sportswear Brand', 'The Luxury Brand', 'The Big Box Retailer'].map((name) => (
+                <span key={name} className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-500">
                   {name}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* Layer 3 — The gut punch */}
+          {/* Layer 4 — The gut punch */}
           <div className="px-7 pt-5 pb-5 border-b border-gray-100">
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-3">Who gets left out</p>
-            <p className="text-xl font-bold text-gray-900 leading-snug">
-              Not TheCustomHub.<br />
-              Not Sara&apos;s Boutique.<br />
-              Not <em>you</em>.
+            <p className="text-xl font-bold leading-snug">
+              <s className="text-gray-900 decoration-red-500 decoration-2">TheCustomHub</s><br />
+              <s className="text-gray-900 decoration-red-500 decoration-2">Sara&apos;s Boutique</s><br />
+              <s className="text-gray-900 decoration-red-500 decoration-2 italic">You</s>
             </p>
           </div>
 
-          {/* Layer 4 — Handoff */}
+          {/* Layer 5 — Handoff */}
           <div className="px-7 py-5 text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-medium text-emerald-700 tracking-wide hover:bg-emerald-100 hover:border-emerald-300 transition-colors cursor-default select-none">
-              <span className="animate-bounce inline-block">↓</span>
+              <span className="animate-bounce inline-block">&darr;</span>
               now watch what changes
             </span>
           </div>
 
         </div>
 
-        {/* Inline Agent Demo Strip */}
-        <AgentDemoStrip />
+        {/* Demo strip — scroll target */}
+        <div id="demo" className="scroll-mt-6">
+          <AgentDemoStrip />
+        </div>
+
+        {/* ⚠ CRITICAL — Breadth connector */}
+        {/* The BEFORE card and demo are boutique-discovery only. Without this block,
+            cold readers assume this is just for tiny gift shops. This connector
+            signals the problem is broader before the three-merchant section proves it. */}
+        <div className="mt-16 max-w-xl mx-auto text-center">
+          <p className="text-xl font-bold text-gray-900">Discovery is just the start.</p>
+          <p className="mt-2 text-sm text-gray-500 leading-relaxed">
+            Wholesalers get mispriced. Retailers get fulfilment wrong.<br />
+            Same blind spot &mdash; different cost.
+          </p>
+        </div>
 
         {/* Merchant stories */}
-        <div className="mt-20">
+        <div className="mt-12">
           <div className="text-center mb-10">
             <h2 className="text-2xl font-bold text-slate-900">Three merchants. One protocol.</h2>
             <p className="mt-2 text-slate-500 text-sm max-w-xl mx-auto">
-              Same UCP foundation. Same extension vocabulary. Different rules, different outcomes —
+              Same UCP foundation. Same extension vocabulary. Different rules, different outcomes &mdash;
               all handled correctly by the agent.
             </p>
           </div>
@@ -239,7 +235,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Where RetailAgentOS fits — stacked gap visual (B2) */}
+        {/* Where RetailAgentOS fits */}
         <div className="mt-20">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-slate-900">Where RetailAgentOS fits</h2>
@@ -249,7 +245,6 @@ export default function Home() {
             </p>
           </div>
           <div className="max-w-2xl mx-auto space-y-0">
-            {/* Top — RetailAgentOS layer */}
             <div className="rounded-t-2xl border border-emerald-300 bg-emerald-50 px-7 py-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -262,110 +257,124 @@ export default function Home() {
                 <Zap className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
               </div>
               <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                Merchant rules become machine-readable — eligibility, contextual pricing, visibility,
+                Merchant rules become machine-readable &mdash; eligibility, contextual pricing, visibility,
                 fulfilment constraints, and the next correct action.
               </p>
             </div>
-
-            {/* Middle — The gap */}
             <div className="border-x border-dashed border-rose-300 bg-rose-50/50 px-7 py-4">
               <div className="text-xs font-semibold text-rose-500 uppercase tracking-wider mb-1">The gap</div>
               <p className="text-sm text-slate-600">
-                Agents can&apos;t reliably read a merchant&apos;s rules — who is eligible, what price
+                Agents can&apos;t reliably read a merchant&apos;s rules &mdash; who is eligible, what price
                 applies, what fulfilment is valid, what action to take.
               </p>
             </div>
-
-            {/* Bottom — UCP rails */}
             <div className="rounded-b-2xl border border-slate-200 bg-white px-7 py-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Universal Commerce Protocol</div>
-                  <div className="font-semibold text-slate-700 text-sm">The rails</div>
-                </div>
-              </div>
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Universal Commerce Protocol</div>
+              <div className="font-semibold text-slate-700 text-sm">The rails</div>
               <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                Discovery · Catalog · Cart · Checkout handoff. Interoperability for commerce systems.
+                Discovery &middot; Catalog &middot; Cart &middot; Checkout handoff. Interoperability for commerce systems.
               </p>
             </div>
           </div>
           <div className="text-center mt-4">
-            <Link
-              href="/architecture"
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              See the full three-layer model in Architecture notes →
+            <Link href="/architecture" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+              See the full three-layer model in Architecture notes &rarr;
             </Link>
           </div>
         </div>
 
-        {/* Who's behind this — founder mission */}
+        {/* Founder */}
         <div className="mt-20 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-slate-900 mb-5">Who&apos;s behind this — and why it took a retail operator to build it</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-5">Who&apos;s behind this &mdash; and why it took a retail operator to build it</h2>
           <div className="space-y-4 text-[15px] leading-7 text-slate-600">
             <p>
-              For 15 years I&apos;ve built retail technology — modernizing POS, building StoreOS to
+              For 15 years I&apos;ve built retail technology &mdash; modernizing POS, building StoreOS to
               simplify the work colleagues do on the floor, and the hardest version of modernization:
               running legacy and modern POS in the same store at the same time, no big-bang cutover,
               while customers kept shopping. That&apos;s the whole idea here.
             </p>
             <p>
-              Millions of merchants on Shopify, Etsy, Amazon, and Walmart Marketplace — custom apparel
-              sellers, local boutiques, specialty food stores, niche wholesalers — pay steep platform
+              Millions of merchants on Shopify, Etsy, Amazon, and Walmart Marketplace &mdash; custom apparel
+              sellers, local boutiques, specialty food stores, niche wholesalers &mdash; pay steep platform
               fees and give up a cut of every sale, and in return they get a storefront but not
               control: over who sees their catalog, who gets quoted which price, who qualifies, or how
               their fulfillment rules are read outside the platform&apos;s walls. That was manageable
               when humans were clicking. AI agents shopping on behalf of buyers will make it critical,
-              because an agent can&apos;t read rules locked inside a platform it can&apos;t reach — so
+              because an agent can&apos;t read rules locked inside a platform it can&apos;t reach &mdash; so
               the merchant pays the platform tax and still gets left out of the next commerce layer.
             </p>
             <p>
-              Every previous shift — mobile, voice, social — got built for the big players first, and
+              Every previous shift &mdash; mobile, voice, social &mdash; got built for the big players first, and
               small merchants got the integration years later, at a price, inside a new lock-in.
               RetailAgentOS is the bridge: declare your rules once, keep selling, and let your existing
               store join agentic commerce without rebuilding anything.
             </p>
             <p className="text-slate-700">
               I&apos;m building it in the open because I honestly don&apos;t know yet whether merchants
-              will configure this layer themselves or whether platforms need to absorb it invisibly —
+              will configure this layer themselves or whether platforms need to absorb it invisibly &mdash;
               and I&apos;d rather find that out in public than guess in private.
             </p>
           </div>
           <div className="mt-5">
-            <Link
-              href="/buildlog"
-              className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              Follow the build, open question and all →
+            <Link href="/buildlog" className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">
+              Follow the build, open question and all &rarr;
             </Link>
           </div>
         </div>
 
-        {/* CTA row */}
-        <div className="mt-20 rounded-2xl border border-slate-200 bg-slate-900 p-10 text-center shadow-lg">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-xs font-semibold text-slate-300 mb-5">
-            <Sparkles className="w-3 h-3" />
-            Start with the story
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-3">
-            See RetailAgentOS in action
-          </h2>
-          <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto mb-8">
-            Walk through Sara, B&T, and Fresh Corner — see how each merchant declares their rules
-            and how the agent responds to different buyer contexts.
-          </p>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
+        {/* Merged closing — primary CTA + path rail */}
+        <div className="mt-20 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">You&apos;ve seen the problem. Pick your path.</h2>
+          <p className="text-sm text-gray-500 mb-8">RetailAgentOS is the bridge &mdash; declare your rules once, and every agent that shops for your customers can find you.</p>
+
+          {/* Primary CTA */}
+          <div className="flex justify-center mb-6">
             <Link
               href="/for-merchants"
-              className="rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-2"
+              className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
             >
-              Get visible to agents <Store className="w-4 h-4" />
+              Make my store visible to AI &rarr;
             </Link>
-            <Link
-              href="/guided"
-              className="rounded-md border border-white/20 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white hover:border-white/40 transition-colors flex items-center gap-2"
-            >
-              See a demo first <ArrowRight className="w-4 h-4" />
+          </div>
+
+          {/* Divider */}
+          <p className="text-xs text-gray-400 tracking-widest uppercase mb-4">or, pick your path</p>
+
+          {/* Path rail — desktop */}
+          <div className="hidden sm:grid grid-cols-3 gap-3 max-w-2xl mx-auto">
+            <Link href="/guided" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Merchant</p>
+              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Watch how Sara&apos;s Boutique got found by AI</p>
+              <span className="text-xs text-green-600 font-medium">See the guided story &rarr;</span>
+            </Link>
+            <Link href="/demo" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Builder</p>
+              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Try a live agent query on a real merchant profile</p>
+              <span className="text-xs text-green-600 font-medium">Open the playground &rarr;</span>
+            </Link>
+            <Link href="/buildlog" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m Following the Build</p>
+              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">See what shipped this week and what&apos;s next</p>
+              <span className="text-xs text-green-600 font-medium">Read the build log &rarr;</span>
+            </Link>
+          </div>
+
+          {/* Path rail — mobile */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            <Link href="/guided" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Merchant</p>
+              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Watch how Sara&apos;s Boutique got found by AI</p>
+              <span className="text-xs text-green-600 font-medium">See the guided story &rarr;</span>
+            </Link>
+            <Link href="/demo" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Builder</p>
+              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Try a live agent query on a real merchant profile</p>
+              <span className="text-xs text-green-600 font-medium">Open the playground &rarr;</span>
+            </Link>
+            <Link href="/buildlog" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m Following the Build</p>
+              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">See what shipped this week and what&apos;s next</p>
+              <span className="text-xs text-green-600 font-medium">Read the build log &rarr;</span>
             </Link>
           </div>
         </div>
