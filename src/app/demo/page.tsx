@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { mockProducts } from '@/lib/mock/catalog';
 import { mockMerchants } from '@/lib/mock/merchants';
-import { PricingContext, CustomerType, MembershipTier } from '@/lib/types/extensions';
+import { PricingContext, CustomerType, MembershipTier, ComputedVisibility, ComputedEligibility, ComputedPriceState } from '@/lib/types/extensions';
 import { CartLine } from '@/lib/types/core';
 import { calculateEligibility, calculateVisibility } from '@/lib/rules/eligibility';
 import { getApplicablePrice } from '@/lib/rules/pricing';
@@ -15,6 +16,28 @@ import { DecisionCard } from '@/components/demo/DecisionCard';
 import { merchantMeta } from '@/lib/mock/merchantMeta';
 import { useView } from '@/lib/context/ViewContext';
 import { ShoppingCart, Search, Info, X, Zap, FlaskConical } from 'lucide-react';
+import { ViewToggle } from '@/components/ui/ViewToggle';
+
+function getWhyLine(visibility: ComputedVisibility, eligibility: ComputedEligibility, priceState: ComputedPriceState): string {
+  if (visibility.status === 'HIDDEN') {
+    return `Hidden — ${visibility.reason || 'not visible in this context.'}`;
+  }
+  if (eligibility.status === 'BLOCKED') {
+    const reason = eligibility.reasons.find(r => r.blocking);
+    return `Blocked — ${reason?.message || 'buyer does not meet requirements.'}`;
+  }
+  if (eligibility.status === 'CONDITIONAL') {
+    return `Conditional — ${eligibility.reasons[0]?.message || 'additional requirements needed.'}`;
+  }
+  const priceLabels: Record<string, string> = {
+    member: 'member pricing applied',
+    bulk_tier: priceState.appliedTier ? `bulk tier — ${(priceState.appliedTier as { minQuantity: number }).minQuantity}+ units` : 'bulk tier pricing',
+    promo_sale: 'weekly sale price',
+    promo_tier: 'mix & match promo applied',
+    base: 'public pricing',
+  };
+  return `Eligible · $${priceState.unitPrice.toFixed(2)} — ${priceLabels[priceState.priceSource] || 'standard pricing'}.`;
+}
 
 type ScenarioId = 'boutique_discovery' | 'grocery_offers' | 'fulfillment_constraints' | 'wholesale_gating' | 'bulk_tier_pricing';
 
@@ -104,6 +127,18 @@ const SCENARIOS: Scenario[] = [
   },
 ];
 
+function ScenarioLoader({ onScenario }: { onScenario: (id: ScenarioId) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const s = searchParams.get('scenario') as ScenarioId | null;
+    if (s && SCENARIOS.find(sc => sc.id === s)) {
+      onScenario(s);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
 export default function DemoPage() {
   const [context, setContext] = useState<PricingContext>({
     customerType: 'guest',
@@ -137,6 +172,7 @@ export default function DemoPage() {
 
   // Business / Technical view from global context
   const { view, setView } = useView();
+
 
   // Dynamically compute effective context based on selected merchant
   const effectiveContext = useMemo<PricingContext>(() => {
@@ -231,6 +267,9 @@ export default function DemoPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      <Suspense>
+        <ScenarioLoader onScenario={applyScenario} />
+      </Suspense>
       {/* Left Column: Context Simulator */}
       <div className="w-72 border-r border-slate-200 bg-slate-50 flex flex-col h-full overflow-y-auto shrink-0">
         <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
@@ -448,12 +487,15 @@ export default function DemoPage() {
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{merchant?.merchantName}</span>
                           <Badge variant={badgeVariant}>
                             {visibility.status === 'HIDDEN' ? 'HIDDEN' : eligibility.status}
                           </Badge>
                         </div>
+                        <p className="text-xs text-slate-500 mb-1.5 italic">
+                          {getWhyLine(visibility, eligibility, priceState)}
+                        </p>
                         <h3 className="text-lg font-bold text-slate-900">{product.title}</h3>
                         <p className="text-sm text-slate-600 mt-1">{product.description}</p>
                       </div>
@@ -671,12 +713,10 @@ export default function DemoPage() {
       {/* Right Column: Payload Inspector */}
       <div className="w-[450px] border-l border-slate-200 bg-[#1e1e1e] flex flex-col h-full shrink-0">
         <div className="border-b border-slate-700 bg-slate-900 sticky top-0 z-10 shrink-0">
-          <div className="p-4 flex justify-between items-center">
+          <div className="p-4 flex justify-between items-center gap-3">
             <h2 className="font-semibold text-slate-200 text-sm">Payload Inspector</h2>
-            <Badge variant="outline" className="border-slate-600 text-slate-300">Live Context</Badge>
+            <ViewToggle />
           </div>
-          {/* Phase 3 scaffold: inspector tab bar */}
-          {/* TODO: implement agent trace tab — design session needed, see todo_agent_reasoning.md */}
           <div className="flex border-t border-slate-700/50 px-1">
             <button
               onClick={() => setInspectorTab('payload')}
@@ -696,9 +736,9 @@ export default function DemoPage() {
                   : 'text-slate-400 border-transparent hover:text-slate-200'
               }`}
             >
-              Agent Trace
-              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-1 py-0.5 leading-none">
-                TODO
+              Agent Reasoning Console
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded px-1 py-0.5 leading-none">
+                Coming next
               </span>
             </button>
           </div>
@@ -706,24 +746,24 @@ export default function DemoPage() {
 
         <div className="flex-1 overflow-y-auto p-4">
 
-          {/* Phase 3: Agent Trace placeholder */}
+          {/* Agent Reasoning Console — Phase 2, in progress */}
           {inspectorTab === 'agent_trace' && (
             <div className="mt-2">
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-5 text-amber-200">
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <FlaskConical className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="text-sm font-semibold text-amber-300">Agent Reasoning Trace</span>
+                  <FlaskConical className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-sm font-semibold text-emerald-300">Agent Reasoning Console</span>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded px-1.5 py-0.5 leading-none ml-1">Phase 2 · Coming next</span>
                 </div>
-                <p className="text-xs text-amber-300/80 leading-relaxed mb-4">
-                  This panel will show how an AI shopping agent evaluates visibility, eligibility,
-                  and pricing decisions step-by-step for the selected product.
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                  This panel will show a step-by-step trace of <em>why</em> an agent made each
+                  decision — why an item is visible or hidden, why a price changed, why a buyer
+                  is eligible or blocked. Format design is in progress.
                 </p>
-                <div className="rounded-md bg-black/30 border border-amber-500/10 p-3 font-mono text-xs text-amber-400/60 space-y-1">
-                  {['reasoning_format = ?', 'agent_vocabulary = ?', 'action_recommendations = ?', 'audience framing = ?'].map(t => (
-                    <div key={t}>{`// TODO: ${t}`}</div>
-                  ))}
-                  <div className="pt-1 text-amber-400/40">{`// Design session needed — see Phase 3 planning`}</div>
-                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  In the meantime, select a product and switch to <strong className="text-slate-400">Business view</strong> to
+                  see a plain-language agent decision summary, or inspect the raw Payload tab.
+                </p>
               </div>
             </div>
           )}

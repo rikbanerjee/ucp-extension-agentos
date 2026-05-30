@@ -1,6 +1,29 @@
 import Link from 'next/link';
 import { Panel } from '@/components/ui/Panel';
-import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Layers } from 'lucide-react';
+
+const computedContracts = [
+  {
+    name: 'ComputedVisibility',
+    shape: `{ status: 'VISIBLE' | 'HIDDEN', reason?: string }`,
+    note: 'Tells an agent whether to surface the item to this buyer. HIDDEN includes the reason why.',
+  },
+  {
+    name: 'ComputedEligibility',
+    shape: `{ status: 'ELIGIBLE' | 'CONDITIONAL' | 'BLOCKED', reasons: EligibilityReason[] }`,
+    note: 'Tells an agent whether a purchase is valid. Each reason has a code, message, and blocking flag.',
+  },
+  {
+    name: 'ComputedPriceState',
+    shape: `{ unitPrice, priceSource: 'base'|'member'|'bulk_tier'|'promo_sale'|'promo_tier', appliedTier?, teaser? }`,
+    note: 'The resolved price with its source. teaser surfaces "add 5 more for 10% off"-style prompts.',
+  },
+  {
+    name: 'CartValidationResult',
+    shape: `{ valid, lines[{ lineId, valid, unitPrice, lineTotal, eligibility, priceSource, messages[] }], cartTotal }`,
+    note: 'Full cart-level validation — each line validated against the live context.',
+  },
+];
 
 const extensionNamespaces = [
   {
@@ -98,6 +121,20 @@ export default function ArchitecturePage() {
             How vendor-scoped extensions layer on top of core UCP to give agents the retail
             semantics they need before checkout.
           </p>
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <strong className="text-slate-800">The contract you can build with:</strong> UCP gives the
+            rails — discovery, catalog, cart, checkout handoff. The extension layer on top produces
+            four computed output shapes that agents (or any downstream system) consume:{' '}
+            <code className="text-xs font-mono text-emerald-700">ComputedVisibility</code>,{' '}
+            <code className="text-xs font-mono text-emerald-700">ComputedEligibility</code>,{' '}
+            <code className="text-xs font-mono text-emerald-700">ComputedPriceState</code>, and{' '}
+            <code className="text-xs font-mono text-emerald-700">CartValidationResult</code>. Every
+            decision is deterministic and inspectable — see the{' '}
+            <Link href="/demo" className="text-emerald-700 underline underline-offset-2 hover:text-emerald-900 transition-colors">
+              live Playground
+            </Link>{' '}
+            to inspect these contracts in real time.
+          </div>
         </div>
 
         <div className="space-y-8">
@@ -158,6 +195,39 @@ export default function ArchitecturePage() {
                   </div>
                   <div className="text-xs text-slate-500 mt-2">→ Unchanged. This project extends UCP — it does not redefine it.</div>
                 </div>
+              </div>
+            </div>
+          </Panel>
+
+          {/* Computed Output Contracts */}
+          <Panel title="Computed Output Contracts — What Agents Consume">
+            <div className="space-y-4">
+              <p className="text-sm text-slate-600 mb-4">
+                The extension layer resolves to four deterministic output shapes. These are what an
+                agent, UI, or downstream system reads to make decisions — not raw merchant config,
+                but computed results with reasons.
+              </p>
+              <div className="space-y-3">
+                {computedContracts.map(({ name, shape, note }) => (
+                  <div key={name} className="rounded-lg border border-slate-200 bg-white p-4">
+                    <div className="flex items-start gap-3">
+                      <Layers className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-mono text-sm font-semibold text-slate-800 mb-1">{name}</div>
+                        <div className="font-mono text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded px-2 py-1 mb-2 break-all">{shape}</div>
+                        <p className="text-xs text-slate-600 leading-relaxed">{note}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <Link
+                  href="/demo"
+                  className="text-sm font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1.5 transition-colors"
+                >
+                  See these computed live in the Playground <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             </div>
           </Panel>

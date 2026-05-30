@@ -11,6 +11,7 @@ import { PricingContext } from '@/lib/types/extensions';
 import { DecisionCard } from '@/components/demo/DecisionCard';
 import { useView } from '@/lib/context/ViewContext';
 import { JsonViewer } from '@/components/ui/JsonViewer';
+import { ViewToggle } from '@/components/ui/ViewToggle';
 
 interface Chapter {
   merchantId: string;
@@ -137,24 +138,31 @@ export default function GuidedDemoPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
 
-        {/* Chapter selector */}
-        <div className="flex items-center gap-2 mb-8 flex-wrap">
-          {chapters.map((ch, i) => (
-            <button
-              key={i}
-              onClick={() => { setChapterIndex(i); setSelectedProductId(null); }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                i === chapterIndex
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-              }`}
-            >
-              {i < chapterIndex && <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />}
-              {i === chapterIndex && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />}
-              {i > chapterIndex && <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block" />}
-              {ch.title.split(':')[1]?.trim() ?? ch.title}
-            </button>
-          ))}
+        {/* Chapter selector + view toggle */}
+        <div className="flex flex-col gap-3 mb-8 sm:flex-row sm:items-center sm:justify-between">
+          {/* Chapter tabs — vertical stack on mobile, horizontal row on sm+ */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            {chapters.map((ch, i) => (
+              <button
+                key={i}
+                onClick={() => { setChapterIndex(i); setSelectedProductId(null); }}
+                className={`flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors w-full sm:w-auto ${
+                  i === chapterIndex
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                {i < chapterIndex && <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                {i === chapterIndex && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shrink-0" />}
+                {i > chapterIndex && <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block shrink-0" />}
+                {ch.title.split(':')[1]?.trim() ?? ch.title}
+              </button>
+            ))}
+          </div>
+          {/* View toggle — below tabs on mobile, right-aligned on sm+ */}
+          <div className="sm:shrink-0">
+            <ViewToggle />
+          </div>
         </div>
 
         {/* Chapter header */}
@@ -201,15 +209,15 @@ export default function GuidedDemoPage() {
                   <button
                     key={product.id}
                     onClick={() => setSelectedProductId(product.id)}
-                    className={`w-full text-left rounded-lg border p-3.5 transition-all ${
+                    className={`w-full text-left rounded-lg border px-4 py-3 min-h-[60px] transition-all ${
                       isSelected
                         ? 'border-slate-900 bg-slate-900 text-white ring-2 ring-slate-900 ring-offset-1'
                         : 'border-slate-200 bg-white hover:border-slate-400'
                     }`}
                   >
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="font-semibold text-sm truncate">{product.title}</div>
-                      <span className={`shrink-0 text-[11px] font-semibold rounded-full px-2 py-0.5 ${
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="font-semibold text-sm leading-snug">{product.title}</div>
+                      <span className={`shrink-0 text-xs font-semibold rounded-full px-2.5 py-1 whitespace-nowrap ${
                         vis.status === 'HIDDEN'
                           ? isSelected ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
                           : elig.status === 'ELIGIBLE'

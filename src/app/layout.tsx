@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ViewProvider } from "@/lib/context/ViewContext";
 import { NavBar } from "@/components/layout/NavBar";
+import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,7 +17,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "RetailAgentOS — Agentic Commerce on UCP",
-  description: "RetailAgentOS makes small merchants agent-ready. Built on the Universal Commerce Protocol.",
+  description: "UCP gives commerce the rails. RetailAgentOS fills the gap — making merchant rules machine-readable so AI shopping agents can act on them correctly.",
+  openGraph: {
+    title: "RetailAgentOS — Agentic Commerce on UCP",
+    description: "UCP gives commerce the rails. RetailAgentOS fills the gap — making merchant rules machine-readable so AI shopping agents can act on them correctly.",
+    siteName: "RetailAgentOS",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RetailAgentOS — Agentic Commerce on UCP",
+    description: "UCP gives commerce the rails. RetailAgentOS fills the gap — making merchant rules machine-readable so AI shopping agents can act on them correctly.",
+  },
 };
 
 export default function RootLayout({
@@ -32,6 +44,7 @@ export default function RootLayout({
           <main className="flex-1 overflow-hidden">
             {children}
           </main>
+          <Footer />
         </ViewProvider>
       </body>
     </html>

@@ -1,5 +1,50 @@
 import Link from 'next/link';
-import { ArrowRight, CheckCircle, Mail, Store, Bot, ShieldCheck, Zap, BarChart3 } from 'lucide-react';
+import { ArrowRight, CheckCircle, Mail, Store, Bot, ShieldCheck, Zap, BarChart3, XCircle } from 'lucide-react';
+
+const agentReadiness = [
+  {
+    id: 'visibility',
+    check: 'Visibility',
+    question: 'Can agents tell which products a given buyer should or shouldn\'t see?',
+    extension: 'ext.eligibility',
+    breaksWithout: 'Wholesale items appear to guest buyers — agent surfaces listings the buyer cannot purchase.',
+  },
+  {
+    id: 'pricing',
+    check: 'Contextual price',
+    question: 'Is the right price exposed before cart, per buyer and quantity?',
+    extension: 'ext.member_pricing / ext.bulk_pricing',
+    breaksWithout: 'Agent quotes list price to a wholesale member — buyer is surprised at checkout.',
+  },
+  {
+    id: 'qualification',
+    check: 'Buyer qualification',
+    question: 'Are buyer requirements (wholesale account, resale cert, MOQ) machine-readable?',
+    extension: 'ext.eligibility / ext.bulk_pricing',
+    breaksWithout: 'Cart is built below MOQ — checkout fails with a cryptic validation error.',
+  },
+  {
+    id: 'fulfillment',
+    check: 'Fulfilment feasibility',
+    question: 'Are mode and region restrictions surfaced at catalog time, not checkout?',
+    extension: 'ext.fulfillment_constraints',
+    breaksWithout: 'Agent confirms shipping to Hawaii for a locally-delivered item — buyer abandoned at checkout.',
+  },
+  {
+    id: 'promotions',
+    check: 'Promotions',
+    question: 'Do active offers surface to agents in real time at browse time?',
+    extension: 'ext.promo_pricing',
+    breaksWithout: 'Weekly sale never factors into the agent\'s recommendation — buyer goes elsewhere.',
+  },
+  {
+    id: 'explainability',
+    check: 'Explainability',
+    question: 'Can the decision be explained, not just made?',
+    extension: 'Agent Reasoning Console (Phase 2)',
+    breaksWithout: 'Merchant and buyer have no visibility into why an item was blocked or a price changed.',
+  },
+];
 
 const problems = [
   {
@@ -198,6 +243,45 @@ export default function ForMerchantsPage() {
                 <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
               </Link>
             ))}
+          </div>
+        </div>
+
+        {/* Agent-Readiness Diagnostic (E1) */}
+        <div id="readiness" className="mb-20 scroll-mt-8">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">Is your store legible to AI agents?</h2>
+            <p className="mt-2 text-slate-500 text-sm max-w-xl">
+              Six checks that determine whether an AI shopping agent can represent your store
+              correctly — and what breaks when they can&apos;t. Each maps to a machine-readable
+              rule layer your store needs.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {agentReadiness.map(({ id, check, question, extension, breaksWithout }) => (
+              <div key={id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{check}</span>
+                      <span className="text-xs font-mono text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5">{extension}</span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-900 mb-1.5">{question}</p>
+                    <p className="text-xs text-rose-600 leading-relaxed">
+                      <span className="font-semibold">Without it: </span>{breaksWithout}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 text-center">
+            <a
+              href="mailto:rikbanerjee007@gmail.com?subject=RetailAgentOS%20Store%20Visibility%20Audit"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              Not sure how your store scores? Request a free audit →
+            </a>
           </div>
         </div>
 

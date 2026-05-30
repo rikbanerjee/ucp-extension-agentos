@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { CheckCircle, Clock, BookOpen, Layers, ArrowUpRight, ArrowRight, Store, Bot, Zap, BarChart3 } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
 import { merchantMeta } from '@/lib/mock/merchantMeta';
+import { ViewToggle } from '@/components/ui/ViewToggle';
 
 // ─── Technical mode data (preserved from original) ───────────────────────────
 
@@ -168,6 +169,128 @@ const whyItMatters = [
   },
 ];
 
+// ─── Currently building block ─────────────────────────────────────────────────
+
+function CurrentlyBuilding({ view }: { view: 'business' | 'technical' }) {
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 mb-10 shadow-sm">
+      <div className="flex items-center gap-3 mb-5">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0" />
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Currently building</span>
+      </div>
+
+      <div className="space-y-4">
+        {/* Immediate — Week 4 */}
+        <div className="rounded-lg border border-emerald-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-4 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Immediate · Week 4</span>
+              <h3 className="font-bold text-slate-900 text-sm">The Specs page</h3>
+            </div>
+            <span className="text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-1 shrink-0">
+              In progress
+            </span>
+          </div>
+          {view === 'business' ? (
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Publishing the eligibility and pricing extension contracts as a first-class reference
+              surface. Drafts already live in the repo — this makes them public and citable, so the
+              rules agents act on are out in the open.
+            </p>
+          ) : (
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Publishing the eligibility and pricing extension contracts as a first-class,
+              versioned reference surface — namespaces, schemas, reason-code registries, and open
+              questions. Drafts already live in <code className="text-xs">/specs</code> in the repo;
+              next is making them public and citable.
+            </p>
+          )}
+        </div>
+
+        {/* Phase 2 — Following */}
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-4 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Phase 2 · Following</span>
+              <h3 className="font-bold text-slate-900 text-sm">Agent Reasoning Console</h3>
+            </div>
+            <span className="text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 rounded-full px-2.5 py-1 shrink-0">
+              Next
+            </span>
+          </div>
+          {view === 'business' ? (
+            <p className="text-sm text-slate-600 leading-relaxed">
+              A visible console that explains <em>why</em> an agent made each decision — why an item
+              is visible or hidden, why a price changed, why a buyer is eligible or blocked. The
+              Specs page is the contract layer that makes the Console&apos;s reasoning explainable.
+            </p>
+          ) : (
+            <p className="text-sm text-slate-600 leading-relaxed">
+              A step-by-step trace of why an agent made each decision, visible in the Playground
+              inspector — over the computed visibility, eligibility, pricing, and fulfilment
+              outputs. The Specs page is the contract layer that makes the Console&apos;s reasoning
+              explainable, not competing with it.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Link
+          href="/buildlog#week-3"
+          className="text-xs font-medium text-emerald-700 hover:text-emerald-900 transition-colors"
+        >
+          See build log for context →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Founder strip ─────────────────────────────────────────────────────────────
+
+function FounderStrip() {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mt-16">
+      <div className="flex items-start gap-5">
+        <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0 flex items-center justify-center text-slate-500 text-sm font-bold">
+          RB
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-slate-900 text-sm">Rik Banerjee</span>
+            <a
+              href="mailto:rikbanerjee007@gmail.com"
+              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              rikbanerjee007@gmail.com
+            </a>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            Retail technology operator building the agentic commerce layer for small merchants.
+          </p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {['POS modernization', 'Mobile store OS', 'AI-driven pharmacy workflows', 'Omnichannel fulfillment'].map((b) => (
+              <span key={b} className="text-xs bg-slate-100 text-slate-600 border border-slate-200 rounded px-2 py-0.5">{b}</span>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            The gap between UCP and what agents need isn&apos;t theoretical — it&apos;s diagnosed
+            from years inside rules-enforcement systems where correctness has real consequences.
+          </p>
+          <div className="flex items-center gap-3 mt-3">
+            <a href="#" className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">{/* TODO: LinkedIn URL */}LinkedIn</a>
+            <span className="text-slate-200">·</span>
+            <a href="#" className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">{/* TODO: Substack URL */}Substack</a>
+            <span className="text-slate-200">·</span>
+            <Link href="/buildlog" className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">Build Log</Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Mode indicator bar ────────────────────────────────────────────────────────
 
 function ModeBar({ view }: { view: 'business' | 'technical' }) {
@@ -236,8 +359,9 @@ function BusinessContent() {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-slate-900">Why most small merchants are invisible to agents</h2>
           <p className="mt-2 text-slate-500 text-sm max-w-xl">
-            AI shopping agents are already active. Without structured store rules, they
-            cannot represent your business correctly.
+            UCP gives the rails — discovery, catalog, cart, checkout handoff. But agents
+            still can&apos;t reason about a merchant&apos;s rules. That&apos;s the gap. These
+            are the four ways it breaks.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -516,11 +640,11 @@ function TechnicalContent() {
           Why this matters for agentic commerce
         </h2>
         <p className="text-slate-400 text-sm leading-relaxed max-w-2xl mx-auto">
-          If UCP is going to support real-world AI agents, the protocol story cannot stop at
-          discovery and checkout handoff. Merchants need a semantics layer that explains whether
-          an item is visible, whether a price is valid in context, whether a promotion applies,
-          or whether a buyer qualifies at all. RetailAgentOS is the exploration of what that
-          layer looks like — built from real merchant archetypes, not hypothetical examples.
+          UCP provides the rails — discovery, catalog, cart, checkout handoff. But the rails
+          alone don&apos;t make a merchant&apos;s rules machine-readable. Agents still can&apos;t
+          reliably reason about visibility, contextual price, qualification, fulfilment feasibility,
+          or what action to take. RetailAgentOS is the semantics and reasoning layer that fills
+          that gap — built from real merchant archetypes, not hypothetical examples.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
           <Link
@@ -549,8 +673,13 @@ export default function VisionPage() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="flex justify-end mb-6">
+          <ViewToggle />
+        </div>
         <ModeBar view={view} />
+        <CurrentlyBuilding view={view} />
         {view === 'business' ? <BusinessContent /> : <TechnicalContent />}
+        <FounderStrip />
         <div className="mt-10 text-center">
           <p className="text-xs text-slate-400">
             <Link href="/" className="text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors">
