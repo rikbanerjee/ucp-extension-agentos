@@ -15,8 +15,8 @@ export function Footer() {
         <nav className="flex items-center gap-4 text-xs text-slate-500">
           <Link href="/for-merchants" className="hover:text-slate-800 transition-colors">For Merchants</Link>
           <Link href="/buildlog" className="hover:text-slate-800 transition-colors">Build Log</Link>
-          <a href="#" className="hover:text-slate-800 transition-colors">{/* TODO: LinkedIn URL */}LinkedIn</a>
-          <a href="#" className="hover:text-slate-800 transition-colors">{/* TODO: Substack URL */}Substack</a>
+          <a href="https://www.linkedin.com/in/rik-banerjee/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-800 transition-colors">LinkedIn</a>
+          <a href="https://rikngeek.substack.com" target="_blank" rel="noopener noreferrer" className="hover:text-slate-800 transition-colors">Substack</a>
           <a href="mailto:rikbanerjee007@gmail.com" className="hover:text-slate-800 transition-colors">Get in touch</a>
         </nav>
 
