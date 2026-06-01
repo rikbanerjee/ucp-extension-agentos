@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Building2, Package, Store, Zap } from 'lucide-react';
+import { ArrowRight, Zap } from 'lucide-react';
 import { buildLog } from '@/lib/content/buildlog';
 import AgentDemoStrip from '@/components/AgentDemoStrip';
 
@@ -52,15 +52,45 @@ const howItWorks = [
 
 export default function Home() {
   return (
-    <div className="h-full overflow-y-auto scroll-smooth">
-      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+    <div className="relative h-full overflow-y-auto scroll-smooth">
+      {/* Decorative hero background band — native CSS/SVG, no image asset.
+          Faint slate topographic lines in the lower third converge toward a soft
+          emerald glow on the right (spec B1). Purely decorative: sits behind the
+          hero content via explicit z-index (.hero-band-behind / .hero-content-above
+          in globals.css — this build does NOT emit Tailwind's -z-10 utility),
+          never intercepts pointer events (pointer-events-none), and is clipped
+          (overflow-hidden) so it can't cause horizontal scroll. The glow is a
+          radial-gradient arbitrary-value utility; the lines use SVG attributes. */}
+      <div
+        aria-hidden="true"
+        className="hero-band-behind pointer-events-none absolute inset-x-0 top-0 h-[640px] overflow-hidden"
+      >
+        {/* Soft emerald glow, right side */}
+        <div className="absolute right-[-12%] top-[34%] h-[420px] w-[420px] rounded-full opacity-80 blur-3xl bg-[radial-gradient(circle,_rgba(16,185,129,0.18)_0%,_rgba(16,185,129,0.08)_38%,_rgba(16,185,129,0)_70%)] sm:right-[2%]" />
+        {/* Faint topographic line motif, lower third, converging toward the glow */}
+        <svg
+          className="absolute inset-x-0 bottom-0 h-[60%] w-full text-slate-900"
+          viewBox="0 0 1280 360"
+          preserveAspectRatio="xMaxYMax slice"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <g stroke="currentColor" strokeWidth="1.25" fill="none" opacity="0.08">
+            <path d="M-40 360 C 360 300, 760 300, 1080 196" />
+            <path d="M-40 330 C 360 276, 770 270, 1085 188" />
+            <path d="M-40 298 C 360 250, 780 240, 1088 182" />
+            <path d="M-40 264 C 380 220, 790 210, 1090 178" />
+            <path d="M-40 228 C 400 188, 800 178, 1092 174" />
+            <path d="M-40 190 C 420 154, 810 146, 1093 172" />
+            <path d="M-40 150 C 440 120, 820 112, 1094 171" />
+          </g>
+        </svg>
+      </div>
+
+      <div className="hero-content-above relative mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
 
         {/* Hero */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-            Built on the Universal Commerce Protocol
-          </div>
           <div className="flex items-center justify-center mb-8">
             <Link
               href="/buildlog"
@@ -79,59 +109,70 @@ export default function Home() {
           <p className="text-4xl font-bold tracking-tight text-slate-500 sm:text-5xl leading-tight mt-1">
             Will it find yours?
           </p>
-          <p className="mt-4 mb-8 text-lg text-gray-500 max-w-md mx-auto">
+          <p className="mt-4 text-lg text-gray-500 max-w-md mx-auto">
             AI agents are already shopping. Most stores get skipped or misread.
           </p>
-          <div className="flex justify-center">
+          <p className="mt-4 text-base text-slate-600 max-w-lg mx-auto">
+            <span className="font-semibold text-slate-900">RetailAgentOS</span>{' '}is the layer that makes your store readable &mdash; and sellable &mdash; by AI shopping agents.
+          </p>
+          <p className="mt-2 mb-8 text-xs text-slate-400">
+            Extends Google&apos;s open Universal Commerce Protocol.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
             <a
               href="#demo"
               className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
             >
               Show me what AI sees &rarr;
             </a>
+            <Link
+              href="/demo"
+              className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              Explore the live playground &rarr;
+            </Link>
           </div>
         </div>
 
         {/* Before section */}
-        <div className="mt-10 mb-8 max-w-2xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="mt-8 mb-8 max-w-2xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden shadow-md shadow-slate-200/60">
 
           {/* Eyebrow */}
-          <div className="px-7 pt-7 pb-5 border-b border-gray-200 text-center">
+          <div className="px-7 pt-4 pb-3 border-b border-gray-200 text-center">
             <p className="text-sm tracking-[0.2em] text-amber-500 font-bold flex items-center justify-center gap-2">
               <span className="text-base">⚠</span> Today, Without RetailAgentOS
             </p>
           </div>
 
-          {/* Layer 1 — The setup */}
-          <div className="px-7 pt-5 pb-4 border-b border-gray-100">
+          {/* Body — query → what they surface → who they skip, as one flowing beat */}
+          <div className="px-7 pt-4 pb-4 space-y-4">
+            {/* The setup */}
             <p className="text-sm text-gray-600 leading-relaxed">
               An AI shopper searches for a personalized Father&apos;s Day T-shirt under $50, shipping to California.
             </p>
-          </div>
 
-          {/* Layer 2 — What they find instead */}
-          <div className="px-7 pt-4 pb-5 border-b border-gray-100">
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-3">What they surface instead</p>
-            <div className="flex flex-wrap gap-2">
-              {['The Big Sportswear Brand', 'The Luxury Brand', 'The Big Box Retailer'].map((name) => (
-                <span key={name} className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-500">
-                  {name}
-                </span>
-              ))}
+            {/* What they surface instead */}
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-2">What they surface instead</p>
+              <div className="flex flex-wrap gap-2">
+                {['The Big Sportswear Brand', 'The Luxury Brand', 'The Big Box Retailer'].map((name) => (
+                  <span key={name} className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-500">
+                    {name}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Layer 4 — The gut punch */}
-          <div className="px-7 pt-5 pb-5 border-b border-gray-100">
-            <p className="text-xl font-bold leading-snug">
+            {/* The gut punch — who gets crossed out */}
+            <p className="text-xl font-bold leading-tight pt-0.5">
               <s className="text-gray-900 decoration-red-500 decoration-2">TheCustomHub</s><br />
               <s className="text-gray-900 decoration-red-500 decoration-2">Sara&apos;s Boutique</s><br />
               <s className="text-gray-900 decoration-red-500 decoration-2 italic">You</s>
             </p>
           </div>
 
-          {/* Layer 5 — Handoff */}
-          <div className="px-7 py-5 text-center">
+          {/* Handoff */}
+          <div className="px-7 py-4 border-t border-gray-100 text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-medium text-emerald-700 tracking-wide hover:bg-emerald-100 hover:border-emerald-300 transition-colors cursor-default select-none">
               <span className="animate-bounce inline-block">&darr;</span>
               now watch what changes
@@ -148,19 +189,10 @@ export default function Home() {
         {/* Breadth connector */}
         <div className="mt-16 max-w-xl mx-auto text-center">
           <p className="text-xl font-bold text-gray-900">Discovery is just the start.</p>
-          <div className="mt-8 grid grid-cols-3 gap-4">
-            {[
-              { icon: Store,     label: 'Boutique',   failure: 'Gets skipped',      iconColor: 'text-rose-400',  bg: 'bg-rose-50',   border: 'border-rose-100'  },
-              { icon: Package,   label: 'Wholesale',  failure: 'Gets misread',      iconColor: 'text-amber-400', bg: 'bg-amber-50',  border: 'border-amber-100' },
-              { icon: Building2, label: 'Big Retail', failure: 'Gets wrong action', iconColor: 'text-slate-400', bg: 'bg-slate-50',  border: 'border-slate-200' },
-            ].map(({ icon: Icon, label, failure, iconColor, bg, border }) => (
-              <div key={label} className={`rounded-xl border ${border} ${bg} px-4 py-5 flex flex-col items-center gap-2`}>
-                <Icon className={`w-6 h-6 ${iconColor}`} />
-                <p className="text-sm font-semibold text-gray-800">{label}</p>
-                <p className="text-xs text-gray-400 leading-snug">{failure}</p>
-              </div>
-            ))}
-          </div>
+          <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+            Getting found is only the first gap. Pricing, buyer qualification, and fulfilment break
+            down for agents too &mdash; and they break differently for every kind of retailer.
+          </p>
         </div>
 
         {/* Merchant stories */}
@@ -302,59 +334,34 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Merged closing — primary CTA + path rail */}
+        {/* Merged closing — dual-track doors */}
         <div className="mt-20 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">You&apos;ve seen the problem. Pick your path.</h2>
           <p className="text-sm text-gray-500 mb-8">RetailAgentOS is the bridge &mdash; declare your rules once, and every agent that shops for your customers can find you.</p>
 
-          {/* Primary CTA */}
-          <div className="flex justify-center mb-6">
-            <Link
-              href="/for-merchants"
-              className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
-            >
-              Make my store visible to AI &rarr;
+          {/* Two equal doors — merchant + builder (one responsive grid) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto text-left">
+            <Link href="/for-merchants" className="group block bg-white border border-slate-300 rounded-xl p-5 hover:border-slate-900 hover:shadow-sm transition-all">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Merchant</p>
+              <p className="text-base font-bold text-slate-900 leading-snug mb-2">Make my store visible to AI</p>
+              <p className="text-sm text-slate-500 mb-3">Declare your rules once and join agentic commerce without rebuilding anything.</p>
+              <span className="text-sm text-emerald-600 font-semibold group-hover:text-emerald-700">Start here &rarr;</span>
+            </Link>
+            <Link href="/demo" className="group block bg-white border border-slate-300 rounded-xl p-5 hover:border-slate-900 hover:shadow-sm transition-all">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Builder</p>
+              <p className="text-base font-bold text-slate-900 leading-snug mb-2">Open the live playground</p>
+              <p className="text-sm text-slate-500 mb-3">Run a real agent query against a live merchant profile and see exactly what it returns.</p>
+              <span className="text-sm text-emerald-600 font-semibold group-hover:text-emerald-700">Try it now &rarr;</span>
             </Link>
           </div>
 
-          {/* Divider */}
-          <p className="text-xs text-gray-400 tracking-widest uppercase mb-4">or, pick your path</p>
-
-          {/* Path rail — desktop */}
-          <div className="hidden sm:grid grid-cols-3 gap-3 max-w-2xl mx-auto">
-            <Link href="/guided" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Merchant</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Watch how Sara&apos;s Boutique got found by AI</p>
-              <span className="text-xs text-green-600 font-medium">See the guided story &rarr;</span>
+          {/* Tertiary — following the build */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link href="/guided" className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">
+              Prefer a guided story? Watch Sara&apos;s Boutique get found &rarr;
             </Link>
-            <Link href="/demo" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Builder</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Try a live agent query on a real merchant profile</p>
-              <span className="text-xs text-green-600 font-medium">Open the playground &rarr;</span>
-            </Link>
-            <Link href="/buildlog" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m Following the Build</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">See what shipped this week and what&apos;s next</p>
-              <span className="text-xs text-green-600 font-medium">Read the build log &rarr;</span>
-            </Link>
-          </div>
-
-          {/* Path rail — mobile */}
-          <div className="flex flex-col gap-2 sm:hidden">
-            <Link href="/guided" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Merchant</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Watch how Sara&apos;s Boutique got found by AI</p>
-              <span className="text-xs text-green-600 font-medium">See the guided story &rarr;</span>
-            </Link>
-            <Link href="/demo" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m a Builder</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">Try a live agent query on a real merchant profile</p>
-              <span className="text-xs text-green-600 font-medium">Open the playground &rarr;</span>
-            </Link>
-            <Link href="/buildlog" className="block bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-white hover:border-gray-400 hover:shadow-sm transition-all text-left">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">I&apos;m Following the Build</p>
-              <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">See what shipped this week and what&apos;s next</p>
-              <span className="text-xs text-green-600 font-medium">Read the build log &rarr;</span>
+            <Link href="/buildlog" className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">
+              Just following along? See what shipped &rarr;
             </Link>
           </div>
         </div>
@@ -363,3 +370,4 @@ export default function Home() {
     </div>
   );
 }
+

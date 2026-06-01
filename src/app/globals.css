@@ -17,3 +17,14 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Hero background band stacking (see src/app/page.tsx).
+   This build does not emit Tailwind's z-index utilities (e.g. -z-10), so the
+   decorative band and the hero content set z-index explicitly here to guarantee
+   the band always sits BEHIND the hero text/CTAs regardless of DOM order. */
+.hero-band-behind {
+  z-index: -10;
+}
+.hero-content-above {
+  z-index: 10;
+}

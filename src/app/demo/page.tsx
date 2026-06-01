@@ -15,8 +15,9 @@ import { Badge, BadgeVariant } from '@/components/ui/Badge';
 import { DecisionCard } from '@/components/demo/DecisionCard';
 import { merchantMeta } from '@/lib/mock/merchantMeta';
 import { useView } from '@/lib/context/ViewContext';
-import { ShoppingCart, Search, Info, X, Zap, FlaskConical } from 'lucide-react';
+import { ShoppingCart, Search, Info, X, Zap, FlaskConical, ArrowDown } from 'lucide-react';
 import { ViewToggle } from '@/components/ui/ViewToggle';
+import { DemoInfographics } from '@/components/demo/DemoInfographics';
 
 function getWhyLine(visibility: ComputedVisibility, eligibility: ComputedEligibility, priceState: ComputedPriceState): string {
   if (visibility.status === 'HIDDEN') {
@@ -266,7 +267,9 @@ export default function DemoPage() {
   const cartTotal = cartValidations.reduce((sum, v) => sum + v.validation.lineTotal, 0);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="h-full overflow-y-auto scroll-smooth">
+      {/* Interactive playground — keeps its own fixed viewport height */}
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       <Suspense>
         <ScenarioLoader onScenario={applyScenario} />
       </Suspense>
@@ -387,6 +390,12 @@ export default function DemoPage() {
                 Clear
               </button>
             )}
+            <a
+              href="#playground-mechanics"
+              className="ml-auto shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 hover:text-emerald-900 transition-colors"
+            >
+              How this works <ArrowDown className="w-3 h-3" />
+            </a>
           </div>
         </div>
 
@@ -879,6 +888,10 @@ export default function DemoPage() {
           ))}
         </div>
       </div>
+      </div>
+
+      {/* SVG infographics — parked at the end; relocate later */}
+      <DemoInfographics />
     </div>
   );
 }

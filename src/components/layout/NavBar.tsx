@@ -9,6 +9,7 @@ import { useView } from '@/lib/context/ViewContext';
 const navLinks = [
   { href: '/architecture', label: 'How it Works' },
   { href: '/guided', label: 'Guided Demo' },
+  { href: '/demo', label: 'Playground' },
   { href: '/for-merchants', label: 'For Merchants', highlight: true },
   { href: '/buildlog', label: 'Build Log' },
 ];
