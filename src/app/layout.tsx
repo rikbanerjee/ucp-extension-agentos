@@ -16,18 +16,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://retailagentos.com"),
   title: "RetailAgentOS — Agentic Commerce on UCP",
   description: "UCP gives commerce the rails. RetailAgentOS fills the gap — making merchant rules machine-readable so AI shopping agents can act on them correctly.",
   openGraph: {
     title: "RetailAgentOS — Agentic Commerce on UCP",
     description: "UCP gives commerce the rails. RetailAgentOS fills the gap — making merchant rules machine-readable so AI shopping agents can act on them correctly.",
     siteName: "RetailAgentOS",
+    url: "https://retailagentos.com",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "RetailAgentOS — UCP gives commerce the rails, RetailAgentOS adds the reasoning.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "RetailAgentOS — Agentic Commerce on UCP",
     description: "UCP gives commerce the rails. RetailAgentOS fills the gap — making merchant rules machine-readable so AI shopping agents can act on them correctly.",
+    images: ["/og-image.png"],
   },
 };
 
