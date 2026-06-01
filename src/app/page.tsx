@@ -63,28 +63,13 @@ export default function Home() {
           radial-gradient arbitrary-value utility; the lines use SVG attributes. */}
       <div
         aria-hidden="true"
-        className="hero-band-behind pointer-events-none absolute inset-x-0 top-0 h-[640px] overflow-hidden"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[640px] overflow-hidden"
       >
         {/* Soft emerald glow, right side */}
-        <div className="absolute right-[-12%] top-[34%] h-[420px] w-[420px] rounded-full opacity-80 blur-3xl bg-[radial-gradient(circle,_rgba(16,185,129,0.18)_0%,_rgba(16,185,129,0.08)_38%,_rgba(16,185,129,0)_70%)] sm:right-[2%]" />
-        {/* Faint topographic line motif, lower third, converging toward the glow */}
-        <svg
-          className="absolute inset-x-0 bottom-0 h-[60%] w-full text-slate-900"
-          viewBox="0 0 1280 360"
-          preserveAspectRatio="xMaxYMax slice"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g stroke="currentColor" strokeWidth="1.25" fill="none" opacity="0.08">
-            <path d="M-40 360 C 360 300, 760 300, 1080 196" />
-            <path d="M-40 330 C 360 276, 770 270, 1085 188" />
-            <path d="M-40 298 C 360 250, 780 240, 1088 182" />
-            <path d="M-40 264 C 380 220, 790 210, 1090 178" />
-            <path d="M-40 228 C 400 188, 800 178, 1092 174" />
-            <path d="M-40 190 C 420 154, 810 146, 1093 172" />
-            <path d="M-40 150 C 440 120, 820 112, 1094 171" />
-          </g>
-        </svg>
+        <div
+          className="absolute top-[-10%] h-[640px] w-[640px] rounded-full blur-3xl"
+          style={{ right: '0%', background: 'radial-gradient(circle, rgba(16,185,129,0.55) 0%, rgba(16,185,129,0.22) 40%, rgba(16,185,129,0) 70%)' }}
+        />
       </div>
 
       <div className="hero-content-above relative mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">

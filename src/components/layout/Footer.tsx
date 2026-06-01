@@ -1,6 +1,11 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname === '/demo') return null;
   return (
     <footer className="border-t border-slate-200 bg-white shrink-0">
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-y-2 gap-x-6">

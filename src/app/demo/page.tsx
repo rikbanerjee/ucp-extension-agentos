@@ -15,7 +15,7 @@ import { Badge, BadgeVariant } from '@/components/ui/Badge';
 import { DecisionCard } from '@/components/demo/DecisionCard';
 import { merchantMeta } from '@/lib/mock/merchantMeta';
 import { useView } from '@/lib/context/ViewContext';
-import { ShoppingCart, Search, Info, X, Zap, FlaskConical, ArrowDown } from 'lucide-react';
+import { ShoppingCart, Search, Info, X, Zap, SlidersHorizontal, List, FileJson } from 'lucide-react';
 import { ViewToggle } from '@/components/ui/ViewToggle';
 import { DemoInfographics } from '@/components/demo/DemoInfographics';
 
@@ -167,12 +167,19 @@ export default function DemoPage() {
   const [activeScenario, setActiveScenario] = useState<ScenarioId | null>(null);
   const [scenarioHintDismissed, setScenarioHintDismissed] = useState(false);
 
-  // Phase 3 scaffold: inspector tab state
-  // TODO: Agent reasoning format — design session needed before implementing agent trace tab
-  const [inspectorTab, setInspectorTab] = useState<'payload' | 'agent_trace'>('payload');
+  const [inspectorTab] = useState<'payload'>('payload');
+
+  // Mobile panel navigation
+  const [mobilePanel, setMobilePanel] = useState<'controls' | 'catalog' | 'inspector'>('catalog');
 
   // Business / Technical view from global context
   const { view, setView } = useView();
+
+  // Helper — inspects an item and auto-navigates to inspector on mobile
+  const inspectItem = (productId: string, variantId: string) => {
+    setInspectedItem({ productId, variantId });
+    setMobilePanel('inspector');
+  };
 
 
   // Dynamically compute effective context based on selected merchant
@@ -210,6 +217,14 @@ export default function DemoPage() {
 
   const clearCart = () => setCart([]);
 
+  // Auto-load boutique_discovery + pre-select Personalized T-Shirt on first visit
+  useEffect(() => {
+    applyScenario('boutique_discovery');
+    setInspectedItem({ productId: 'p_b_001', variantId: 'v_b_001_1' });
+    // Don't auto-navigate to inspector on mobile — let user land on catalog first
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const applyScenario = (scenarioId: ScenarioId) => {
     const scenario = SCENARIOS.find(s => s.id === scenarioId);
     if (!scenario) return;
@@ -225,6 +240,23 @@ export default function DemoPage() {
   const clearScenario = () => {
     setActiveScenario(null);
     setScenarioHintDismissed(false);
+  };
+
+  const resetControls = () => {
+    setContext({
+      customerType: 'guest',
+      membershipTier: 'none',
+      marketRegion: 'US',
+      fulfillmentMode: 'shipping',
+      accountLinked: false,
+      taxExempt: false,
+      resaleCertificateOnFile: false,
+      activeExtensions: [],
+    });
+    setMerchantFilter('all');
+    clearScenario();
+    setSearchQuery('');
+    setInspectedItem(null);
   };
 
   // Computed Catalog
@@ -267,79 +299,120 @@ export default function DemoPage() {
   const cartTotal = cartValidations.reduce((sum, v) => sum + v.validation.lineTotal, 0);
 
   return (
-    <div className="h-full overflow-y-auto scroll-smooth">
-      {/* Interactive playground — keeps its own fixed viewport height */}
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Page header */}
+      <div className="border-b border-slate-200 bg-white px-4 sm:px-6 py-3 flex items-center justify-between gap-4 shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-sm font-bold text-slate-900 truncate">Agent Reasoning Playground</h1>
+          <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">Change the buyer context on the left — watch what the agent is allowed to see, recommend, and do on the right.</p>
+        </div>
+        <a
+          href="mailto:rikbanerjee007@gmail.com?subject=RetailAgentOS%20Store%20Visibility%20Audit"
+          className="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
+        >
+          Get an audit →
+        </a>
+      </div>
+      {/* Three-column layout — desktop side-by-side, mobile single-panel */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
       <Suspense>
         <ScenarioLoader onScenario={applyScenario} />
       </Suspense>
       {/* Left Column: Context Simulator */}
-      <div className="w-72 border-r border-slate-200 bg-slate-50 flex flex-col h-full overflow-y-auto shrink-0">
+      <div className={`${mobilePanel === 'controls' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-72 border-r border-slate-200 bg-slate-50 h-full overflow-y-auto shrink-0`}>
         <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
-          <h2 className="font-semibold text-slate-900">Context Controls</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-slate-900">Context Controls</h2>
+          </div>
+          {(activeScenario || merchantFilter !== 'all') ? (
+            <button
+              onClick={resetControls}
+              className="w-full rounded-md border-2 border-slate-900 bg-white px-3 py-2 text-xs font-bold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+            >
+              ↺ Reset to explore all controls
+            </button>
+          ) : (
+            <p className="text-[11px] text-slate-400 leading-relaxed">Pick a scenario above or adjust controls to simulate any buyer context.</p>
+          )}
         </div>
         <div className="p-4 space-y-6">
           
           {/* Business & Wholesale Controls */}
-          {(effectiveContext.activeExtensions.includes('ext.bulk_pricing') || effectiveContext.activeExtensions.includes('ext.member_pricing') || merchantFilter === 'all') && (
-            <>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Customer Type</label>
-                <select 
-                  value={context.customerType}
-                  onChange={(e) => setContext({ ...context, customerType: e.target.value as CustomerType })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm bg-white"
-                >
-                  <option value="guest">Guest</option>
-                  <option value="member">Member</option>
-                  <option value="wholesale">Wholesale</option>
-                  <option value="b2b">B2B</option>
-                </select>
+          {(() => {
+            const active = effectiveContext.activeExtensions.includes('ext.bulk_pricing') || effectiveContext.activeExtensions.includes('ext.member_pricing') || merchantFilter === 'all';
+            return (
+              <div className={`space-y-4 transition-opacity ${active ? '' : 'opacity-40'}`}>
+                {!active && (
+                  <button onClick={resetControls} className="w-full text-left text-[11px] text-slate-500 bg-slate-100 border border-dashed border-slate-300 rounded-md px-3 py-2 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+                    Wholesale &amp; buyer controls — reset to unlock ↑
+                  </button>
+                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Customer Type</label>
+                  <select
+                    value={context.customerType}
+                    onChange={(e) => setContext({ ...context, customerType: e.target.value as CustomerType })}
+                    disabled={!active}
+                    className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm bg-white disabled:cursor-not-allowed"
+                  >
+                    <option value="guest">Guest</option>
+                    <option value="member">Member</option>
+                    <option value="wholesale">Wholesale</option>
+                    <option value="b2b">B2B</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Wholesale Account Tier</label>
+                  <select
+                    value={context.membershipTier}
+                    onChange={(e) => setContext({ ...context, membershipTier: e.target.value as MembershipTier })}
+                    disabled={!active || context.customerType === 'guest'}
+                    className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm bg-white disabled:cursor-not-allowed"
+                  >
+                    <option value="none">None</option>
+                    <option value="gold">Gold</option>
+                    <option value="reseller_plus">Reseller Plus</option>
+                    <option value="distributor">Distributor</option>
+                  </select>
+                </div>
+                <div className="space-y-3 pt-2 border-b border-slate-200 pb-4">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={context.taxExempt} disabled={!active} onChange={e => setContext({ ...context, taxExempt: e.target.checked })} className="rounded text-slate-900 focus:ring-slate-900 disabled:cursor-not-allowed" />
+                    <span className="text-sm text-slate-700">Tax Exempt</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={context.resaleCertificateOnFile} disabled={!active} onChange={e => setContext({ ...context, resaleCertificateOnFile: e.target.checked })} className="rounded text-slate-900 focus:ring-slate-900 disabled:cursor-not-allowed" />
+                    <span className="text-sm text-slate-700">Resale Certificate on File</span>
+                  </label>
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Wholesale Account Tier</label>
-                <select 
-                  value={context.membershipTier}
-                  onChange={(e) => setContext({ ...context, membershipTier: e.target.value as MembershipTier })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm bg-white"
-                  disabled={context.customerType === 'guest'}
-                >
-                  <option value="none">None</option>
-                  <option value="gold">Gold</option>
-                  <option value="reseller_plus">Reseller Plus</option>
-                  <option value="distributor">Distributor</option>
-                </select>
-              </div>
-
-              <div className="space-y-3 pt-2 border-b border-slate-200 pb-4">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={context.taxExempt} onChange={e => setContext({ ...context, taxExempt: e.target.checked })} className="rounded text-slate-900 focus:ring-slate-900" />
-                  <span className="text-sm text-slate-700">Tax Exempt</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={context.resaleCertificateOnFile} onChange={e => setContext({ ...context, resaleCertificateOnFile: e.target.checked })} className="rounded text-slate-900 focus:ring-slate-900" />
-                  <span className="text-sm text-slate-700">Resale Certificate on File</span>
-                </label>
-              </div>
-            </>
-          )}
+            );
+          })()}
 
           {/* Fulfillment Controls */}
-          {(effectiveContext.activeExtensions.includes('ext.fulfillment_constraints') || merchantFilter === 'all') && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Fulfillment Mode</label>
-              <select 
-                value={context.fulfillmentMode}
-                onChange={(e) => setContext({ ...context, fulfillmentMode: e.target.value as any })}
-                className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm bg-white"
-              >
-                <option value="shipping">Shipping</option>
-                <option value="pickup">Store Pickup</option>
-                <option value="local_delivery">Local Delivery</option>
-              </select>
-            </div>
-          )}
+          {(() => {
+            const active = effectiveContext.activeExtensions.includes('ext.fulfillment_constraints') || merchantFilter === 'all';
+            return (
+              <div className={`space-y-2 transition-opacity ${active ? '' : 'opacity-40'}`}>
+                {!active && (
+                  <button onClick={resetControls} className="w-full text-left text-[11px] text-slate-500 bg-slate-100 border border-dashed border-slate-300 rounded-md px-3 py-2 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+                    Fulfillment controls — reset to unlock ↑
+                  </button>
+                )}
+                <label className="text-sm font-medium text-slate-700">Fulfillment Mode</label>
+                <select
+                  value={context.fulfillmentMode}
+                  onChange={(e) => setContext({ ...context, fulfillmentMode: e.target.value as any })}
+                  disabled={!active}
+                  className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm bg-white disabled:cursor-not-allowed"
+                >
+                  <option value="shipping">Shipping</option>
+                  <option value="pickup">Store Pickup</option>
+                  <option value="local_delivery">Local Delivery</option>
+                </select>
+              </div>
+            );
+          })()}
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Market Region</label>
@@ -360,63 +433,83 @@ export default function DemoPage() {
       </div>
 
       {/* Center Column: Interactive Demo */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50">
+      <div className={`${mobilePanel === 'catalog' ? 'flex' : 'hidden'} md:flex flex-1 flex-col h-full overflow-hidden bg-slate-50/50`}>
 
-        {/* Scenario Picker */}
-        <div className="border-b border-slate-200 bg-white px-4 py-3 shrink-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 shrink-0">
-              <Zap className="w-3.5 h-3.5" />
-              Try a scenario:
-            </div>
+        {/* Scenario Picker — single scrollable line */}
+        <div className="border-b border-emerald-200 bg-emerald-50 px-3 py-2 shrink-0">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+            <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 shrink-0">
+              <Zap className="w-3 h-3" /> Try:
+            </span>
             {SCENARIOS.map((scenario) => (
               <button
                 key={scenario.id}
                 onClick={() => activeScenario === scenario.id ? clearScenario() : applyScenario(scenario.id)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
                   activeScenario === scenario.id
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-white text-slate-600 border-slate-300 hover:border-slate-500 hover:text-slate-800'
+                    ? 'bg-emerald-700 text-white border-emerald-700'
+                    : 'bg-white text-emerald-700 border-emerald-300 hover:border-emerald-600 hover:bg-emerald-100'
                 }`}
               >
                 {scenario.label}
               </button>
             ))}
             {activeScenario && (
-              <button
-                onClick={clearScenario}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors ml-1"
-              >
-                Clear
+              <button onClick={clearScenario} className="shrink-0 text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                ✕ Clear
               </button>
             )}
-            <a
-              href="#playground-mechanics"
-              className="ml-auto shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 hover:text-emerald-900 transition-colors"
-            >
-              How this works <ArrowDown className="w-3 h-3" />
-            </a>
           </div>
         </div>
 
-        <div className="flex items-center border-b border-slate-200 bg-white px-4">
-          <button 
-            className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === 'catalog' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            onClick={() => setActiveTab('catalog')}
-          >
-            Catalog Search
-          </button>
-          <button 
-            className={`px-4 py-3 text-sm font-medium border-b-2 flex items-center gap-2 ${activeTab === 'cart' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            onClick={() => setActiveTab('cart')}
-          >
-            Cart Validation
-            {cart.length > 0 && (
-              <span className="bg-slate-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cart.length}
-              </span>
-            )}
-          </button>
+        {/* Combined toolbar: tabs + search + filter — one compact row */}
+        <div className="border-b border-slate-200 bg-white px-3 py-2 flex items-center gap-2 shrink-0">
+          {/* Tab toggle */}
+          <div className="flex items-center rounded-md border border-slate-200 bg-slate-50 p-0.5 shrink-0">
+            <button
+              onClick={() => setActiveTab('catalog')}
+              className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${activeTab === 'catalog' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Catalog
+            </button>
+            <button
+              onClick={() => setActiveTab('cart')}
+              className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors flex items-center gap-1 ${activeTab === 'cart' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Cart
+              {cart.length > 0 && (
+                <span className="bg-slate-900 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center leading-none">{cart.length}</span>
+              )}
+            </button>
+          </div>
+
+          {/* Search — grows to fill available space */}
+          {activeTab === 'catalog' && (
+            <>
+              <div className="relative flex-1 min-w-0">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search products…"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                />
+              </div>
+              <select
+                value={merchantFilter}
+                onChange={e => setMerchantFilter(e.target.value)}
+                className="shrink-0 border border-slate-300 rounded-md px-2 py-1.5 text-xs bg-white text-slate-700 max-w-[130px]"
+              >
+                <option value="all">All Merchants</option>
+                {mockMerchants.map(m => <option key={m.merchantId} value={m.merchantId}>{merchantMeta[m.merchantId]?.humanName ?? m.merchantName}</option>)}
+              </select>
+              <label className="shrink-0 flex items-center gap-1 text-xs text-slate-500 cursor-pointer" title="Hide hidden/blocked products">
+                <input type="checkbox" checked={hideIneligible} onChange={e => setHideIneligible(e.target.checked)} className="rounded text-slate-900 w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Hide blocked</span>
+              </label>
+            </>
+          )}
         </div>
 
         {/* Scenario Hint Banner */}
@@ -424,52 +517,15 @@ export default function DemoPage() {
           const scenario = SCENARIOS.find(s => s.id === activeScenario);
           if (!scenario) return null;
           return (
-            <div className="flex items-start gap-3 bg-sky-50 border-b border-sky-200 px-4 py-3 text-sm text-sky-800 shrink-0">
-              <FlaskConical className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 bg-sky-50 border-b border-sky-200 px-4 py-2 text-sm text-sky-800 shrink-0">
+              <Zap className="w-3.5 h-3.5 text-sky-500 shrink-0 mt-0.5" />
               <span className="flex-1 text-xs leading-relaxed">{scenario.hint}</span>
-              <button
-                onClick={() => setScenarioHintDismissed(true)}
-                className="text-sky-400 hover:text-sky-700 transition-colors shrink-0"
-              >
-                <X className="w-4 h-4" />
+              <button onClick={() => setScenarioHintDismissed(true)} className="text-sky-400 hover:text-sky-700 transition-colors shrink-0">
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           );
         })()}
-
-        {activeTab === 'catalog' && (
-          <div className="p-4 border-b border-slate-200 bg-white space-y-4">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search products..." 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
-              />
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <select 
-                value={merchantFilter} 
-                onChange={e => setMerchantFilter(e.target.value)}
-                className="border border-slate-300 rounded-md px-2 py-1 bg-white text-slate-700"
-              >
-                <option value="all">All Merchants</option>
-                {mockMerchants.map(m => <option key={m.merchantId} value={m.merchantId}>{m.merchantName}</option>)}
-              </select>
-              <label className="flex items-center gap-2 text-slate-600">
-                <input 
-                  type="checkbox" 
-                  checked={hideIneligible} 
-                  onChange={e => setHideIneligible(e.target.checked)}
-                  className="rounded text-slate-900"
-                />
-                Hide hidden/blocked products
-              </label>
-            </div>
-          </div>
-        )}
 
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === 'catalog' && (
@@ -489,15 +545,15 @@ export default function DemoPage() {
                 else if (eligibility.status === 'BLOCKED') badgeVariant = 'error';
 
                 return (
-                  <Panel 
-                    key={product.id} 
+                  <Panel
+                    key={product.id}
                     className={`border-slate-200 shadow-sm transition-colors cursor-pointer ${inspectedItem?.productId === product.id ? 'ring-2 ring-slate-400' : 'hover:border-slate-400'}`}
-                    onClick={() => setInspectedItem({ productId: product.id, variantId: variant.id })}
+                    onClick={() => inspectItem(product.id, variant.id)}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{merchant?.merchantName}</span>
+                          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{merchantMeta[product.merchantId]?.humanName ?? merchant?.merchantName}</span>
                           <Badge variant={badgeVariant}>
                             {visibility.status === 'HIDDEN' ? 'HIDDEN' : eligibility.status}
                           </Badge>
@@ -641,12 +697,12 @@ export default function DemoPage() {
                       <div 
                         key={line.id} 
                         className={`border rounded-lg p-4 bg-white shadow-sm flex flex-col gap-4 cursor-pointer transition-colors ${inspectedItem?.productId === product.id ? 'ring-2 ring-slate-400 border-transparent' : 'border-slate-200 hover:border-slate-400'}`}
-                        onClick={() => setInspectedItem({ productId: product.id, variantId: variant.id })}
+                        onClick={() => inspectItem(product.id, variant.id)}
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{merchant?.merchantName}</span>
+                              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{merchantMeta[product.merchantId]?.humanName ?? merchant?.merchantName}</span>
                               <Badge variant={validation.valid ? 'success' : 'error'}>
                                 {validation.valid ? 'Valid' : 'Invalid'}
                               </Badge>
@@ -720,64 +776,33 @@ export default function DemoPage() {
       </div>
 
       {/* Right Column: Payload Inspector */}
-      <div className="w-[450px] border-l border-slate-200 bg-[#1e1e1e] flex flex-col h-full shrink-0">
+      <div className={`${mobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[450px] border-l border-slate-200 bg-[#1e1e1e] h-full shrink-0`}>
         <div className="border-b border-slate-700 bg-slate-900 sticky top-0 z-10 shrink-0">
-          <div className="p-4 flex justify-between items-center gap-3">
-            <h2 className="font-semibold text-slate-200 text-sm">Payload Inspector</h2>
+          <div className="p-3 md:p-4 flex justify-between items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setMobilePanel('catalog')}
+                className="md:hidden text-slate-400 hover:text-white transition-colors p-1 -ml-1"
+                aria-label="Back to catalog"
+              >
+                ← <span className="text-xs">Catalog</span>
+              </button>
+              <h2 className="font-semibold text-slate-200 text-sm">Payload Inspector</h2>
+            </div>
             <ViewToggle />
           </div>
-          <div className="flex border-t border-slate-700/50 px-1">
-            <button
-              onClick={() => setInspectorTab('payload')}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
-                inspectorTab === 'payload'
-                  ? 'text-white border-white'
-                  : 'text-slate-400 border-transparent hover:text-slate-200'
-              }`}
-            >
-              Payload
-            </button>
-            <button
-              onClick={() => setInspectorTab('agent_trace')}
-              className={`px-4 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-colors ${
-                inspectorTab === 'agent_trace'
-                  ? 'text-white border-white'
-                  : 'text-slate-400 border-transparent hover:text-slate-200'
-              }`}
-            >
-              Agent Reasoning Console
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded px-1 py-0.5 leading-none">
-                Coming next
-              </span>
-            </button>
+          <div className="flex items-center border-t border-slate-700/50 px-4 py-2 gap-3">
+            <span className="text-xs font-medium text-white border-b-2 border-white pb-0.5">Payload</span>
+            <span className="text-xs text-slate-500 flex items-center gap-1.5">
+              <span className="text-[10px] bg-slate-700 text-slate-400 border border-slate-600 rounded px-1.5 py-0.5 leading-none">Phase 2</span>
+              Agent Reasoning Console — coming next
+            </span>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
 
-          {/* Agent Reasoning Console — Phase 2, in progress */}
-          {inspectorTab === 'agent_trace' && (
-            <div className="mt-2">
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <FlaskConical className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-sm font-semibold text-emerald-300">Agent Reasoning Console</span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded px-1.5 py-0.5 leading-none ml-1">Phase 2 · Coming next</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                  This panel will show a step-by-step trace of <em>why</em> an agent made each
-                  decision — why an item is visible or hidden, why a price changed, why a buyer
-                  is eligible or blocked. Format design is in progress.
-                </p>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  In the meantime, select a product and switch to <strong className="text-slate-400">Business view</strong> to
-                  see a plain-language agent decision summary, or inspect the raw Payload tab.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {inspectorTab === 'payload' && (inspectedItem ? (
+          {inspectedItem ? (
             <div className="space-y-6">
               {(() => {
                 const product = mockProducts.find(p => p.id === inspectedItem.productId)!;
@@ -881,17 +906,50 @@ export default function DemoPage() {
               })()}
             </div>
           ) : (
-            <div className="text-center text-slate-500 text-sm mt-10">
+            <div className="text-center text-slate-500 text-sm mt-10 px-4">
               <Info className="w-8 h-8 mx-auto mb-3 text-slate-600" />
-              Click a product card or cart item to inspect its computed extension payload.
+              <p className="font-medium text-slate-300 mb-1">Click any product to inspect it</p>
+              <p className="text-xs text-slate-500 leading-relaxed">The agent&apos;s visibility, pricing, and eligibility decision will appear here — in plain language or raw JSON.</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
       </div>
 
-      {/* SVG infographics — parked at the end; relocate later */}
-      <DemoInfographics />
+      {/* Mobile bottom tab bar */}
+      <div className="md:hidden shrink-0 border-t-2 border-slate-200 bg-white shadow-[0_-4px_12px_rgba(15,23,42,0.08)] px-3 py-2 flex gap-2">
+        {([
+          { panel: 'controls'  as const, icon: SlidersHorizontal, label: 'Controls',  desc: 'Buyer context' },
+          { panel: 'catalog'   as const, icon: List,               label: 'Catalog',   desc: 'Browse products' },
+          { panel: 'inspector' as const, icon: FileJson,           label: 'Inspector', desc: 'Agent decision' },
+        ] as const).map(({ panel, icon: Icon, label, desc }) => {
+          const isActive = mobilePanel === panel;
+          const hasDot = panel === 'inspector' && inspectedItem && !isActive;
+          return (
+            <button
+              key={panel}
+              onClick={() => setMobilePanel(panel)}
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                isActive
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+              }`}
+            >
+              <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+              <span>{label}</span>
+              <span className={`text-[10px] font-normal leading-none ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>{desc}</span>
+              {hasDot && (
+                <span className="absolute top-2 right-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* SVG infographics — desktop only; too complex for small screens */}
+      <div className="hidden md:block">
+        <DemoInfographics />
+      </div>
     </div>
   );
 }
