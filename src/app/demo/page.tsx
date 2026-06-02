@@ -299,6 +299,8 @@ export default function DemoPage() {
   const cartTotal = cartValidations.reduce((sum, v) => sum + v.validation.lineTotal, 0);
 
   return (
+    <div className="h-full overflow-y-auto">
+    {/* Interactive app shell — exactly one viewport tall, columns scroll internally */}
     <div className="h-full flex flex-col overflow-hidden">
       {/* Page header */}
       <div className="border-b border-slate-200 bg-white px-4 sm:px-6 py-3 flex items-center justify-between gap-4 shrink-0">
@@ -945,6 +947,8 @@ export default function DemoPage() {
           );
         })}
       </div>
+    </div>
+    {/* End app shell. Infographics live BELOW it in the scroll flow (desktop only). */}
 
       {/* SVG infographics — desktop only; too complex for small screens */}
       <div className="hidden md:block">
