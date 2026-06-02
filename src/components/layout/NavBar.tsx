@@ -28,8 +28,13 @@ export function NavBar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
 
         {/* Logo */}
-        <Link href="/" className="font-semibold text-lg tracking-tight text-slate-900 mr-6 shrink-0">
-          RetailAgentOS
+        <Link href="/" className="group mr-6 flex shrink-0 items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500 text-base font-black leading-none text-emerald-950 transition-transform group-hover:scale-105">
+            R
+          </span>
+          <span className="text-lg font-extrabold tracking-tight text-slate-900">
+            RetailAgent<span className="text-emerald-600">OS</span>
+          </span>
         </Link>
 
         {/* Desktop nav — hidden on mobile */}

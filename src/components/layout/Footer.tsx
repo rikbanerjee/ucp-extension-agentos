@@ -14,7 +14,7 @@ export function Footer() {
           <a href="mailto:rikbanerjee007@gmail.com" className="text-slate-500 hover:text-slate-700 transition-colors font-medium">
             Rik Banerjee
           </a>
-          {' '}· UCP = the rails · RetailAgentOS = the reasoning layer · Building in public
+          {' '}· UCP = the rails · <span className="font-semibold text-slate-600">RetailAgent<span className="text-emerald-600">OS</span></span> = the reasoning layer · Building in public
         </p>
 
         <nav className="flex items-center gap-4 text-xs text-slate-500">

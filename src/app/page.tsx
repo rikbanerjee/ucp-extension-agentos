@@ -98,7 +98,7 @@ export default function Home() {
             AI agents are already shopping. Most stores get skipped or misread.
           </p>
           <p className="mt-4 text-base text-slate-600 max-w-lg mx-auto">
-            <span className="font-semibold text-slate-900">RetailAgentOS</span>{' '}is the layer that makes your store readable &mdash; and sellable &mdash; by AI shopping agents.
+            <span className="font-semibold text-slate-900">RetailAgent<span className="text-emerald-600">OS</span></span>{' '}is the layer that makes your store readable &mdash; and sellable &mdash; by AI shopping agents.
           </p>
           <p className="mt-2 mb-8 text-xs text-slate-400">
             Extends Google&apos;s open Universal Commerce Protocol.
@@ -235,7 +235,7 @@ export default function Home() {
         {/* Where RetailAgentOS fits */}
         <div className="mt-20">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">Where RetailAgentOS fits</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Where RetailAgent<span className="text-emerald-600">OS</span> fits</h2>
             <p className="mt-2 text-slate-500 text-sm max-w-xl mx-auto">
               UCP provides the rails. But agents still can&apos;t reason about a merchant&apos;s rules.
               That&apos;s the gap RetailAgentOS fills.
