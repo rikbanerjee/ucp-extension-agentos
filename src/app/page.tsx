@@ -1,9 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Zap } from 'lucide-react';
-import { buildLog } from '@/lib/content/buildlog';
 import AgentDemoStrip from '@/components/AgentDemoStrip';
-
-const latest = buildLog[0];
 
 const merchants = [
   {
@@ -77,14 +74,16 @@ export default function Home() {
         {/* Hero */}
         <div className="text-center">
           <div className="flex items-center justify-center mb-8">
-            <Link
-              href="/buildlog"
+            <a
+              href="https://www.linkedin.com/in/rik-banerjee/recent-activity/all/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              Building in public &middot; {latest.week} of {latest.date} &middot; Shipped: {latest.shipped}
+              Building in public &middot; join the discussion
               <ArrowRight className="w-3 h-3" />
-            </Link>
+            </a>
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl leading-tight">
             Your next customer is asking an AI
