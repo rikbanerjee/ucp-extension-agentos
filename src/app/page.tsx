@@ -284,10 +284,10 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-slate-900 mb-5">Who&apos;s behind this &mdash; and why it took a retail operator to build it</h2>
           <div className="space-y-4 text-[15px] leading-7 text-slate-600">
             <p>
-              For 15 years I&apos;ve built retail technology &mdash; modernizing POS, building StoreOS to
-              simplify the work colleagues do on the floor, and the hardest version of modernization:
-              running legacy and modern POS in the same store at the same time, no big-bang cutover,
-              while customers kept shopping. That&apos;s the whole idea here.
+              For 15 years I&apos;ve worked in retail technology &mdash; close to the systems stores
+              actually run on, and the messy reality of modernizing them without the customer ever
+              noticing. That experience is the whole idea here: meet a store where it is, and change
+              what&apos;s underneath without breaking what&apos;s already working.
             </p>
             <p>
               Millions of merchants on Shopify, Etsy, Amazon, and Walmart Marketplace &mdash; custom apparel
@@ -306,9 +306,12 @@ export default function Home() {
               store join agentic commerce without rebuilding anything.
             </p>
             <p className="text-slate-700">
-              I&apos;m building it in the open because I honestly don&apos;t know yet whether merchants
-              will configure this layer themselves or whether platforms need to absorb it invisibly &mdash;
-              and I&apos;d rather find that out in public than guess in private.
+              I&apos;m building it in the open, on my own time &mdash; and not as a walled-off product,
+              but as shared, open specs for how AI agents read a store, that the whole retail community,
+              from independent shops to enterprise, can carry forward toward real standards. I honestly
+              don&apos;t know yet whether merchants will configure this layer themselves or whether
+              platforms need to absorb it invisibly &mdash; and I&apos;d rather find that out in public
+              than guess in private.
             </p>
           </div>
           <div className="mt-5">
