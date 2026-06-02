@@ -309,10 +309,10 @@ export default function DemoPage() {
           <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">Change the buyer context on the left — watch what the agent is allowed to see, recommend, and do on the right.</p>
         </div>
         <a
-          href="mailto:rikbanerjee007@gmail.com?subject=RetailAgentOS%20Store%20Visibility%20Audit"
+          href="/for-merchants#readiness"
           className="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
         >
-          Get an audit →
+          Check agent-readiness →
         </a>
       </div>
       {/* Three-column layout — desktop side-by-side, mobile single-panel */}
