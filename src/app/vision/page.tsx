@@ -687,11 +687,7 @@ export default function VisionPage() {
             </Link>
             {' '}·{' '}
             <Link href="/guided" className="text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors">
-              Guided Demo
-            </Link>
-            {' '}·{' '}
-            <Link href="/home" className="text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors">
-              Full story
+              See it (90s)
             </Link>
           </p>
         </div>

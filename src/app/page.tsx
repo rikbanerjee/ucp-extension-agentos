@@ -103,17 +103,17 @@ export default function Home() {
             Extends Google&apos;s open Universal Commerce Protocol.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            <a
-              href="#demo"
+            <Link
+              href="/guided"
               className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
             >
-              Show me what AI sees &rarr;
-            </a>
+              See it (90 seconds) &rarr;
+            </Link>
             <Link
               href="/demo"
               className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
             >
-              Explore the live playground &rarr;
+              Launch Playground &rarr;
             </Link>
           </div>
         </div>

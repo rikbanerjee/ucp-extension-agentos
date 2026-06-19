@@ -38,10 +38,10 @@ export default function BuildLogPage() {
           <div className="mt-6 inline-flex items-start gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 max-w-2xl">
             <span className="text-xs font-semibold bg-slate-200 text-slate-600 rounded-full px-2.5 py-0.5 shrink-0 mt-0.5">Up next</span>
             <p className="text-sm text-slate-600 leading-relaxed">
-              <span className="font-semibold text-slate-800">Week 4 — the Specs page.</span>{' '}
-              Publishing the first open spec, <em>Eligibility &amp; Visibility Semantics</em>, as a
-              first-class, linkable surface — versioned, with a reason-code registry and open
-              questions for comment. Drafting in the open.
+              <span className="font-semibold text-slate-800">Making the last simulated seams real.</span>{' '}
+              The engine is deterministic and the specs are live. What remains: a real MCP server
+              that agents can actually query, and cryptographic signatures a third party can
+              independently verify. No timeline overclaim — these ship when they ship correctly.
             </p>
           </div>
         </div>

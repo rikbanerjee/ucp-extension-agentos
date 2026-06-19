@@ -1,5 +1,6 @@
-import { ComputedVisibility, ComputedEligibility, ComputedPriceState } from '@/lib/types/extensions';
-import { CheckCircle, XCircle, AlertCircle, ShoppingCart, Eye, EyeOff, Tag } from 'lucide-react';
+import { ComputedVisibility, ComputedEligibility, ComputedPriceState, AppliedOffer, SuppressedOffer } from '@/lib/types/extensions';
+import { CheckCircle, XCircle, AlertCircle, ShoppingCart, Eye, EyeOff, Tag, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 
 interface DecisionCardProps {
   merchantHumanName: string;
@@ -8,6 +9,84 @@ interface DecisionCardProps {
   eligibility: ComputedEligibility;
   priceState: ComputedPriceState;
   onSwitchToTechnical?: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Offer stacking summary helpers
+// ---------------------------------------------------------------------------
+
+function offerTypeLabel(type: AppliedOffer['type']): string {
+  switch (type) {
+    case 'member':     return 'Member pricing';
+    case 'bulk_tier':  return 'Volume tier';
+    case 'promo_sale': return 'Sale price';
+    case 'promo_tier': return 'Mix & match promo';
+    default: return type;
+  }
+}
+
+/**
+ * Renders the applied + suppressed offer stack in business-friendly language.
+ * Collapsed by default; expands on click so it doesn't dominate the card.
+ */
+function OfferStackSummary({
+  appliedOffers,
+  suppressedOffers,
+}: {
+  appliedOffers: AppliedOffer[];
+  suppressedOffers: SuppressedOffer[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const hasOffers = appliedOffers.length > 0 || suppressedOffers.length > 0;
+  if (!hasOffers) return null;
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+      >
+        {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        {expanded ? 'Hide' : 'Show'} offer breakdown
+        {suppressedOffers.length > 0 && (
+          <span className="ml-1 bg-amber-900/60 text-amber-300 text-[10px] px-1.5 py-0.5 rounded-full font-medium">
+            {suppressedOffers.length} overridden
+          </span>
+        )}
+      </button>
+
+      {expanded && (
+        <div className="mt-2 space-y-1.5">
+          {appliedOffers.map(offer => (
+            <div key={offer.offerId} className="flex items-start gap-2 bg-emerald-900/20 border border-emerald-800/40 rounded px-2.5 py-1.5">
+              <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-emerald-300">{offerTypeLabel(offer.type)}</div>
+                <div className="text-[11px] text-slate-400 leading-snug">{offer.description}</div>
+              </div>
+              <div className="text-xs font-bold text-emerald-300 ml-auto shrink-0">
+                ${offer.unitPriceAfter.toFixed(2)}
+              </div>
+            </div>
+          ))}
+
+          {suppressedOffers.map(offer => (
+            <div key={offer.offerId} className="flex items-start gap-2 bg-slate-800/60 border border-slate-700/60 rounded px-2.5 py-1.5 opacity-70">
+              <XCircle className="w-3 h-3 text-slate-500 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-xs font-medium text-slate-400 line-through">{offerTypeLabel(offer.type)}</div>
+                <div className="text-[11px] text-slate-500 leading-snug">Overridden by a higher-priority offer</div>
+              </div>
+              <div className="text-[10px] font-mono text-slate-500 ml-auto shrink-0 self-center">
+                {offer.reason}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function priceLabel(priceState: ComputedPriceState): string {
@@ -125,7 +204,7 @@ export function DecisionCard({
         {isVisible && (
           <div className="flex items-start gap-3">
             <Tag className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold text-slate-300">
                 ${priceState.unitPrice.toFixed(2)}{' '}
                 <span className="font-normal text-slate-500">· {priceLabel(priceState)}</span>
@@ -133,6 +212,10 @@ export function DecisionCard({
               {priceState.teaser && (
                 <div className="text-xs text-emerald-400 mt-0.5">{priceState.teaser.message}</div>
               )}
+              <OfferStackSummary
+                appliedOffers={priceState.appliedOffers ?? []}
+                suppressedOffers={priceState.suppressedOffers ?? []}
+              />
             </div>
           </div>
         )}

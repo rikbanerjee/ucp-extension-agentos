@@ -1,7 +1,12 @@
-import { PricingContext, ComputedEligibility, ComputedVisibility, EligibilityReason } from '../types/extensions';
-import { Variant } from '../types/core';
+import type { BuyerContext } from '../types/context';
+import type { ComputedEligibility, ComputedVisibility, EligibilityReason } from '../types/extensions';
+import type { Variant } from '../types/core';
+import { deriveEligibilityStatus } from '../types/reasons';
 
-export function calculateVisibility(variant: Variant, context: PricingContext): ComputedVisibility {
+// The owning namespace for all RAOS-0001 reason codes.
+const ELIGIBILITY_NAMESPACE = 'com.os.retailagent.shopping.eligibility';
+
+export function calculateVisibility(variant: Variant, context: BuyerContext): ComputedVisibility {
   const rules = variant.eligibilityRules;
   if (!rules) return { status: 'VISIBLE' };
 
@@ -21,47 +26,68 @@ export function calculateVisibility(variant: Variant, context: PricingContext): 
     };
   }
 
-  // Add more visibility rules here if needed
-
   return { status: 'VISIBLE' };
 }
 
-export function calculateEligibility(variant: Variant, context: PricingContext): ComputedEligibility {
-  const reasons: EligibilityReason[] = [];
-  let status: ComputedEligibility['status'] = 'ELIGIBLE';
+export function calculateEligibility(variant: Variant, context: BuyerContext): ComputedEligibility {
+  const rules = variant.eligibilityRules;
+  const fulfillment = variant.fulfillmentConstraints;
 
-  const visibility = calculateVisibility(variant, context);
-  if (visibility.status === 'HIDDEN') {
+  // Guest visibility gate → item is hidden entirely
+  if (rules?.hideFromGuests && context.customerType === 'guest') {
+    const reason: EligibilityReason = {
+      code: 'HIDDEN_PRODUCT',
+      message: 'This product is not visible to guests.',
+      severity: 'BLOCK',
+      blocking: true,
+      source: ELIGIBILITY_NAMESPACE,
+    };
     return {
-      status: 'BLOCKED',
-      reasons: [{
-        code: 'HIDDEN_PRODUCT',
-        message: visibility.reason || 'Product is hidden.',
-        blocking: true
-      }]
+      status: deriveEligibilityStatus([reason]),
+      reasons: [reason],
     };
   }
 
-  const rules = variant.eligibilityRules;
-  if (!rules) return { status, reasons };
+  // Region restriction → distinct code so agents can explain it
+  if (fulfillment?.restrictedRegions?.includes(context.marketRegion)) {
+    const reason: EligibilityReason = {
+      code: 'REGION_RESTRICTED',
+      message: `This product is not available in ${context.marketRegion}.`,
+      severity: 'BLOCK',
+      blocking: true,
+      source: ELIGIBILITY_NAMESPACE,
+    };
+    return {
+      status: deriveEligibilityStatus([reason]),
+      reasons: [reason],
+    };
+  }
+
+  const reasons: EligibilityReason[] = [];
+
+  if (!rules) {
+    return { status: 'ELIGIBLE', reasons };
+  }
 
   if (rules.requireWholesale && context.customerType !== 'wholesale' && context.customerType !== 'b2b') {
-    status = 'BLOCKED';
     reasons.push({
       code: 'WHOLESALE_ONLY',
       message: 'This product requires a wholesale account.',
+      severity: 'BLOCK',
       blocking: true,
-      requirements: [{ type: 'customer_type', value: 'wholesale' }]
+      requirements: [{ type: 'customer_type', value: 'wholesale' }],
+      source: ELIGIBILITY_NAMESPACE,
     });
   }
 
   if (rules.requireResaleCertificate && !context.resaleCertificateOnFile) {
-    status = 'BLOCKED';
     reasons.push({
       code: 'RESALE_CERTIFICATE_REQUIRED',
       message: 'A resale certificate on file is required to purchase this product.',
+      severity: 'BLOCK',
       blocking: true,
-      requirements: [{ type: 'resale_certificate', value: true }]
+      requirements: [{ type: 'resale_certificate', value: true }],
+      source: ELIGIBILITY_NAMESPACE,
     });
   }
 
@@ -69,31 +95,34 @@ export function calculateEligibility(variant: Variant, context: PricingContext):
     const tierHierarchy = ['none', 'gold', 'reseller_plus', 'distributor'];
     const currentTierIdx = tierHierarchy.indexOf(context.membershipTier);
     const requiredTierIdx = tierHierarchy.indexOf(rules.requiredTier);
-    
+
     if (currentTierIdx < requiredTierIdx) {
-      status = status === 'BLOCKED' ? status : 'CONDITIONAL';
       reasons.push({
         code: 'TIER_RESTRICTION',
         message: `Requires ${rules.requiredTier} membership tier.`,
+        // BLOCK severity + requirements[] → derives to CONDITIONAL status (§8.1).
+        // This resolves the OQ#1/#2 incoherence: old code had blocking:true + CONDITIONAL status.
+        // New model: BLOCK severity + resolution path → CONDITIONAL. Behavior preserved.
+        severity: 'BLOCK',
         blocking: true,
-        requirements: [{ type: 'membership_tier', value: rules.requiredTier }]
+        requirements: [{ type: 'membership_tier', value: rules.requiredTier }],
+        source: ELIGIBILITY_NAMESPACE,
       });
     }
   }
 
-  const fulfillment = variant.fulfillmentConstraints;
   if (fulfillment?.availableModes && !fulfillment.availableModes.includes(context.fulfillmentMode)) {
-    status = 'BLOCKED';
     reasons.push({
       code: 'FULFILLMENT_UNAVAILABLE',
       message: `This product is not available for ${context.fulfillmentMode.replace('_', ' ')}.`,
-      blocking: true
+      severity: 'BLOCK',
+      blocking: true,
+      source: ELIGIBILITY_NAMESPACE,
     });
   }
 
-  if (status !== 'BLOCKED' && reasons.length > 0) {
-    status = 'CONDITIONAL';
-  }
-
-  return { status, reasons };
+  return {
+    status: deriveEligibilityStatus(reasons),
+    reasons,
+  };
 }

@@ -52,7 +52,7 @@ export default function RootLayout({
       <body className="flex h-full flex-col font-sans text-slate-900 bg-slate-50">
         <ViewProvider>
           <NavBar />
-          <main className="flex-1 overflow-hidden">
+          <main className="flex-1 overflow-y-auto">
             {children}
           </main>
           <Footer />

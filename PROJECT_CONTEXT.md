@@ -37,13 +37,13 @@ In this project, core UCP means:
 
 ## What this project adds
 This project introduces vendor-scoped retail semantics extensions such as:
-- `com.ezyupload.shopping.pricing_context`
-- `com.ezyupload.shopping.eligibility`
-- `com.ezyupload.shopping.member_pricing`
-- `com.ezyupload.shopping.bulk_pricing`
-- `com.ezyupload.shopping.loyalty`
-- `com.ezyupload.shopping.intent_capture`
-- `com.ezyupload.shopping.fulfillment_constraints`
+- `com.os.retailagent.shopping.pricing_context`
+- `com.os.retailagent.shopping.eligibility`
+- `com.os.retailagent.shopping.member_pricing`
+- `com.os.retailagent.shopping.bulk_pricing`
+- `com.os.retailagent.shopping.loyalty`
+- `com.os.retailagent.shopping.intent_capture`
+- `com.os.retailagent.shopping.fulfillment_constraints`
 
 These extensions are intended to show how context-aware retail logic can fit on top of UCP without redefining the protocol.
 

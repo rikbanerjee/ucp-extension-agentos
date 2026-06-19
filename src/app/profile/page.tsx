@@ -50,9 +50,15 @@ export default function ProfilePage() {
           </div>
         </Panel>
 
-        <Panel title="Vendor-Scoped Extensions">
+        <Panel title={`Manifest · Headline Tier ${activeMerchant.manifest.tier} · capabilities[]`}>
+          <p className="text-xs text-slate-500 mb-4">
+            The headline <span className="font-mono">tier</span> is an advisory maturity summary.
+            Agents negotiate against the authoritative{' '}
+            <span className="font-mono">capabilities[]</span> list below
+            (each <span className="font-mono">namespace@version</span>), never against the tier number.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            {activeMerchant.extensions.map(ext => (
+            {activeMerchant.manifest.capabilities.map(ext => (
               <div key={ext.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-slate-900">{ext.name}</span>

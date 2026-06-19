@@ -1,8 +1,8 @@
 # RAOS-0001 · Eligibility & Visibility Semantics
 
-**Extension namespace:** `com.ezyupload.shopping.eligibility`
+**Extension namespace:** `com.os.retailagent.shopping.eligibility`
 **Status:** Draft · Request for Comment
-**Version:** 0.1.0
+**Version:** 1.1.0
 **Layer:** RetailAgentOS extension on top of UCP (Universal Commerce Protocol)
 **Reference implementation:** [`src/lib/rules/eligibility.ts`](../src/lib/rules/eligibility.ts) — runnable in the [Playground](../src/app/demo/page.tsx)
 **Author:** Rik Banerjee · rikbanerjee007@gmail.com
@@ -72,24 +72,31 @@ semantics.
 ```
 
 All fields are optional. A variant with no `eligibilityRules` is `VISIBLE` and `ELIGIBLE` to
-everyone.
+everyone (see §7 for the one asymmetry that follows from this in the reference implementation).
 
 ### 4.2 Buyer context (the evaluation environment)
 
-```jsonc
-{
-  "customerType": "guest | member | wholesale | b2b",
-  "membershipTier": "none | gold | reseller_plus | distributor",
-  "marketRegion": "US | CA | NY | HI | ...",      // region / jurisdiction code
-  "fulfillmentMode": "shipping | pickup | local_delivery",
-  "accountLinked": false,
-  "taxExempt": false,
-  "resaleCertificateOnFile": false
-}
-```
+This spec consumes the `BuyerContext` object defined in **RAOS-0000 §4** — not an
+inline context type of its own. Every extension in the RetailAgentOS series evaluates against
+the same `BuyerContext`; RAOS-0001 uses the following fields:
 
-Context is supplied by the agent on behalf of the buyer. Fields an agent doesn't know default
-to the most restrictive interpretation (e.g. unknown `customerType` is treated as `guest`).
+| Field | Type | RAOS-0001 usage |
+|---|---|---|
+| `customerType` | `guest \| member \| wholesale \| b2b` | `hideFromGuests`, `requireWholesale` gates |
+| `membershipTier` | `none \| gold \| reseller_plus \| distributor` | `requiredTier` comparison (ordered ladder) |
+| `marketRegion` | `string` | `REGION_RESTRICTED` check via `fulfillmentConstraints.restrictedRegions` |
+| `fulfillmentMode` | `shipping \| pickup \| local_delivery` | `FULFILLMENT_UNAVAILABLE` check |
+| `resaleCertificateOnFile` | `boolean` | `requireResaleCertificate` gate |
+| `trust.mode` | `asserted \| signed` | For transaction-gating stages, asserted privilege claims are downgraded (RAOS-0000 §7.2). Eligibility is a transaction-gating stage. |
+
+Fields an agent doesn't supply are normalized to their **most-restrictive** defaults before
+evaluation (`normalizeBuyerContext`, RAOS-0000 §4.3): unknown `customerType` → `guest`,
+unknown `marketRegion` → treat region-gated items as restricted.
+
+The full `BuyerContext` shape (including `loyaltyTier`, `accountLinked`, `taxExempt`, and
+the `trust` envelope) is defined in [`src/lib/types/context.ts`](../src/lib/types/context.ts).
+RAOS-0001 does not read `loyaltyTier`, `accountLinked`, or `taxExempt` — those are consumed
+by RAOS-0009 and RAOS-0011 respectively.
 
 ---
 
@@ -114,16 +121,22 @@ quote, or add a `HIDDEN` item to a cart.
   "status": "ELIGIBLE | CONDITIONAL | BLOCKED",
   "reasons": [
     {
-      "code": "WHOLESALE_ONLY",                    // machine-readable, from the registry (§6)
-      "message": "This product requires a wholesale account.",  // human-readable
-      "blocking": true,                            // does this reason prevent purchase now?
-      "requirements": [                            // optional — what would resolve it
+      "code": "WHOLESALE_ONLY",
+      "message": "This product requires a wholesale account.",
+      "severity": "BLOCK",                             // RAOS-0000 §8.1 — replaces blocking bool
+      "source": "com.os.retailagent.shopping.eligibility",  // owning namespace
+      "blocking": true,                                // @deprecated — derived: severity !== 'INFO'
+      "requirements": [
         { "type": "customer_type", "value": "wholesale" }
       ]
     }
   ]
 }
 ```
+
+Reason entries use the unified `ReasonEntry` shape from RAOS-0000 §8. The `blocking` field
+is still emitted (derived from `severity !== 'INFO'`) but is **deprecated** — consumers
+should read `severity` instead. See §6 and the changelog (§11).
 
 **Status semantics:**
 
@@ -135,6 +148,11 @@ quote, or add a `HIDDEN` item to a cart.
   agent can offer (e.g. region restriction, unavailable fulfillment mode). The agent should
   stop and explain.
 
+**Status is derived from reasons (RAOS-0000 §8.1):**
+- `BLOCK` severity + no `requirements[]` → `BLOCKED`
+- `BLOCK` or `CONDITION` severity + a non-empty `requirements[]` → `CONDITIONAL`
+- `INFO` only, or no reasons → `ELIGIBLE`
+
 **`requirements[]` types:** `customer_type`, `membership_tier`, `tax_exempt`,
 `resale_certificate`, `moq`, `quantity_increment`.
 
@@ -143,19 +161,26 @@ quote, or add a `HIDDEN` item to a cart.
 ## 6. Reason code registry
 
 The registry is the heart of interoperability — two systems agree on codes, not on prose.
-Messages are localizable; codes are stable.
+Messages are localizable; codes are stable. Each entry uses the unified `ReasonEntry` shape
+(RAOS-0000 §8): `code`, `message`, `severity`, `source`, `requirements?`, and the deprecated
+`blocking` field derived from `severity`.
 
-| Code | Meaning | Default status contribution | Resolvable? |
-|------|---------|------------------------------|-------------|
-| `HIDDEN_PRODUCT` | Item is not visible in this context (maps a `HIDDEN` visibility into eligibility) | `BLOCKED` | No |
-| `WHOLESALE_ONLY` | Requires a wholesale or B2B account | `BLOCKED` | Yes — become a wholesale account |
-| `RESALE_CERTIFICATE_REQUIRED` | Resale certificate must be on file | `BLOCKED` | Yes — upload certificate |
-| `TIER_RESTRICTION` | Requires a higher membership tier | `CONDITIONAL` | Yes — upgrade tier |
-| `FULFILLMENT_UNAVAILABLE` | Not available for the requested fulfillment mode | `BLOCKED` | No (in this mode) |
-| `REGION_RESTRICTED` *(proposed)* | Not available in the buyer's region | `BLOCKED` | No |
+| Code | Meaning | Severity | Source namespace | Resolvable? |
+|------|---------|----------|-----------------|-------------|
+| `HIDDEN_PRODUCT` | Item is not visible in this context (guest visibility gate) | `BLOCK` | `…eligibility` | No |
+| `REGION_RESTRICTED` | Not available in the buyer's market region | `BLOCK` | `…eligibility` | No |
+| `WHOLESALE_ONLY` | Requires a wholesale or B2B account | `BLOCK` | `…eligibility` | Yes — become a wholesale account |
+| `RESALE_CERTIFICATE_REQUIRED` | Resale certificate must be on file | `BLOCK` | `…eligibility` | Yes — upload certificate |
+| `TIER_RESTRICTION` | Requires a higher membership tier | `BLOCK` + `requirements[]` → derives `CONDITIONAL` | `…eligibility` | Yes — upgrade tier |
+| `FULFILLMENT_UNAVAILABLE` | Not available for the requested fulfillment mode | `BLOCK` | `…eligibility` | No (in this mode) |
 
-*Codes are namespaced under `com.ezyupload.shopping.eligibility`. New codes should be additive;
-never repurpose an existing code's meaning.*
+**Deprecated field:** The `blocking` boolean field on each reason entry is **deprecated as
+of v1.1.0**. It is still emitted, derived as `severity !== 'INFO'`, with
+`@supersededBy: severity`. It will be removed in the next major version per the RAOS-0000 §7.4
+deprecation contract.
+
+*Codes are namespaced under `com.os.retailagent.shopping.eligibility`. New codes should be
+additive; never repurpose an existing code's meaning.*
 
 ---
 
@@ -163,40 +188,71 @@ never repurpose an existing code's meaning.*
 
 Deterministic. Same context + same rules → same result, every time. No model in the loop.
 
-1. **Visibility first.** If `hideFromGuests` and `customerType == guest` → `HIDDEN`. If the
-   variant's fulfillment constraints restrict the buyer's region → `HIDDEN`. Otherwise
-   `VISIBLE`.
-2. **If `HIDDEN`** → eligibility is `BLOCKED` with a single `HIDDEN_PRODUCT` reason. Stop.
-3. **Otherwise evaluate each rule, accumulating reasons:**
-   - `requireWholesale` and buyer is not `wholesale`/`b2b` → add `WHOLESALE_ONLY` (blocking).
-   - `requireResaleCertificate` and no certificate on file → add `RESALE_CERTIFICATE_REQUIRED`
-     (blocking).
-   - `requiredTier` not met → add `TIER_RESTRICTION`.
-   - fulfillment mode not in the variant's available modes → add `FULFILLMENT_UNAVAILABLE`
-     (blocking).
-4. **Resolve final status:** `BLOCKED` if any unresolvable blocking reason is present;
-   otherwise `CONDITIONAL` if any reasons exist; otherwise `ELIGIBLE`.
+1. **Visibility first.** If `hideFromGuests` and `customerType == guest` → `HIDDEN` (guest
+   gate). If the variant's `fulfillmentConstraints.restrictedRegions` includes the buyer's
+   `marketRegion` → `HIDDEN` (region gate). Otherwise `VISIBLE`.
+2. **If `HIDDEN` (guest gate)** → eligibility is `BLOCKED` with `HIDDEN_PRODUCT` reason.
+   Stop.
+3. **If `HIDDEN` (region gate)** → eligibility is `BLOCKED` with `REGION_RESTRICTED` reason.
+   Stop.
+4. **If the variant has no `eligibilityRules`** → return `ELIGIBLE` immediately. The region
+   and fulfillment checks in steps 1–3 have already passed; no further rules apply.
+5. **Otherwise evaluate each rule, accumulating reasons:**
+   - `requireWholesale` and buyer is not `wholesale`/`b2b` → add `WHOLESALE_ONLY` (`BLOCK`).
+   - `requireResaleCertificate` and `resaleCertificateOnFile === false` → add
+     `RESALE_CERTIFICATE_REQUIRED` (`BLOCK` + `requirements[]`).
+   - `requiredTier` not met (using ordered ladder `none < gold < reseller_plus < distributor`)
+     → add `TIER_RESTRICTION` (`BLOCK` + `requirements[]` → status derives to `CONDITIONAL`).
+   - `fulfillmentConstraints.availableModes` is set and `fulfillmentMode` not in it → add
+     `FULFILLMENT_UNAVAILABLE` (`BLOCK`).
+6. **Derive final status** per RAOS-0000 §8.1 (see §5.2 above).
+
+### Known reference-implementation asymmetry (pinned, WP-00)
+
+Step 4 above introduces a **deliberate asymmetry** between `calculateVisibility` and
+`calculateEligibility` in the reference implementation:
+
+- **`calculateVisibility`** returns `VISIBLE` immediately for variants with no
+  `eligibilityRules`, skipping the region check entirely. A variant without
+  `eligibilityRules` is therefore *always* visible — region-hiding does not apply.
+- **`calculateEligibility`** catches `REGION_RESTRICTED` regardless of `eligibilityRules`,
+  because the region check runs before the early-return (steps 1–3 precede step 4).
+
+The practical consequence is that `FULFILLMENT_UNAVAILABLE` is currently **unreachable** for a
+variant with no `eligibilityRules`: the function returns `ELIGIBLE` at step 4 before
+evaluating fulfillment mode. `REGION_RESTRICTED` is always reachable (handled in step 3).
+
+This is a **known quirk of the reference implementation**, not a design intention. It will be
+corrected when the evaluation logic is refactored into the formal VISIBILITY and ELIGIBILITY
+pipeline stages (ARCH §3–§5). It is documented here so that consumers of the reference
+implementation are not surprised, and so the pipeline-stage refactor has a clear acceptance
+criterion: after the refactor, a variant without `eligibilityRules` that is region-restricted
+must return `HIDDEN` / `BLOCKED [REGION_RESTRICTED]`, matching the behavior for variants that
+carry `eligibilityRules`.
 
 ---
 
 ## 8. Worked examples (the three archetypes)
 
-### B&T Wholesale — gated, qualification-first SKU
+### Atlas Wholesale — gated, qualification-first SKU
 Rules: `{ hideFromGuests: true, requireWholesale: true, requireResaleCertificate: true }`
 
 - **Guest buyer** → `VISIBLE: HIDDEN` → `Eligibility: BLOCKED [HIDDEN_PRODUCT]`.
   *Agent never surfaces it.*
 - **Wholesale buyer, no resale cert** → `VISIBLE` → `Eligibility: BLOCKED
-  [RESALE_CERTIFICATE_REQUIRED]` with requirement `{ resale_certificate: true }`.
+  [RESALE_CERTIFICATE_REQUIRED]` with `requirements: [{ resale_certificate: true }]`.
   *Agent: "I can show this, but you'll need a resale certificate on file. Want to upload one?"*
 - **Wholesale buyer, resale cert on file** → `VISIBLE` → `Eligibility: ELIGIBLE`.
   *Agent proceeds.*
 
 ### Fresh Corner Market — region & fulfillment sensitive
-Variant restricted in `HI`, available only via `pickup`/`local_delivery`.
+Variant has `fulfillmentConstraints.restrictedRegions: ['HI']` and
+`fulfillmentConstraints.availableModes: ['pickup', 'local_delivery']`, with `eligibilityRules`
+set (so the fulfillment-mode check is reachable).
 
-- **Buyer in HI** → `HIDDEN` (`This product is not available in HI.`).
-- **Buyer requesting `shipping`** → `Eligibility: BLOCKED [FULFILLMENT_UNAVAILABLE]`.
+- **Buyer in HI** → `HIDDEN` → `Eligibility: BLOCKED [REGION_RESTRICTED]`.
+  *Agent explains — "This product is not available in HI." — doesn't silently drop.*
+- **Buyer requesting `shipping`** → `VISIBLE` → `Eligibility: BLOCKED [FULFILLMENT_UNAVAILABLE]`.
   *Agent doesn't promise shipping it can't deliver.*
 
 ### Sara's Boutique — discovery-led, open DTC
@@ -204,7 +260,8 @@ No `eligibilityRules`.
 
 - **Any buyer** → `VISIBLE`, `ELIGIBLE`. *Clean payload, no gates — an agent recommends
   freely.* (This archetype's gap is *discoverability*, addressed by a future spec, not
-  eligibility.)
+  eligibility.) Note: per the asymmetry in §7, region checking does not apply to variants
+  without `eligibilityRules` in the current reference implementation.
 
 ---
 
@@ -212,22 +269,41 @@ No `eligibilityRules`.
 
 These are genuine forks. Tell me I'm wrong.
 
-1. **`blocking` vs. status coherence.** The reference implementation currently emits
-   `TIER_RESTRICTION` with `blocking: true` while resolving status to `CONDITIONAL`. That's
-   incoherent: if a reason is resolvable (upgrade tier), is it really "blocking"? **Proposed
-   fix:** `blocking` describes only the *current* state (purchase is blocked right now);
-   `CONDITIONAL` vs `BLOCKED` is derived from whether a `requirements[]` path exists. Should
-   `blocking` even be a field, or is it fully derivable from `requirements`? *Leaning: derive
-   it.*
-2. **Is `CONDITIONAL` worth keeping as a distinct status,** or should agents just read
-   `BLOCKED` + the presence of `requirements[]`? Three states is more expressive; two is
-   simpler to implement. Which serves agents better?
-3. **`REGION_RESTRICTED` placement.** Region restriction currently surfaces as a *visibility*
-   `HIDDEN` reason rather than an eligibility code. Should region be a first-class eligibility
-   reason code so agents can explain it, rather than the item silently vanishing?
-4. **Unknown-context defaulting.** Spec says "default to most restrictive." Is that right for
-   discovery (you'd under-surface), or should visibility default open and eligibility default
-   strict?
+1. **`blocking` vs. status coherence. — RESOLVED (2026-06-10)**
+   The incoherence (emitting `TIER_RESTRICTION` with `blocking: true` while resolving status
+   to `CONDITIONAL`) is resolved by the RAOS-0000 §8.1 severity model. `blocking` is now a
+   *derived* boolean (`severity !== 'INFO'`), not an authored field. The status derivation rule
+   is: `BLOCK` severity + `requirements[]` → `CONDITIONAL` status (the resolution path exists,
+   so the buyer isn't fully stopped). This is implemented in `deriveEligibilityStatus` in
+   `src/lib/types/reasons.ts`. The `blocking` field is deprecated with `supersededBy: severity`
+   per RAOS-0000 §7.4.
+
+2. **Is `CONDITIONAL` worth keeping as a distinct status? — RESOLVED (2026-06-10)**
+   Resolved together with OQ#1. Three states are kept (`ELIGIBLE | CONDITIONAL | BLOCKED`)
+   because they serve agents differently: `CONDITIONAL` carries an actionable resolution path
+   the agent can surface; `BLOCKED` means stop and explain with no path. Collapsing to two
+   states would require the agent to inspect `requirements[]` to distinguish them — three states
+   is more expressive and the derivation from `severity + requirements[]` is deterministic and
+   cheap (RAOS-0000 §8.1).
+
+3. **`REGION_RESTRICTED` placement.** Region restriction surfaces as a *visibility* `HIDDEN`
+   result (the item disappears) **and** as the eligibility reason code `REGION_RESTRICTED`
+   (so agents can explain it). Is a region-restricted item correctly `HIDDEN`, or should it
+   be `VISIBLE` with `BLOCKED` eligibility? Hidden means the agent never surfaces it; blocked
+   means the agent sees it but can't transact. Which is more useful for agent behavior? Open
+   for comment.
+
+4. **Unknown-context defaulting for transaction-gating stages. — RESOLVED (2026-06-10)**
+   Per RAOS-0000 §7.2, **transaction-gating stages** (Eligibility, Price, Quote) default
+   to the **most-restrictive** interpretation for unknown or untrusted context. Untrusted
+   privilege claims (`membershipTier`, `loyaltyTier`, `taxExempt`, `resaleCertificateOnFile`)
+   are downgraded when `trust.mode === 'asserted'`. The normalization is implemented in
+   `src/lib/rules/normalizeBuyerContext.ts`.
+
+   The **discovery-side default** (should visibility default open, risking surfacing something
+   a buyer can't buy, or strict, risking under-surfacing?) is **not yet resolved** — it is an
+   open question at the RAOS-0000 §11 level as well. Comment welcome.
+
 5. **Tier hierarchy.** It's currently an ordered list (`none < gold < reseller_plus <
    distributor`). Should tiers be a partial order / capability set instead of a strict ladder?
 
@@ -246,6 +322,41 @@ into UCP itself.
 The mission: a small retailer can't build this. But if the spec exists and is open, the
 platform they already use can implement it once — and every merchant on that platform inherits
 agent-readiness for free. The spec is the leverage.
+
+---
+
+## 11. Changelog
+
+### v1.1.0 — 2026-06-10 (WP-03 retrofit)
+
+**Additive changes:**
+
+- **§4.2 Inputs:** The inline buyer-context object is replaced with a reference to the
+  RAOS-0000 §4 `BuyerContext` — the single, shared evaluation environment all extensions
+  consume. A per-field usage table documents which fields RAOS-0001 reads and why. The
+  `loyaltyTier` and `trust` fields are now visible in context (they were added in WP-02).
+- **§5.2 / §6 Reason code registry:** Each `ReasonEntry` now carries `severity` (replaces
+  the ambiguous `blocking` bool) and `source` (owning namespace for trace attribution).
+  The registry table adds `Severity` and `Source namespace` columns.
+- **`blocking` deprecated:** The `blocking` boolean field is still emitted (derived as
+  `severity !== 'INFO'`) but marked deprecated with `supersededBy: severity` per
+  RAOS-0000 §7.4. It will be removed in the next major version.
+- **OQ#1 and OQ#2 resolved** (2026-06-10): the `blocking` / `CONDITIONAL` incoherence is
+  resolved by the RAOS-0000 §8.1 severity model.
+- **OQ#4 partially resolved** (2026-06-10): transaction-gating most-restrictive default is
+  resolved; discovery-side default remains open.
+- **§7 algorithm:** Expanded to document the known reference-implementation asymmetry for
+  variants without `eligibilityRules` (visibility skips region check; `FULFILLMENT_UNAVAILABLE`
+  unreachable in that path). Documented as a known quirk slated for the pipeline-stage refactor.
+
+**No breaking changes.** All six reason codes are unchanged. `ComputedVisibility` and
+`ComputedEligibility` shapes are unchanged. Existing consumers reading `blocking` continue to
+work; the field is preserved for ≥1 major.
+
+### v0.1.0 — 2026-05 (initial draft)
+
+Initial draft published for comment. Six reason codes, three worked examples (B&T Wholesale /
+Fresh Corner Market / Sara's Boutique), five open questions.
 
 ---
 
