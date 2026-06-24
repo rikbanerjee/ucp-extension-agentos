@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/guided', label: 'See it (90s)' },
   { href: '/demo', label: 'Playground' },
   { href: '/specs', label: 'Specs' },
+  { href: '/aeo-score', label: 'AEO Score' },
   { href: '/for-merchants', label: 'For Merchants', highlight: true },
   { href: '/buildlog', label: 'Build Log' },
 ];
