@@ -16,17 +16,15 @@
  * for the QUOTE-stage evaluator. This is the pattern documented in evaluators/quote.ts.
  */
 
-import '@/lib/extensions';
-import { evaluateOffer, setQuoteMeta } from '@/lib/extensions';
-import { validateQuote } from '@/lib/rules/quote';
+import { evaluateOffer, setQuoteMeta, validateQuote } from '@retailagentos/engine';
+import type { PartialBuyerContext, QuoteToken } from '@retailagentos/engine';
 import type { Recipe, RecipeResult } from './index';
 import {
   MERCHANT_B,
   VARIANT_QUOTABLE,
   REFERENCE_NOW,
 } from '../fixtures';
-import type { PartialBuyerContext, BuyerContext, MembershipTier } from '@/lib/types/context';
-import type { QuoteToken } from '@/lib/types/quote';
+import type { BuyerContext, MembershipTier } from '@/lib/types/context';
 
 const shownSource = `// RAOS-0007: Quote Integrity & Price Lock
 import '@/lib/extensions';

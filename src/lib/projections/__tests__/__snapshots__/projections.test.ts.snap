@@ -1,0 +1,223 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildManifest > snapshot: projects MerchantProfile into UcpManifest 1`] = `
+{
+  "capabilities": [
+    {
+      "description": "Calculates product and cart-level eligibility reasoning.",
+      "id": "ext.eligibility",
+      "name": "Eligibility Rules",
+      "namespace": "com.os.retailagent.shopping.eligibility",
+      "required": true,
+      "tier": 1,
+      "version": "1.1.0",
+    },
+    {
+      "description": "Real-time stock state.",
+      "id": "ext.inventory",
+      "name": "Inventory & Availability",
+      "namespace": "com.os.retailagent.shopping.inventory",
+      "required": true,
+      "tier": 1,
+      "version": "1.0.0",
+    },
+    {
+      "description": "Signed, TTL'd price commitments.",
+      "id": "ext.quote",
+      "name": "Quote Integrity & Price Lock",
+      "namespace": "com.os.retailagent.shopping.quote",
+      "required": false,
+      "tier": 2,
+      "version": "1.0.0",
+    },
+  ],
+  "keys": [
+    {
+      "keyId": "k1",
+      "validFrom": 1700000000000,
+      "validTo": null,
+    },
+  ],
+  "protocol": "1.0",
+  "tier": 2,
+}
+`;
+
+exports[`toProductFeed > snapshot: all sample variants → feed rows 1`] = `
+[
+  {
+    "availability": "in stock",
+    "call_for_price": false,
+    "currency": "USD",
+    "id": "v-robotics-shirt-sm-black",
+    "price": "29.99 USD",
+    "ships_to": "US,CA",
+    "sku": "RBT-SM-BLK",
+    "title": "Robotics Team Shirt — Small / Black",
+  },
+  {
+    "availability": "in stock",
+    "call_for_price": false,
+    "currency": "USD",
+    "id": "v-robotics-shirt-lg-red",
+    "price": "29.99 USD",
+    "ships_to": "US,CA",
+    "sku": "RBT-LG-RED",
+    "title": "Robotics Team Shirt — Large / Red",
+  },
+  {
+    "availability": "out of stock",
+    "call_for_price": false,
+    "currency": "USD",
+    "id": "v-robotics-hat-os",
+    "price": "19.99 USD",
+    "ships_to": "US,CA",
+    "sku": "RBT-HAT-OS",
+    "title": "Robotics Team Cap — One Size",
+  },
+  {
+    "availability": "in stock",
+    "call_for_price": true,
+    "currency": "USD",
+    "id": "v-bulk-custom-jersey",
+    "price": "",
+    "ships_to": "US,CA",
+    "sku": "BULK-CUST-JRS",
+    "title": "Custom Bulk Jersey — Group Order",
+  },
+]
+`;
+
+exports[`toSchemaOrgProduct > snapshot: callForPrice variant → priceSpecification present 1`] = `
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Custom Bulk Jersey — Group Order",
+  "offers": {
+    "@type": "Offer",
+    "availability": "https://schema.org/InStock",
+    "price": 0,
+    "priceCurrency": "USD",
+    "priceSpecification": {
+      "@type": "PriceSpecification",
+      "description": "Call for price",
+      "price": null,
+      "priceCurrency": "USD",
+    },
+    "shippingDetails": [
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "US",
+        },
+      },
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "CA",
+        },
+      },
+    ],
+  },
+  "productID": "v-bulk-custom-jersey",
+  "sku": "BULK-CUST-JRS",
+}
+`;
+
+exports[`toSchemaOrgProduct > snapshot: in-stock variant 1`] = `
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Robotics Team Shirt — Small / Black",
+  "offers": {
+    "@type": "Offer",
+    "availability": "https://schema.org/InStock",
+    "price": 29.99,
+    "priceCurrency": "USD",
+    "shippingDetails": [
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "US",
+        },
+      },
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "CA",
+        },
+      },
+    ],
+  },
+  "productID": "v-robotics-shirt-sm-black",
+  "sku": "RBT-SM-BLK",
+}
+`;
+
+exports[`toSchemaOrgProduct > snapshot: low-stock variant → LimitedAvailability 1`] = `
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Robotics Team Shirt — Large / Red",
+  "offers": {
+    "@type": "Offer",
+    "availability": "https://schema.org/LimitedAvailability",
+    "price": 29.99,
+    "priceCurrency": "USD",
+    "shippingDetails": [
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "US",
+        },
+      },
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "CA",
+        },
+      },
+    ],
+  },
+  "productID": "v-robotics-shirt-lg-red",
+  "sku": "RBT-LG-RED",
+}
+`;
+
+exports[`toSchemaOrgProduct > snapshot: out-of-stock variant 1`] = `
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Robotics Team Cap — One Size",
+  "offers": {
+    "@type": "Offer",
+    "availability": "https://schema.org/OutOfStock",
+    "price": 19.99,
+    "priceCurrency": "USD",
+    "shippingDetails": [
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "US",
+        },
+      },
+      {
+        "@type": "OfferShippingDetails",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "CA",
+        },
+      },
+    ],
+  },
+  "productID": "v-robotics-hat-os",
+  "sku": "RBT-HAT-OS",
+}
+`;

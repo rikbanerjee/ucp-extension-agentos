@@ -12,9 +12,9 @@
  * Real lib calls: evaluateOffer (from @/lib/extensions/pipeline)
  */
 
-// Must import the registration side-effect so evaluators are in the registry.
-import '@/lib/extensions';
-import { evaluateOffer } from '@/lib/extensions';
+// Importing the package self-registers all evaluators.
+import { evaluateOffer } from '@retailagentos/engine';
+import type { PartialBuyerContext } from '@retailagentos/engine';
 import type { Recipe, RecipeResult } from './index';
 import {
   MERCHANT_A,
@@ -22,7 +22,6 @@ import {
   VARIANT_OPEN,
   REFERENCE_NOW,
 } from '../fixtures';
-import type { PartialBuyerContext } from '@/lib/types/context';
 
 const shownSource = `// RAOS-0000: Manifest negotiation + trust downgrade
 // Step 1 — Import the pipeline (evaluators self-register at boot)

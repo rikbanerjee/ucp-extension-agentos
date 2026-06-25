@@ -13,14 +13,8 @@
  */
 
 import { useState, useMemo } from 'react';
-import type { DecisionRecord } from '@/lib/extensions/pipeline';
-import { buildDecisionTrace } from '@/lib/trace/derive';
-import {
-  renderDeveloperTrace,
-  renderMerchantTrace,
-  renderBuyerTrace,
-} from '@/lib/trace/render';
-import type { MerchantTraceRow } from '@/lib/trace/types';
+import { buildDecisionTrace, renderDeveloperTrace, renderMerchantTrace, renderBuyerTrace } from '@retailagentos/engine';
+import type { DecisionRecord, MerchantTraceRow } from '@retailagentos/engine';
 import { BuyerDecisionCard } from './BuyerDecisionCard';
 
 // ---------------------------------------------------------------------------

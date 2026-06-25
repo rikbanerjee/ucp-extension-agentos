@@ -20,8 +20,8 @@
  * This recipe focuses on the envelope field values and TRUST_SIMULATED reason.
  */
 
-import '@/lib/extensions';
-import { evaluateOffer } from '@/lib/extensions';
+import { evaluateOffer } from '@retailagentos/engine';
+import type { PartialBuyerContext } from '@retailagentos/engine';
 import type { Recipe, RecipeResult } from './index';
 import {
   MERCHANT_A,
@@ -30,7 +30,6 @@ import {
   VARIANT_QUOTABLE,
   REFERENCE_NOW,
 } from '../fixtures';
-import type { PartialBuyerContext } from '@/lib/types/context';
 
 const shownSource = `// RAOS-0008: Trust, Provenance & Freshness
 import '@/lib/extensions';

@@ -8,8 +8,8 @@
  * Real lib call: evaluateOffer (eligibility evaluator in ELIGIBILITY stage)
  */
 
-import '@/lib/extensions';
-import { evaluateOffer } from '@/lib/extensions';
+import { evaluateOffer } from '@retailagentos/engine';
+import type { PartialBuyerContext } from '@retailagentos/engine';
 import type { Recipe, RecipeResult } from './index';
 import {
   MERCHANT_A,
@@ -19,7 +19,7 @@ import {
   VARIANT_OPEN,
   REFERENCE_NOW,
 } from '../fixtures';
-import type { PartialBuyerContext, CustomerType, MembershipTier } from '@/lib/types/context';
+import type { CustomerType, MembershipTier } from '@/lib/types/context';
 
 const shownSource = `// RAOS-0001: Eligibility gate
 import '@/lib/extensions';

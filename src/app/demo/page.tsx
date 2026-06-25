@@ -10,7 +10,7 @@ import { CartLine } from '@/lib/types/core';
 import { calculateEligibility, calculateVisibility } from '@/lib/rules/eligibility';
 import { getApplicablePrice, computePrice } from '@/lib/rules/pricing';
 import { validateCartLine } from '@/lib/rules/cartValidation';
-import { evaluateOffer } from '@/lib/extensions';
+import { evaluateOffer } from '@retailagentos/engine';
 import { TraceTab } from '@/components/demo/TraceTab';
 import { Panel } from '@/components/ui/Panel';
 import { JsonViewer } from '@/components/ui/JsonViewer';

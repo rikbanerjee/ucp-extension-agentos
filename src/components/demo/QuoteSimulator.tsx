@@ -22,16 +22,14 @@
 
 import { useState, useMemo } from 'react';
 import { Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Lock, Unlock } from 'lucide-react';
-import { issueQuote, validateQuote } from '@/lib/rules/quote';
+import { issueQuote, validateQuote } from '@retailagentos/engine';
+import type { QuoteToken, QuoteValidationResult, DecisionRecord, MerchantProfile } from '@retailagentos/engine';
 import { normalizeBuyerContext } from '@/lib/rules/normalizeBuyerContext';
 import { getApplicablePrice } from '@/lib/rules/pricing';
 import { mockProducts } from '@/lib/mock/catalog';
 import { mockMerchants } from '@/lib/mock/merchants';
-import type { QuoteToken, QuoteValidationResult } from '@/lib/types/quote';
-import type { DecisionRecord } from '@/lib/extensions/pipeline';
 import type { NormalizedBuyerContext } from '@/lib/types/context';
 import type { ComputedPriceState } from '@/lib/types/extensions';
-import type { MerchantProfile } from '@/lib/types/core';
 import { signEnvelope } from '@/lib/rules/trust';
 
 // ---------------------------------------------------------------------------

@@ -34,13 +34,10 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { evaluateOffer } from '@/lib/extensions';
-import { buildDecisionTrace } from '@/lib/trace/derive';
-import { renderBuyerTrace } from '@/lib/trace/render';
+import { evaluateOffer, buildDecisionTrace, renderBuyerTrace, issueQuote, validateQuote } from '@retailagentos/engine';
 import { mockMerchants } from '@/lib/mock/merchants';
 import { mockProducts } from '@/lib/mock/catalog';
 import { BuyerDecisionCard } from '@/components/demo/BuyerDecisionCard';
-import { issueQuote, validateQuote } from '@/lib/rules/quote';
 
 // ─── Fixed story constants ────────────────────────────────────────────────────
 

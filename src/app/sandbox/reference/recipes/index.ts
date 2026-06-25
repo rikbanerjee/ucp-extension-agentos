@@ -5,10 +5,7 @@
  * The UI layer imports this registry and renders generically.
  */
 
-import type { DecisionRecord } from '@/lib/extensions/pipeline';
-import type { QuoteToken, QuoteValidationResult } from '@/lib/types/quote';
-import type { MerchantTraceRow, BuyerTraceView } from '@/lib/trace/types';
-import type { PartialBuyerContext } from '@/lib/types/context';
+import type { DecisionRecord, QuoteToken, QuoteValidationResult, MerchantTraceRow, BuyerTraceView, PartialBuyerContext } from '@retailagentos/engine';
 
 // ---------------------------------------------------------------------------
 // Control definition types

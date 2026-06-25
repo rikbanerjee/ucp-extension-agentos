@@ -11,8 +11,8 @@
  * Real lib call: evaluateOffer (inventory evaluator in ELIGIBILITY stage at priority 20)
  */
 
-import '@/lib/extensions';
-import { evaluateOffer } from '@/lib/extensions';
+import { evaluateOffer } from '@retailagentos/engine';
+import type { PartialBuyerContext } from '@retailagentos/engine';
 import type { Recipe, RecipeResult } from './index';
 import {
   MERCHANT_A,
@@ -23,7 +23,6 @@ import {
   VARIANT_STALE,
   REFERENCE_NOW,
 } from '../fixtures';
-import type { PartialBuyerContext } from '@/lib/types/context';
 import type { ComputedAvailability } from '@/lib/types/inventory';
 
 const shownSource = `// RAOS-0005: Inventory & Availability

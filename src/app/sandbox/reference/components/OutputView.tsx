@@ -1,10 +1,7 @@
 'use client';
 
 import type { RecipeResult } from '../recipes/index';
-import type { DecisionRecord } from '@/lib/extensions/pipeline';
-import type { QuoteToken } from '@/lib/types/quote';
-import type { MerchantTraceRow, BuyerTraceView } from '@/lib/trace/types';
-import type { PartialBuyerContext } from '@/lib/types/context';
+import type { DecisionRecord, QuoteToken, MerchantTraceRow, BuyerTraceView, PartialBuyerContext } from '@retailagentos/engine';
 import { CodeBlock } from './CodeBlock';
 
 // ---------------------------------------------------------------------------

@@ -15,14 +15,15 @@
  *   renderMerchantTrace, renderBuyerTrace
  */
 
-import '@/lib/extensions';
-import { evaluateOffer, setQuoteMeta } from '@/lib/extensions';
-import { buildDecisionTrace } from '@/lib/trace/derive';
 import {
+  evaluateOffer,
+  setQuoteMeta,
+  buildDecisionTrace,
   renderDeveloperTrace,
   renderMerchantTrace,
   renderBuyerTrace,
-} from '@/lib/trace/render';
+} from '@retailagentos/engine';
+import type { PartialBuyerContext } from '@retailagentos/engine';
 import type { Recipe, RecipeResult } from './index';
 import {
   MERCHANT_A,
@@ -34,7 +35,7 @@ import {
   VARIANT_QUOTABLE,
   REFERENCE_NOW,
 } from '../fixtures';
-import type { PartialBuyerContext, MembershipTier } from '@/lib/types/context';
+import type { MembershipTier } from '@/lib/types/context';
 
 const shownSource = `// RAOS-0013: Decision Trace — three-audience renderers
 import '@/lib/extensions';
