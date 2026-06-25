@@ -3,9 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "description": "RetailAgentOS reference engine — pure, deterministic offer evaluation.",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1"
   }
 }

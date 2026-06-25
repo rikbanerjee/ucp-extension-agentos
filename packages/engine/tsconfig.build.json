@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../src/*"]
+    },
+    "noEmit": false,
+    "declaration": true,
+    "incremental": false,
+    "composite": false,
+    "plugins": []
+  },
+  "include": ["src/index.ts"],
+  "exclude": ["node_modules", "dist", "src/__fixtures__"]
+}
