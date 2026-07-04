@@ -20,7 +20,7 @@ export default function ReferenceCookbookPage() {
             href="/sandbox/retail-agent-os"
             className="text-xs text-slate-400 hover:text-slate-600 mb-3 block"
           >
-            ← Back to Playground
+            ← Story mode (narrative demo)
           </Link>
           <div className="text-xs font-mono text-emerald-600 font-semibold mb-1">
             RAOS Reference Cookbook

@@ -115,7 +115,7 @@ Rename surface copy from "AEO score" to "AI-readiness score" (keep the route; ad
 **Acceptance:** running it against TheCustomHub (post-pilot) and a raw store produces
 visibly different levels; result page is screenshot-able.
 
-### SWP-7 · IA / navigation consolidation `(S–M)`
+### SWP-7 · IA / navigation consolidation `(S–M)` — ✅ done 2026-07-04
 **Files:** `src/components/layout/NavBar.tsx`, `layout.tsx`, small edits on affected pages.
 **Do:** collapse the 13-route sprawl into an audience-based nav:
 **For retailers** (`/aeo-score`, `/for-merchants`, `/guided`) · **For builders** (`/adopt`,
