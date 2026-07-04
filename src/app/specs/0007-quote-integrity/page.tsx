@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Lock, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
+import { TierBadge } from '../TierBadge';
 
 // ---------------------------------------------------------------------------
 // Reason code registry (RAOS-0007 §6)
@@ -230,9 +231,6 @@ export default function Spec0007Page() {
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
               v1.0.0 · June 2026
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-              Tier 2 · Priced
-            </span>
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">
             Quote Integrity &amp; Price Lock
@@ -241,6 +239,8 @@ export default function Spec0007Page() {
             A signed, TTL&apos;d price commitment binding variant + quantity + buyer-context hash + resolved price to a checkout window.
             Guarantees that the price the agent quoted is the price charged.
           </p>
+
+          <TierBadge tier="Tier 2" tierName="Priced" version="1.0.0" adoptAnchor="tier-2" />
         </div>
 
         {/* Namespace */}

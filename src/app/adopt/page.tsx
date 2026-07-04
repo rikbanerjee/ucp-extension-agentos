@@ -214,7 +214,7 @@ export default function AdoptPage() {
         </section>
 
         {/* Derived surfaces table */}
-        <section className="mb-16">
+        <section id="derived-surfaces" className="mb-16 scroll-mt-24">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Everything else is derived</h2>
           <p className="text-sm text-slate-500 mb-4">From the two contracts, the engine derives every agent-facing surface.</p>
           <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -258,7 +258,11 @@ export default function AdoptPage() {
 
           <ol className="space-y-6">
             {tiers.map((t, i) => (
-              <li key={t.tier} className="relative rounded-xl border border-slate-200 overflow-hidden">
+              <li
+                key={t.tier}
+                id={`tier-${i}`}
+                className="relative rounded-xl border border-slate-200 overflow-hidden scroll-mt-24"
+              >
                 <div className={`px-5 py-4 border-b border-slate-200 ${t.planned ? 'bg-slate-50' : 'bg-white'}`}>
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="shrink-0 w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">

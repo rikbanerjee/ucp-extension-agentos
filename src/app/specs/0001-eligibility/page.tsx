@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
 import { ViewToggle } from '@/components/ui/ViewToggle';
+import { TierBadge } from '../TierBadge';
 
 const reasonCodes = [
   {
@@ -202,6 +203,8 @@ export default function Spec0001Page() {
             This is an open draft. The point is to be argued with. If a reason code, a status, or a field is wrong, that&apos;s the most useful thing you can tell me.{' '}
             <a href="#open-questions" className="underline font-medium">See the open questions →</a>
           </div>
+
+          <TierBadge tier="Tier 1" tierName="Qualified" version="1.1.0" adoptAnchor="tier-1" />
         </div>
 
         {/* View toggle */}

@@ -22,6 +22,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { AeoResult, AuditItem, AuditCategory } from '@/lib/aeo/types';
+import ReadinessCard from './ReadinessCard';
 import styles from './page.module.css';
 
 // ---------------------------------------------------------------------------
@@ -226,7 +227,7 @@ const TABS: { id: AuditCategory; label: string; desc: string }[] = [
   { id: 'format', label: 'Data Format & Density', desc: 'LLMs strongly favor bulleted lists, key-value grids, tabular specifications, and numerical statistics to formulate responses.' },
   { id: 'eeat', label: 'EEAT & Authority', desc: 'Trustworthiness factors verified by clear outbound citations, links to author profiles, and essential legal transparency anchors.' },
   { id: 'metadata', label: 'Metadata & Technical', desc: 'Standard SEO configuration, page title sizes, meta descriptions, Open Graph headers, and clean semantic tag frameworks.' },
-  { id: 'retailagentos', label: 'RetailAgentOS Reasoning', desc: 'Ensures compliance with RetailAgentOS autonomous agent commerce specs. Evaluates namespaced JSON-LD and UCP discovery extensions to prevent checkout-time transaction crashes.' },
+  { id: 'retailagentos', label: 'Agent Checkout Reasoning', desc: "Checks whether your store's data would let an AI agent shop safely: correct pricing by buyer, membership eligibility, and shipping restrictions. This does not check whether RetailAgentOS is installed — it shows what would change this score if it were." },
 ];
 
 interface AuditTabProps {
@@ -365,7 +366,7 @@ function ScoreRing({ score, grade, url }: ScoreRingProps) {
 
   return (
     <section className={`${styles.panel} ${styles.scoreCard}`}>
-      <h3 className={styles.panelH3}>Overall GEO Score</h3>
+      <h3 className={styles.panelH3}>Technical detail: overall AEO/GEO score</h3>
       <div className={styles.scoreCircleWrapper}>
         <svg className={styles.scoreRing} width="160" height="160">
           <circle className={styles.scoreRingBg} cx="80" cy="80" r="70" />
@@ -507,10 +508,10 @@ export default function AeoScorePage() {
         <header className={styles.appHeader}>
           <div className={styles.logo}>
             <span className={styles.logoIcon}>⚡</span>
-            <span>GEO<span className={styles.logoSub}>Audit</span></span>
+            <span>AI-<span className={styles.logoSub}>Readiness</span></span>
           </div>
           <p className={styles.tagline}>
-            Optimize your content for Perplexity, Gemini, ChatGPT Search, and Google SGE
+            Find out what level your store is at — and the exact list of what&rsquo;s holding it back.
           </p>
         </header>
 
@@ -518,10 +519,10 @@ export default function AeoScorePage() {
           {/* Input Form */}
           {view === 'form' && (
             <section className={`${styles.panel} ${styles.inputPanel}`}>
-              <h2 className={styles.panelH2}>Enter Website URL for GEO Analysis</h2>
+              <h2 className={styles.panelH2}>Check your store&rsquo;s AI-readiness score</h2>
               <p className={styles.panelDesc}>
-                Our engine will crawl the page and audit it against schema semantics, formatting
-                data density, LLM readability, and citations authority.
+                Two minutes, no signup. We&rsquo;ll scan the page and tell you your readiness level,
+                your score, and the exact things holding it back — in plain language.
               </p>
               <form onSubmit={handleSubmit}>
                 <div className={styles.inputWrapper}>
@@ -540,7 +541,7 @@ export default function AeoScorePage() {
                     type="submit"
                     className={`${styles.btn} ${styles.btnPrimary}`}
                   >
-                    Audit Website
+                    Check my store
                   </button>
                 </div>
                 <div className={styles.checkboxWrapper}>
@@ -602,7 +603,10 @@ export default function AeoScorePage() {
           {/* Results */}
           {view === 'results' && result && (
             <div>
-              {/* Top grid: score card + engine compatibility */}
+              {/* The shareable one-page verdict — level, score, top blockers, CTA */}
+              <ReadinessCard result={result} />
+
+              {/* Technical detail: category score ring + engine compatibility */}
               <div className={styles.resultsGridTop}>
                 <ScoreRing score={result.score} grade={result.grade} url={result.url} />
                 <section className={styles.panel}>
@@ -653,10 +657,9 @@ export default function AeoScorePage() {
 
               {/* Actionable Checklist */}
               <section className={styles.panel}>
-                <h3 className={styles.panelH3}>Actionable GEO Fix Checklist</h3>
+                <h3 className={styles.panelH3}>Technical detail: full fix checklist</h3>
                 <p className={styles.panelDesc}>
-                  Implement the following technical improvements to boost your visibility inside
-                  generative AI engines:
+                  Everything behind the score above, for whoever implements the fixes:
                 </p>
                 <div className={styles.checklistItems}>
                   {(() => {
@@ -700,7 +703,7 @@ export default function AeoScorePage() {
         </main>
 
         <footer className={styles.appFooter}>
-          <p>&copy; 2026 GEO Audit Engine — built for AI-assisted search ecosystems. Part of <strong>RetailAgentOS</strong>.</p>
+          <p>&copy; 2026 AI-Readiness Score — part of <strong>RetailAgentOS</strong>&rsquo;s open reference architecture.</p>
         </footer>
       </div>
     </div>

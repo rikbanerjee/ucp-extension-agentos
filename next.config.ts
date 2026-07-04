@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
         destination: '/',
         permanent: true,
       },
+      // SWP-6: /readiness is a lightweight alias for the AI-readiness score tool.
+      {
+        source: '/readiness',
+        destination: '/aeo-score',
+        permanent: false,
+      },
     ];
   },
 };

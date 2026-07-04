@@ -96,7 +96,7 @@ every page: "For AI agents: start at `/agents.md` and `/.well-known/ucp`."
 **Acceptance:** `curl localhost:3000/agents.md` returns the file; examples are copied from
 real fixture output, not invented.
 
-### SWP-5 · Conformance scoreboard (EVIDENCE-PLAN E4) `(M)`
+### SWP-5 · Conformance scoreboard (EVIDENCE-PLAN E4) `(M)` — ✅ done 2026-07-04
 **Files:** new `src/app/evidence/conformance/page.tsx` + a JSON route.
 **Do:** generate (from the extension registry + fixtures, not hand-written): every reason
 code in the published specs × exercised-by-fixture status; archetype × spec scenario grid.
@@ -104,7 +104,7 @@ Serve as both a page and JSON (agents can read it too).
 **Acceptance:** adding a reason code without a fixture visibly breaks the scoreboard;
 numbers derived at build time from the same source the tests use.
 
-### SWP-6 · AEO score = the Readiness Index front door `(M)`
+### SWP-6 · AEO score = the Readiness Index front door `(M)` — ✅ done 2026-07-04
 **Files:** `src/app/aeo-score/**` (exists; polish, don't rebuild).
 **Do:** align the tool's output with the homepage's four-level ladder (HOMEPAGE-COPY §4)
 so the score maps to a level; results page gets: your level, the exact failing checks in
@@ -126,7 +126,7 @@ visibly different levels; result page is screenshot-able.
 **Acceptance:** every page reachable in ≤2 clicks from the homepage; no orphan routes;
 nav reflects the three audiences.
 
-### SWP-8 · Spec pages get the tier frame `(S)`
+### SWP-8 · Spec pages get the tier frame `(S)` — ✅ done 2026-07-04
 **Files:** `src/app/specs/page.tsx` + the 7 spec pages (pattern edit).
 **Do:** reorganize the `/specs` index by conformance tier (mirror `specs/README.md`
 exactly); each spec page gets a tier badge, a "status: Draft·RFC vX · built & tested"

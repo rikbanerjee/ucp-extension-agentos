@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { ArrowRight, FileText, Clock } from 'lucide-react';
 
-type SpecStatus = 'Draft · RFC' | 'Planned' | 'Published';
+type SpecStatus = 'Draft · RFC' | 'Planned' | 'Planned · next up';
+
+type TierGroupId = 'foundation' | 'tier-0' | 'tier-1' | 'tier-2' | 'tier-3' | 'tier-4';
 
 interface Spec {
   number: string;
@@ -14,12 +16,14 @@ interface Spec {
   date: string | null;
   href: string | null;
   summary: string;
-  plane: number;
-  tier: string;
+  group: TierGroupId;
+  tierBadge: string;
 }
 
+// Mirrors specs/README.md exactly — the catalog is the single source of truth
+// for grouping, statuses, and tier assignments. Update both together.
 const specs: Spec[] = [
-  // Plane 0 — Foundation
+  // Foundation — required at every tier
   {
     number: '0000',
     title: 'Protocol Foundations, Context & Conformance',
@@ -29,8 +33,8 @@ const specs: Spec[] = [
     date: 'June 2026',
     href: '/specs/0000-foundations',
     summary: 'The canonical BuyerContext object, conformance tiers (0–4), versioning policy, determinism rule, graceful degradation, and the /.well-known/ucp extension manifest. Everything else depends on this.',
-    plane: 0,
-    tier: 'Foundation',
+    group: 'foundation',
+    tierBadge: 'Foundation',
   },
   {
     number: '0008',
@@ -40,9 +44,21 @@ const specs: Spec[] = [
     version: '1.0.0',
     date: 'June 2026',
     href: '/specs/0008-trust-provenance',
-    summary: 'Signed payload envelopes (simulated crypto — seam for WP-19 real HMAC/ECDSA), per-stage TTL defaults, data-staleness behavior matrix, key rotation, and a threat model mapping four attack vectors to envelope fields. Lets agents and buyers trust that catalog and price data is authentic and current.',
-    plane: 0,
-    tier: 'Foundation',
+    summary: 'Signed payload envelopes (simulated crypto — seam for real HMAC/ECDSA), per-stage TTL defaults, data-staleness behavior matrix, key rotation, and a threat model mapping four attack vectors to envelope fields. Lets agents and buyers trust that catalog and price data is authentic and current.',
+    group: 'foundation',
+    tierBadge: 'Foundation',
+  },
+  {
+    number: '0013 pt 1',
+    title: 'Decision Trace (three audiences)',
+    namespace: 'com.os.retailagent.shopping.trace',
+    status: 'Draft · RFC',
+    version: '0.1.0',
+    date: 'June 2026',
+    href: '/specs/0013-intent-capture',
+    summary: 'Three-audience rendering of every pipeline decision: developer JSON (stable key-order, round-trip safe), merchant ops table (BLOCK/CONDITION reasons + config hints), buyer card (deny-list enforced). Trace schema v1.0.0.',
+    group: 'foundation',
+    tierBadge: 'Foundation',
   },
   {
     number: '0015',
@@ -53,21 +69,34 @@ const specs: Spec[] = [
     date: null,
     href: null,
     summary: 'Buyer context is PII. Consent model, PII minimization, account-linking trust (how a loyalty/member claim is verified), and GDPR/CCPA-aware data-retention signals.',
-    plane: 0,
-    tier: 'Foundation',
+    group: 'foundation',
+    tierBadge: 'Foundation',
   },
-  // Plane 1 — Discovery & Truth
+  // Tier 0 · Discoverable
   {
     number: '0004',
-    title: 'Discovery, Catalog Semantics & Match',
+    title: 'Discovery & Catalog Semantics',
     namespace: 'com.os.retailagent.shopping.discovery',
     status: 'Planned',
     version: null,
     date: null,
     href: null,
     summary: 'Merchant-declared discoverability: keywords, intent tags, substitution/alternates, bundle/kit schemas, and attribute normalization so agents match across merchants.',
-    plane: 1,
-    tier: 'Tier 0 · Discoverable',
+    group: 'tier-0',
+    tierBadge: 'Tier 0 · Discoverable',
+  },
+  // Tier 1 · Qualified
+  {
+    number: '0001',
+    title: 'Eligibility & Visibility Semantics',
+    namespace: 'com.os.retailagent.shopping.eligibility',
+    status: 'Draft · RFC',
+    version: '1.1.0',
+    date: 'June 2026',
+    href: '/specs/0001-eligibility',
+    summary: 'Machine-readable way for a merchant to declare who may see a product and who may buy it, and why — evaluated at catalog time with structured reason codes.',
+    group: 'tier-1',
+    tierBadge: 'Tier 1 · Qualified',
   },
   {
     number: '0005',
@@ -78,58 +107,33 @@ const specs: Spec[] = [
     date: 'June 2026',
     href: '/specs/0005-inventory',
     summary: 'Real-time stock state (in-stock / low / out / backorder / preorder), per-location quantity, availability TTL, soft reservation semantics, and threshold signaling. Agents never recommend what isn\'t there.',
-    plane: 1,
-    tier: 'Tier 1 · Qualified',
-  },
-  // Plane 2 — Reasoning
-  {
-    number: '0001',
-    title: 'Eligibility & Visibility Semantics',
-    namespace: 'com.os.retailagent.shopping.eligibility',
-    status: 'Draft · RFC',
-    version: '1.1.0',
-    date: 'June 2026',
-    href: '/specs/0001-eligibility',
-    summary: 'Machine-readable way for a merchant to declare who may see a product and who may buy it, and why — evaluated at catalog time with structured reason codes.',
-    plane: 2,
-    tier: 'Tier 1 · Qualified',
+    group: 'tier-1',
+    tierBadge: 'Tier 1 · Qualified',
   },
   {
     number: '0011',
     title: 'Tax & Restricted / Regulated Goods',
-    namespace: 'com.os.retailagent.shopping.restricted',
-    status: 'Planned',
+    namespace: 'com.os.retailagent.shopping.tax / …restricted',
+    status: 'Planned · next up',
     version: null,
     date: null,
     href: null,
     summary: 'Age-restricted goods (alcohol, cannabis, tobacco, pharmacy), regional legality, purchase limits, and tax-treatment signals — surfaced at catalog time so agents never route buyers into a restricted-goods dead end.',
-    plane: 2,
-    tier: 'Tier 1 · Qualified',
+    group: 'tier-1',
+    tierBadge: 'Tier 1 · Qualified',
   },
-  // Plane 3 — Price & Value
+  // Tier 2 · Priced
   {
     number: '0002',
     title: 'Contextual Pricing (Member + Bulk)',
-    namespace: 'com.os.retailagent.shopping.member_pricing',
+    namespace: 'com.os.retailagent.shopping.member_pricing / …bulk_pricing',
     status: 'Draft · RFC',
     version: '1.0.0',
     date: 'June 2026',
     href: '/specs/0002-contextual-pricing',
     summary: 'Member price, teaser price for unqualified buyers, bulk tier selection, MOQ, quantity increments, purchase limits, and call-for-price — all derived from buyer context at catalog time. Ships the forward-compatible AppliedOffer shape that RAOS-0006 and RAOS-0007 bind.',
-    plane: 3,
-    tier: 'Tier 2 · Priced',
-  },
-  {
-    number: '0006',
-    title: 'Promotional Pricing & Stacking',
-    namespace: 'com.os.retailagent.shopping.promo_pricing',
-    status: 'Planned',
-    version: null,
-    date: null,
-    href: null,
-    summary: 'Sale/markdown, BOGO, mix-and-match, coupons, and a deterministic stacking model (stackable/exclusive flags + priority ladder) with reason codes for every applied or suppressed offer.',
-    plane: 3,
-    tier: 'Tier 2 · Priced',
+    group: 'tier-2',
+    tierBadge: 'Tier 2 · Priced',
   },
   {
     number: '0007',
@@ -140,9 +144,22 @@ const specs: Spec[] = [
     date: 'June 2026',
     href: '/specs/0007-quote-integrity',
     summary: 'Signed, TTL\'d price commitments binding variant + quantity + buyer-context hash + resolved price. Five-step checkout validation (signature → TTL/grace → context hash → stock → price recomputation) with merchant-declared HonorPolicy. Guarantees the price the agent showed is the price charged — the retailer-trust unlock.',
-    plane: 3,
-    tier: 'Tier 2 · Priced',
+    group: 'tier-2',
+    tierBadge: 'Tier 2 · Priced',
   },
+  {
+    number: '0006',
+    title: 'Promotional Pricing & Stacking',
+    namespace: 'com.os.retailagent.shopping.promo_pricing',
+    status: 'Planned · next up',
+    version: null,
+    date: null,
+    href: null,
+    summary: 'Sale/markdown, BOGO, mix-and-match, coupons, and a deterministic stacking model (stackable/exclusive flags + priority ladder) with reason codes for every applied or suppressed offer.',
+    group: 'tier-2',
+    tierBadge: 'Tier 2 · Priced',
+  },
+  // Tier 3 · Member-aware
   {
     number: '0009',
     title: 'Loyalty & Rewards',
@@ -152,8 +169,8 @@ const specs: Spec[] = [
     date: null,
     href: null,
     summary: 'Browse-time earn preview per line item, burn/redeem eligibility, member benefit summaries, tier-progress signals, and account-linked state — so agents can surface loyalty value before checkout, not after. Owns the buyer loyalty tier (gold/silver/guest) as a BuyerContext claim — orthogonal to a merchant\'s conformance tier.',
-    plane: 3,
-    tier: 'Tier 3 · Member-aware',
+    group: 'tier-3',
+    tierBadge: 'Tier 3 · Member-aware',
   },
   {
     number: '0010',
@@ -164,10 +181,10 @@ const specs: Spec[] = [
     date: null,
     href: null,
     summary: 'Subscribe-and-save pricing, first-order discount, cadence semantics, skip/pause/cancel, and recurring eligibility. Essential for grocery and DTC agent shopping.',
-    plane: 3,
-    tier: 'Tier 3 · Member-aware',
+    group: 'tier-3',
+    tierBadge: 'Tier 3 · Member-aware',
   },
-  // Plane 4 — Fulfillment
+  // Tier 4 · Assisted
   {
     number: '0003',
     title: 'Fulfillment Feasibility',
@@ -177,10 +194,9 @@ const specs: Spec[] = [
     date: null,
     href: null,
     summary: 'Ship / pickup / local-delivery / BOPIS modes, delivery windows, lead times, hazmat/oversize restrictions, and split-shipment signaling — surfaced before cart, not at checkout.',
-    plane: 4,
-    tier: 'Tier 4 · Assisted',
+    group: 'tier-4',
+    tierBadge: 'Tier 4 · Assisted',
   },
-  // Plane 5 — Outcomes & Handoff
   {
     number: '0012',
     title: 'Cart Bridge & Checkout Handoff',
@@ -190,20 +206,20 @@ const specs: Spec[] = [
     date: null,
     href: null,
     summary: 'Serialize the agent-built cart and hand off to real checkout with all quote tokens intact. Idempotent, quote-expiry-aware, and handles partial-cart scenarios.',
-    plane: 5,
-    tier: 'Tier 4 · Assisted',
+    group: 'tier-4',
+    tierBadge: 'Tier 4 · Assisted',
   },
   {
-    number: '0013',
-    title: 'Intent Capture, Assisted Commerce & Decision Trace',
-    namespace: 'com.os.retailagent.shopping.trace',
-    status: 'Draft · RFC',
-    version: '0.1.0',
-    date: 'June 2026',
-    href: '/specs/0013-intent-capture',
-    summary: 'Three-audience rendering of every pipeline decision: developer JSON (stable key-order, round-trip safe), merchant ops table (BLOCK/CONDITION reasons + config hints), buyer card (deny-list enforced). Trace schema v1.0.0. Intent capture routing (notify-me, B2B quote request) — planned WP-14.',
-    plane: 5,
-    tier: 'Tier 3 · Member-aware',
+    number: '0013 pt 2',
+    title: 'Intent Capture & Assisted Commerce',
+    namespace: 'com.os.retailagent.shopping.intent_capture',
+    status: 'Planned',
+    version: null,
+    date: null,
+    href: null,
+    summary: 'Intent capture routing (notify-me, B2B quote request) for items that can\'t resolve to an immediate price or cart line. Builds on the Decision Trace substrate shipped in Foundation (0013 pt 1).',
+    group: 'tier-4',
+    tierBadge: 'Tier 4 · Assisted',
   },
   {
     number: '0014',
@@ -214,24 +230,24 @@ const specs: Spec[] = [
     date: null,
     href: null,
     summary: 'Return window, final-sale flags, restocking fees, who pays return shipping, warranty terms — machine-readable at catalog time so agents communicate policy before the buyer commits.',
-    plane: 5,
-    tier: 'Tier 4 · Assisted',
+    group: 'tier-4',
+    tierBadge: 'Tier 4 · Assisted',
   },
 ];
 
-const planes = [
-  { id: 0, label: 'Plane 0 · Foundation', description: 'The spine — everything depends on it.' },
-  { id: 1, label: 'Plane 1 · Discovery & Truth', description: 'Getting found. Never selling what isn\'t there.' },
-  { id: 2, label: 'Plane 2 · Reasoning', description: 'Who may see this, who may buy it, and why.' },
-  { id: 3, label: 'Plane 3 · Price & Value', description: 'The right price, the right offer, honored at checkout.' },
-  { id: 4, label: 'Plane 4 · Fulfillment', description: 'Can you actually get it to this buyer, this way?' },
-  { id: 5, label: 'Plane 5 · Outcomes & Handoff', description: 'Cart, checkout, intent capture, post-purchase.' },
+const groups: { id: TierGroupId; label: string; description: string }[] = [
+  { id: 'foundation', label: 'Foundation', description: 'Required at every tier — the spine everything else depends on.' },
+  { id: 'tier-0', label: 'Tier 0 · Discoverable', description: 'An agent can find and correctly read my catalog.' },
+  { id: 'tier-1', label: 'Tier 1 · Qualified', description: 'No dead-end carts.' },
+  { id: 'tier-2', label: 'Tier 2 · Priced', description: 'The right price per buyer, honored at checkout.' },
+  { id: 'tier-3', label: 'Tier 3 · Member-aware', description: 'Supports member/loyalty-aware pricing and earn preview.' },
+  { id: 'tier-4', label: 'Tier 4 · Assisted', description: 'Full commerce: fulfillment, handoff, intent, returns.' },
 ];
 
 const statusStyles: Record<string, string> = {
   'Draft · RFC': 'bg-amber-50 text-amber-700 border border-amber-200',
   'Planned': 'bg-slate-50 text-slate-500 border border-slate-200',
-  'Published': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  'Planned · next up': 'bg-sky-50 text-sky-700 border border-sky-200',
 };
 
 export default function SpecsPage() {
@@ -253,7 +269,9 @@ export default function SpecsPage() {
           <p className="mt-4 text-base text-slate-500 max-w-2xl">
             Every spec is backed by a runnable reference implementation in the{' '}
             <Link href="/demo" className="text-emerald-600 hover:underline">Playground</Link>.
-            If the Playground runs it, the spec is real.
+            If the Playground runs it, the spec is real. Want the reference architecture instead of
+            the raw RFCs? Start at{' '}
+            <Link href="/adopt" className="text-emerald-600 hover:underline">/adopt</Link>.
           </p>
         </div>
 
@@ -301,17 +319,17 @@ export default function SpecsPage() {
           </div>
         </div>
 
-        {/* Spec list — grouped by plane */}
-        {planes.map((plane) => {
-          const planeSpecs = specs.filter((s) => s.plane === plane.id);
+        {/* Spec list — grouped by conformance tier (mirrors specs/README.md) */}
+        {groups.map((group) => {
+          const groupSpecs = specs.filter((s) => s.group === group.id);
           return (
-            <div key={plane.id} className="mb-10">
+            <div key={group.id} className="mb-10">
               <div className="mb-3">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{plane.label}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{plane.description}</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{group.label}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{group.description}</p>
               </div>
               <div className="space-y-3">
-                {planeSpecs.map((spec) => (
+                {groupSpecs.map((spec) => (
                   <div
                     key={spec.number}
                     className={`rounded-xl border ${spec.href ? 'border-slate-200 hover:border-emerald-200 hover:shadow-sm transition-all' : 'border-slate-100'} bg-white overflow-hidden`}
@@ -367,7 +385,7 @@ function SpecCard({ spec }: { spec: Spec }) {
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusStyles[spec.status]}`}>
             {spec.status}
           </span>
-          <span className="text-xs text-slate-400 border border-slate-100 rounded px-1.5 py-0.5">{spec.tier}</span>
+          <span className="text-xs text-slate-400 border border-slate-100 rounded px-1.5 py-0.5">{spec.tierBadge}</span>
           {spec.version && (
             <span className="text-xs text-slate-400">v{spec.version}</span>
           )}

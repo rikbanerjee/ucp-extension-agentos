@@ -65,6 +65,10 @@ export default function EvidencePage() {
             ·{' '}
             <Link href="/adopt" className="text-emerald-600 hover:underline">
               Adoption guide
+            </Link>{' '}
+            ·{' '}
+            <Link href="/evidence/conformance" className="text-emerald-600 hover:underline">
+              Conformance scoreboard
             </Link>
           </p>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { TierBadge } from '../TierBadge';
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, AlertCircle, Mail, Layers, ShieldCheck } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
 import { ViewToggle } from '@/components/ui/ViewToggle';
@@ -162,7 +163,6 @@ export default function Spec0000Page() {
             </span>
             <span className="text-xs text-slate-400">v0.1.0</span>
             <span className="text-xs text-slate-400">June 2026</span>
-            <span className="text-xs text-slate-400 border border-slate-100 rounded px-1.5 py-0.5">Plane 0 · Foundation</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">
             Protocol Foundations, Context &amp; Conformance
@@ -180,6 +180,8 @@ export default function Spec0000Page() {
             This is the shared substrate — the context object, the conformance ladder, the manifest, versioning, reasons, and degradation. It is an open draft. If a rule here is wrong, that&apos;s the most useful thing you can tell me.{' '}
             <a href="#open-questions" className="underline font-medium">See the open questions →</a>
           </div>
+
+          <TierBadge tier="Foundation" version="0.1.0" adoptAnchor="tier-0" />
         </div>
 
         {/* View toggle */}

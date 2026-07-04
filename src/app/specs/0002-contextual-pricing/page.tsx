@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, AlertCircle, Mail, Tag, TrendingDown } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
 import { ViewToggle } from '@/components/ui/ViewToggle';
+import { TierBadge } from '../TierBadge';
 
 const reasonCodes = [
   {
@@ -194,7 +195,6 @@ export default function Spec0002Page() {
             com.os.retailagent.shopping.bulk_pricing
           </p>
           <p className="text-sm text-slate-500">
-            Plane 3 · Price &amp; Value · Tier 2 · Priced ·{' '}
             <Link href="/demo" className="text-emerald-600 hover:underline">Reference implementation in Playground</Link>
           </p>
 
@@ -204,6 +204,8 @@ export default function Spec0002Page() {
             question (§9.1) is a genuine fork with real implications for grocery + wholesale.{' '}
             <a href="#open-questions" className="underline font-medium">See the open questions →</a>
           </div>
+
+          <TierBadge tier="Tier 2" tierName="Priced" version="1.0.0" adoptAnchor="tier-2" />
         </div>
 
         {/* View toggle */}

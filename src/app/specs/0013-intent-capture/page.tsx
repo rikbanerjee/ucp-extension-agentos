@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
+import { TierBadge } from '../TierBadge';
 
 // ---------------------------------------------------------------------------
 // Deny-list fields (§1.3)
@@ -147,9 +148,6 @@ export default function Spec0013Page() {
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
               v0.1.0 · June 2026
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-              Tier 3 · Member-aware
-            </span>
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">
             Intent Capture, Assisted Commerce &amp; Decision Trace
@@ -160,6 +158,12 @@ export default function Spec0013Page() {
             The trace is a pure derivation of the <code className="text-sm bg-slate-100 px-1 rounded">DecisionRecord</code> —
             it transforms, never augments.
           </p>
+          <p className="mt-2 text-xs text-slate-500">
+            Part 1 (Decision Trace, built here) is Foundation — required at every tier. Part 2
+            (Intent Capture routing) is planned for Tier 4 · Assisted.
+          </p>
+
+          <TierBadge tier="Foundation" version="0.1.0" adoptAnchor="derived-surfaces" />
         </div>
 
         {/* Namespace */}

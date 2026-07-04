@@ -828,6 +828,143 @@
   font-weight: 300;
 }
 
+/* --- Readiness Card (the shareable one-page verdict) --- */
+.readinessCard {
+  border-color: rgba(0, 229, 255, 0.15);
+  box-shadow: var(--shadow-glow);
+}
+.readinessHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.levelBadge {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+.levelBadgeTag {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.levelBadgeName {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.levelBadgeLevel0 { border-color: rgba(248, 113, 113, 0.35); background: var(--status-fail-bg); }
+.levelBadgeLevel0 .levelBadgeName { color: var(--status-fail); }
+.levelBadgeLevel1 { border-color: rgba(253, 224, 71, 0.35); background: var(--status-warn-bg); }
+.levelBadgeLevel1 .levelBadgeName { color: var(--status-warn); }
+.levelBadgeLevel2 { border-color: rgba(0, 229, 255, 0.35); background: rgba(0, 229, 255, 0.08); }
+.levelBadgeLevel2 .levelBadgeName { color: var(--accent-cyan); }
+.levelBadgeLevel3 { border-color: rgba(74, 222, 128, 0.35); background: var(--status-pass-bg); }
+.levelBadgeLevel3 .levelBadgeName { color: var(--status-pass); }
+
+.readinessScoreBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.readinessScoreValue {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.readinessScoreLabel {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.readinessVerdict {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+.readinessScannedUrl {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  word-break: break-all;
+  margin-bottom: 1.5rem;
+}
+
+.blockersBlock {
+  margin-bottom: 1.25rem;
+}
+.blockersHeading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+.blockersList {
+  list-style: decimal;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.blockerItem {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+.blockerPlain {
+  margin-bottom: 0.25rem;
+}
+.blockersNone {
+  color: var(--status-pass);
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+.technicalDetailToggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+.technicalDetailToggle:hover {
+  color: var(--accent-cyan);
+}
+.technicalDetailBody {
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 2px solid var(--border-light);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+.level4Note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-light);
+  padding-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+.readinessCtaRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 /* --- Responsive --- */
 @media (max-width: 900px) {
   .resultsGridTop {
@@ -854,5 +991,13 @@
   .appContainer {
     padding: 1.5rem 1rem;
     gap: 1.5rem;
+  }
+  .readinessHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .readinessScoreBlock {
+    align-items: flex-start;
+    text-align: left;
   }
 }

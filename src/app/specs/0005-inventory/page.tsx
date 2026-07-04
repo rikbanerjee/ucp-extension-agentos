@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, AlertCircle, Mail, Package, MapPin } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
 import { ViewToggle } from '@/components/ui/ViewToggle';
+import { TierBadge } from '../TierBadge';
 
 const reasonCodes = [
   {
@@ -167,7 +168,6 @@ export default function Spec0005Page() {
             com.os.retailagent.shopping.inventory
           </p>
           <p className="text-sm text-slate-500">
-            Plane 1 · Discovery &amp; Truth · Tier 1 · Qualified ·{' '}
             <Link href="/demo" className="text-emerald-600 hover:underline">Reference implementation in Playground</Link>
           </p>
 
@@ -178,6 +178,8 @@ export default function Spec0005Page() {
             oversell incidents, your input is the most valuable.{' '}
             <a href="#open-questions" className="underline font-medium">See the open questions →</a>
           </div>
+
+          <TierBadge tier="Tier 1" tierName="Qualified" version="1.0.0" adoptAnchor="tier-1" />
         </div>
 
         {/* View toggle */}

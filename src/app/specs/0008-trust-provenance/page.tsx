@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, AlertCircle, Mail, Shield } from 'lucide-react';
 import { useView } from '@/lib/context/ViewContext';
 import { ViewToggle } from '@/components/ui/ViewToggle';
+import { TierBadge } from '../TierBadge';
 
 const reasonCodes = [
   {
@@ -196,7 +197,6 @@ export default function Spec0008Page() {
             com.os.retailagent.shopping.trust
           </p>
           <p className="text-sm text-slate-500">
-            Plane 0 · Foundation · Tier 0 · Discoverable ·{' '}
             <Link href="/demo" className="text-emerald-600 hover:underline">Reference implementation in Playground</Link>
           </p>
 
@@ -215,6 +215,8 @@ export default function Spec0008Page() {
             stage (OQ#3) are genuine design forks.{' '}
             <a href="#open-questions" className="underline font-medium">See the open questions →</a>
           </div>
+
+          <TierBadge tier="Foundation" version="1.0.0" adoptAnchor="tier-2" />
         </div>
 
         {/* View toggle */}
