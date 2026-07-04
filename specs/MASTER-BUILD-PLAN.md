@@ -1,7 +1,13 @@
 # RetailAgentOS — Master Build Plan
 
-**Owner:** Rik Banerjee · **Role of this doc:** the *executable engineering plan*
-**Status:** Active · supersedes the execution sections (§7–§8) of `PROGRAM-PLAN.md`; the spec catalog, conformance model, and locked decisions there remain authoritative.
+> **Role change (2026-07-04):** this document is now the **work-package detail archive**,
+> not the execution entry point. The current, ordered execution queue lives in
+> [`BUILD-PLAN.md`](./BUILD-PLAN.md) — coding agents start there and come here only for the
+> full brief of a specific WP it references (WP-09…WP-19). Waves 0–2 below are **done**;
+> do not re-execute them.
+
+**Owner:** Rik Banerjee · **Role of this doc:** per-WP detail briefs (sequencing superseded by `BUILD-PLAN.md`)
+**Status:** Archive of record · supersedes the execution sections (§7–§8) of `PROGRAM-PLAN.md`; the spec catalog, conformance model, and locked decisions there remain authoritative.
 **Date:** 2026-06-09
 **Companions:** [`PROGRAM-PLAN.md`](./PROGRAM-PLAN.md) (spec catalog + locked decisions) · [`ARCH-UCP-EXTENSION-MCP.md`](./ARCH-UCP-EXTENSION-MCP.md) (extension contract, pipeline, MCP shape) · [`PRODUCT-BACKLOG.md`](./PRODUCT-BACKLOG.md) (market rationale) · [`0000-foundations.md`](./0000-foundations.md) (the substrate spec) · [`../questions.md`](../questions.md) (locked answers)
 

@@ -1,6 +1,11 @@
 # RetailAgentOS — Spec Program Plan
 
-**Owner:** Rik Banerjee · **Status:** Living plan · **Date:** June 2026
+> **Role change (2026-07-04):** this document is retained for its **per-spec briefs (§6)**
+> and the **Standard Deliverable Set (§7)** — both still authoritative. Its catalog table
+> (§3) is superseded by [`README.md`](./README.md), and its execution waves (§8) by
+> [`BUILD-PLAN.md`](./BUILD-PLAN.md). Don't take ordering or status from this file.
+
+**Owner:** Rik Banerjee · **Status:** Reference (briefs + deliverable set) · **Date:** June 2026
 **Companion:** the decisions in [`/questions.md`](../questions.md) are now **locked** (A1–A3, B1–B6, C toggles, D1–D3) — this plan reflects FINAL v1 scope (multi-currency and marketplace cart are **OUT → V2**, §11).
 **Execution:** the waves in §8 are superseded by the work-package plan in [`MASTER-BUILD-PLAN.md`](./MASTER-BUILD-PLAN.md) (2026-06-09) — coding agents execute from there; this doc remains authoritative for the spec catalog, conformance model, and per-spec briefs. The agent-reasoning trace *format* is now **decided** (merchant ops-view · buyer simplified · developer JSON — see MASTER-BUILD-PLAN WP-08); only the concrete schema review remains.
 

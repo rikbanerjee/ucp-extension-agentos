@@ -4,7 +4,18 @@
 **Partner:** thecustomhub.com — custom-built, Firebase-hosted, made-to-order apparel (Indian cultural + American lifestyle), B2C.
 **Arrangement:** free pilot in exchange for a public case study; partner will change their codebase. We co-design.
 
-> This folder is **gitignored** — it holds client-specific co-design material that must not land in the public spec/reference repo (scope rule + partner confidentiality).
+> **Note (2026-07-04):** this folder was previously marked "gitignored / must not land in the
+> public repo," but it was already git-tracked and contains no secrets, keys, or PII — only
+> architecture/co-design notes. The project owner reviewed this and decided to keep it
+> committed, consolidated here under `specs/reference-implementation/` alongside the engine
+> docs, since it *is* the concrete proof that the specs are implementable. If a future
+> engagement with a partner requires real confidentiality, gitignore that engagement's folder
+> explicitly rather than relying on a README note.
+
+This is a **reference implementation case study**, not a spec definition. Nothing here changes
+what any `specs/00NN-*.md` RFC says — it documents one real merchant applying the already-
+published specs via `@retailagentos/engine`. See [`../README.md`](../README.md) for how this
+fits with the rest of the reference-implementation section.
 
 ## Goal
 Make TheCustomHub agent-ready end-to-end: discoverable by buyer agents where the platforms allow it, and — the differentiator — **transactable for made-to-order goods without dead-ends** (call-for-price → quote → order), powered by the RetailAgentOS reasoning engine.

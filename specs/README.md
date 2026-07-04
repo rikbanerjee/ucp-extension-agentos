@@ -13,72 +13,81 @@ But if the semantics exist as an open spec, the platform they already use can im
 and every merchant inherits agent-readiness for free. The spec is the leverage. The goal is to
 prove patterns on real merchant archetypes and propose the durable ones upstream into UCP.
 
-**Namespace:** `com.os.retailagent.shopping.*` (vendor-neutral, upstream-candidate per A1)
+**Namespace:** `com.os.retailagent.shopping.*` (vendor-neutral, upstream-candidate)
 
-Every spec is backed by a runnable reference implementation in this repo — if the Playground
-runs it, the spec is real.
+## Start where you are
 
----
+| You are | Start with |
+|---|---|
+| A retail IT engineer integrating a real store | [`ADOPTION-GUIDE.md`](./ADOPTION-GUIDE.md) — the reference architecture, tier by tier |
+| New to the project, or picking it back up | [`WIKI.md`](./WIKI.md) — the plain-language map |
+| A contributor / coding agent building the next spec | [`BUILD-PLAN.md`](./BUILD-PLAN.md) — the one execution queue |
+| Verifying what's actually real | [`../VERIFICATION-NEEDED.md`](../VERIFICATION-NEEDED.md) — the single status source |
 
-## Conformance tiers
-
-| Tier | Name | Promise |
-|------|------|---------|
-| 0 | Discoverable | An agent can find and correctly read my catalog. |
-| 1 | Qualified | No dead-end carts — only eligible, in-stock items surface. |
-| 2 | Priced | The right price per buyer, honored at checkout. |
-| 3 | Member-aware | Merchant *supports* member/loyalty-aware pricing, earn preview, subscriptions. (Buyer loyalty tier is an orthogonal `BuyerContext` claim, not a rung here.) |
-| 4 | Assisted | Full commerce — fulfillment, handoff, intent, returns. |
+Every published spec is backed by a runnable reference implementation — if the Playground
+runs it, the spec is real. The packaged engine and the live merchant pilot are documented in
+[`reference-implementation/`](./reference-implementation/README.md).
 
 ---
 
-## The spec catalog
+## The catalog, organized by conformance tier
 
-### Plane 0 · Foundation
+A merchant declares a headline **tier** (0–4, cumulative) backed by an authoritative
+`capabilities[]` list; agents negotiate against `capabilities[]` and degrade gracefully.
+The tier describes *merchant implementation maturity* — a buyer's gold/silver/guest loyalty
+standing is an orthogonal `BuyerContext` claim (owned by RAOS-0009), never a tier.
 
-| # | Spec | Namespace | Status | Tier |
+### Foundation (required at every tier)
+
+| # | Spec | Namespace | Status | Wiki |
 |---|------|-----------|--------|------|
-| 0000 | [Protocol Foundations, Context & Conformance](./0000-foundations.md) | `…core` | **Draft · RFC** | Foundation |
-| 0008 | [Trust, Provenance & Freshness](./0008-trust-provenance.md) | `…trust` | **Draft · RFC** v1.0.0 | Foundation |
-| 0015 | Privacy, Consent & Identity *(planned)* | `…identity` | Not started | Foundation |
+| 0000 | [Protocol Foundations, Context & Conformance](./0000-foundations.md) | `…core` | **Draft · RFC** | [intent](./wiki/0000-foundations.md) |
+| 0008 | [Trust, Provenance & Freshness](./0008-trust-provenance.md) | `…trust` | **Draft · RFC** v1.0.0 | [intent](./wiki/0008-trust-provenance.md) |
+| 0013 pt 1 | [Decision Trace (three audiences)](./0013-intent-capture.md) | `…trace` | **Draft · RFC** v0.1.0 | [intent](./wiki/0013-decision-trace.md) |
+| 0015 | Privacy, Consent & Identity | `…identity` | Planned | [pending](./wiki/pending/0015-privacy-consent.md) |
 
-### Plane 1 · Discovery & Truth
+### Tier 0 · Discoverable — "an agent can find and correctly read my catalog"
 
-| # | Spec | Namespace | Status | Tier |
+| # | Spec | Namespace | Status | Wiki |
 |---|------|-----------|--------|------|
-| 0004 | Discovery & Catalog Semantics *(planned)* | `…discovery` | Not started | Tier 0 |
-| 0005 | [Inventory & Availability](./0005-inventory.md) | `…inventory` | **Draft · RFC** v1.0.0 | Tier 1 |
+| 0004 | Discovery & Catalog Semantics | `…discovery` | Planned | [pending](./wiki/pending/0004-discovery-match.md) |
 
-### Plane 2 · Reasoning
+### Tier 1 · Qualified — "no dead-end carts"
 
-| # | Spec | Namespace | Status | Tier |
+| # | Spec | Namespace | Status | Wiki |
 |---|------|-----------|--------|------|
-| 0001 | [Eligibility & Visibility Semantics](./0001-eligibility.md) | `…eligibility` | **Draft · RFC** v1.1.0 | Tier 1 |
-| 0011 | Tax & Restricted / Regulated Goods *(planned)* | `…restricted` | Not started | Tier 1 |
+| 0001 | [Eligibility & Visibility Semantics](./0001-eligibility.md) | `…eligibility` | **Draft · RFC** v1.1.0 | [intent](./wiki/0001-eligibility.md) |
+| 0005 | [Inventory & Availability](./0005-inventory.md) | `…inventory` | **Draft · RFC** v1.0.0 | [intent](./wiki/0005-inventory.md) |
+| 0011 | Tax & Restricted / Regulated Goods | `…tax`, `…restricted` | Planned · next up | [pending](./wiki/pending/0011-restricted-goods.md) |
 
-### Plane 3 · Price & Value
+### Tier 2 · Priced — "the right price per buyer, honored at checkout"
 
-| # | Spec | Namespace | Status | Tier |
+| # | Spec | Namespace | Status | Wiki |
 |---|------|-----------|--------|------|
-| 0002 | [Contextual Pricing (Member + Bulk)](./0002-contextual-pricing.md) | `…member_pricing`, `…bulk_pricing` | **Draft · RFC** v1.0.0 | Tier 2 |
-| 0006 | Promotional Pricing & Stacking *(planned)* | `…promo_pricing` | Not started | Tier 2 |
-| 0007 | [Quote Integrity & Price Lock](./0007-quote-integrity.md) | `…quote` | **Draft · RFC** v1.0.0 | Tier 2 |
-| 0009 | Loyalty & Rewards *(planned)* | `…loyalty` | Not started | Tier 3 |
-| 0010 | Subscriptions & Recurring *(planned)* | `…subscription` | Not started | Tier 3 |
+| 0002 | [Contextual Pricing (Member + Bulk)](./0002-contextual-pricing.md) | `…member_pricing`, `…bulk_pricing` | **Draft · RFC** v1.0.0 | [intent](./wiki/0002-contextual-pricing.md) |
+| 0007 | [Quote Integrity & Price Lock](./0007-quote-integrity.md) | `…quote` | **Draft · RFC** v1.0.0 | [intent](./wiki/0007-quote-integrity.md) |
+| 0006 | Promotional Pricing & Stacking | `…promo_pricing` | Planned · next up | [pending](./wiki/pending/0006-promo-stacking.md) |
 
-### Plane 4 · Fulfillment
+### Tier 3 · Member-aware — "supports member/loyalty-aware pricing and earn preview"
 
-| # | Spec | Namespace | Status | Tier |
+| # | Spec | Namespace | Status | Wiki |
 |---|------|-----------|--------|------|
-| 0003 | Fulfillment Feasibility *(planned)* | `…fulfillment_constraints` | Not started | Tier 4 |
+| 0009 | Loyalty & Rewards | `…loyalty` | Planned | [pending](./wiki/pending/0009-loyalty.md) |
+| 0010 | Subscriptions & Recurring | `…subscription` | Planned | [pending](./wiki/pending/0010-subscriptions.md) |
 
-### Plane 5 · Outcomes & Handoff
+### Tier 4 · Assisted — "full commerce: fulfillment, handoff, intent, returns"
 
-| # | Spec | Namespace | Status | Tier |
+| # | Spec | Namespace | Status | Wiki |
 |---|------|-----------|--------|------|
-| 0012 | Cart Bridge & Checkout Handoff *(planned)* | `…cart_bridge` | Not started | Tier 4 |
-| 0013 | [Intent Capture, Assisted Commerce & Decision Trace](./0013-intent-capture.md) | `…trace` | **Draft · RFC** v0.1.0 | Tier 3 |
-| 0014 | Returns & Post-Purchase Policy *(planned)* | `…returns` | Not started | Tier 4 |
+| 0003 | Fulfillment Feasibility | `…fulfillment_constraints` | Planned | [pending](./wiki/pending/0003-fulfillment.md) |
+| 0012 | Cart Bridge & Checkout Handoff | `…cart_bridge` | Planned | [pending](./wiki/pending/0012-cart-bridge.md) |
+| 0013 pt 2 | Intent Capture & Assisted Commerce | `…intent_capture` | Planned | [pending](./wiki/pending/0013-intent-capture-routing.md) |
+| 0014 | Returns & Post-Purchase Policy | `…returns` | Planned | [pending](./wiki/pending/0014-returns.md) |
+
+**Reserved (horizon, namespaces only):** 0016 Agent Identity & Rate Limits · 0017 Merchant
+Observability & Change Feed · 0018 Negotiation & Dynamic Offers · 0019 Payment Constraints &
+Stored Value. Scoped in `MASTER-BUILD-PLAN.md` §6; not started by design.
+**Explicit V2:** multi-currency/i18n · cross-merchant/marketplace cart (`TODO.md`).
 
 ---
 
