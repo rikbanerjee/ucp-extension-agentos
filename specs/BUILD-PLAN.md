@@ -1,9 +1,10 @@
 # RetailAgentOS — Build Plan (the one execution queue)
 
-**Role:** the single, forward-looking execution document. If you are a coding agent asked
-to "build the next thing," start here — not in `MASTER-BUILD-PLAN.md`, `PROGRAM-PLAN.md`,
-or `PUNCH-LIST.md` (those are retained as detail archives; this file supersedes their
-ordering).
+**Role:** the single, forward-looking execution document for **engine + spec work**. If you
+are a coding agent asked to "build the next thing," start here — not in
+`MASTER-BUILD-PLAN.md`, `PROGRAM-PLAN.md`, or `PUNCH-LIST.md` (those are retained as detail
+archives; this file supersedes their ordering). Website/positioning work has its own queue:
+[`SITE-PLAN.md`](./SITE-PLAN.md) — never mix the two in one task.
 **Last reconciled:** 2026-07-04.
 
 **How this file stays true:** when a task below lands, (1) move its row to §1, (2) update

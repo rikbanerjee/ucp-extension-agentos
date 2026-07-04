@@ -21,7 +21,8 @@ prove patterns on real merchant archetypes and propose the durable ones upstream
 |---|---|
 | A retail IT engineer integrating a real store | [`ADOPTION-GUIDE.md`](./ADOPTION-GUIDE.md) — the reference architecture, tier by tier |
 | New to the project, or picking it back up | [`WIKI.md`](./WIKI.md) — the plain-language map |
-| A contributor / coding agent building the next spec | [`BUILD-PLAN.md`](./BUILD-PLAN.md) — the one execution queue |
+| A contributor / coding agent building the next spec | [`BUILD-PLAN.md`](./BUILD-PLAN.md) — the engine/spec execution queue |
+| A coding agent working on the public website | [`SITE-PLAN.md`](./SITE-PLAN.md) — the site/positioning execution queue |
 | Verifying what's actually real | [`../VERIFICATION-NEEDED.md`](../VERIFICATION-NEEDED.md) — the single status source |
 
 Every published spec is backed by a runnable reference implementation — if the Playground
