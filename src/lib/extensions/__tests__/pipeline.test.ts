@@ -21,6 +21,7 @@ import { evaluateOffer } from '../pipeline';
 import type { UcpExtension, ExtensionResult } from '../contract';
 import type { MerchantProfile, Variant } from '@/lib/types/core';
 import type { PricingContext } from '@/lib/types/extensions';
+import type { ReasonEntry } from '@/lib/types/reasons';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,6 +122,7 @@ function makeFakeSuccessEvaluator(
           {
             code: 'TEST_OK',
             message: `${namespace} ran successfully`,
+            severity: 'INFO',
             blocking: false,
             source: namespace,
           },
@@ -290,7 +292,7 @@ describe('pipeline: advisory evaluator degradation', () => {
     }
 
     // No PIPELINE_EVALUATOR_ERROR in the reasons list (advisory → omit, not BLOCK)
-    const errorReason = record!.reasons.find(r => r.code === 'PIPELINE_EVALUATOR_ERROR');
+    const errorReason = record!.reasons.find((r: ReasonEntry) => r.code === 'PIPELINE_EVALUATOR_ERROR');
     expect(errorReason).toBeUndefined();
   });
 

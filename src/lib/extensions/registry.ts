@@ -88,7 +88,7 @@ export function manifestSubset(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): UcpExtension<any, any>[] {
   const allowedNamespaces = new Set(manifest.capabilities.map(c => c.namespace));
-  const result: UcpExtension<any, any>[] = [];
+  const result: UcpExtension<unknown, unknown>[] = [];
 
   for (const ext of _registry.values()) {
     if (allowedNamespaces.has(ext.namespace)) {

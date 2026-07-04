@@ -23,6 +23,10 @@ specs **0000, 0001, 0002, 0005, 0007, 0008, 0013 pt 1 (trace)** published Draft�
 tested reference implementations. The engine is extracted as `@retailagentos/engine`
 (`packages/engine`, v0.1.0, tarballed). 328/328 tests passing as of 2026-07-04.
 
+**Q1 hygiene batch — done (2026-07-04):** tsc and `src/lib` lint are clean, `npm run build`
+passes, real coverage recorded (93.8% lines on `src/lib/rules`), and the engine tarball was
+rebuilt and smoke-tested in an external project (ESM + CJS). Details: `VERIFICATION-NEEDED.md` §1.
+
 Per-WP detail for the done work: `MASTER-BUILD-PLAN.md` §4 Waves 0–2.
 
 ---
@@ -50,21 +54,7 @@ Restated from `MASTER-BUILD-PLAN.md` §1.3/§3 — read those sections in full b
 
 ## 3. The queue (in order)
 
-### Q1 · Hygiene batch — make the stated quality bar true again `(S · no deps · do first)`
-The docs claim "TypeScript clean" and a verified build; neither is currently true
-(`VERIFICATION-NEEDED.md` §1.2–1.5). Close the gap:
-- Fix the 2 `tsc --noEmit` errors in `src/lib/extensions/__tests__/pipeline.test.ts`
-  (missing `severity` on a fixture; implicit-any param).
-- Fix the 2 `no-explicit-any` lint errors in `src/lib/extensions/registry.ts:91`
-  (engine-surface code sold on strong typing).
-- Run `npm run build`, `npx tsc --noEmit`, `npx vitest run --coverage` locally; record real
-  results in `VERIFICATION-NEEDED.md`.
-- Smoke-test the engine tarball in a throwaway external project
-  (`npm i ./packages/engine/retailagentos-engine-0.1.0.tgz`; call `evaluateOffer`) — the
-  packaging claim is unverified until this runs.
-
-**Acceptance:** zero tsc errors; zero lint errors in `src/lib/**`; `VERIFICATION-NEEDED.md`
-§1 updated with fresh numbers.
+### ~~Q1 · Hygiene batch~~ — ✅ done 2026-07-04 (moved to §1)
 
 ### Q2 · TheCustomHub pilot, Track B `(L · lives in the thecustomhub repo)`
 The only path from "simulated demo" to "an agent bought something real." Brief:

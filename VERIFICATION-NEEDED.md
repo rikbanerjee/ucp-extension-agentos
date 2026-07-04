@@ -8,90 +8,136 @@ of** re-deriving these facts from the source tree by hand.
 
 **Verified as of:** 2026-07-04, this session, `aarch64` sandbox, Node v22.22.3.
 
+**2026-07-04 refresh (Q1 hygiene batch, `specs/BUILD-PLAN.md` §3):** the two `tsc` errors and
+two `registry.ts` lint errors flagged in the original §1.2/§1.3 below have been fixed
+(type-level only; no runtime/golden-fixture changes). All five §1 checks were re-run for real
+in this pass, including coverage and the build, which the original pass could not complete.
+Results below are updated in place; the original findings are preserved as struck-through
+context where useful.
+
 ---
 
 ## 1. Confirmed by actually running things (not just reading code)
 
-### 1.1 Test suite — ✅ VERIFIED, numbers corrected
+### 1.1 Test suite — ✅ VERIFIED
 
 ```
 npx vitest run
 Test Files  13 passed (13)
      Tests  328 passed (328)
-  Duration  2.14s
+  Duration  502ms
 ```
 
-**This corrects two stale numbers found elsewhere in the docs:**
-- `POSITIONING.md` (original, 2026-06-10) said "~130 test cases, 96% line coverage" — the test
-  *count* is stale (real count is 328), and the coverage % was **not** re-verified this pass
-  (see §2.1 below — the coverage command itself didn't complete in this sandbox).
-- `specs/reference-implementation/thecustomhub/03-implementation-plan.md` (Track A, acceptance
-  criterion for A1) says "**293 tests still pass**" as the no-behavior-change proof for the
-  engine extraction. Real current count is 328. This isn't necessarily wrong — it may simply
-  predate later test additions (trace, projections, region allowlist) — but the number should
-  be re-pinned before anyone cites it, and Track B's own acceptance check should re-count at
-  the point the extraction is actually verified, not rely on this figure.
+Unchanged from the prior pass (328/328). The two stale historical counts noted before
+("~130 test cases" in the original `POSITIONING.md`, "293 tests" in
+`specs/reference-implementation/thecustomhub/03-implementation-plan.md`) are still stale
+relative to this real count; not re-touched in this pass beyond confirming 328 still holds.
 
-### 1.2 TypeScript — 🔴 NOT clean, contradicts a written Definition-of-Done
-
-`MASTER-BUILD-PLAN.md` §8 and §9 both assert "`npm run build` passes (TypeScript clean)" as a
-program-level and per-WP acceptance bar. Running the type-checker directly:
+### 1.2 TypeScript — ✅ FIXED, now clean
 
 ```
 npx tsc --noEmit
-src/lib/extensions/__tests__/pipeline.test.ts(121,11): error TS2741: Property 'severity' is
-  missing in type '{ code: string; message: string; blocking: false; source: string; }' but
-  required in type 'ReasonEntry'.
-src/lib/extensions/__tests__/pipeline.test.ts(293,46): error TS7006: Parameter 'r' implicitly
-  has an 'any' type.
+(zero output, exit 0)
 ```
 
-Both errors are in a **test file**, not production rule/extension code, and `vitest` still runs
-that test file successfully (ts-check is separate from ts-transpile — Vitest's transform layer
-doesn't type-check). So this is not evidence the *engine* is broken. It is evidence that the
-"TypeScript clean" claim is currently false as stated, and that `npm run build` may or may not
-actually fail on it depending on whether Next.js's build-time type-check includes test files
-under `tsconfig.json`'s `**/*.ts` include pattern (it wasn't possible to confirm — see §2.2).
-**Action:** add the missing `severity` field to the fixture at line 121 and an explicit type
-for `r` at line 293; re-run `tsc --noEmit` to confirm zero errors; then re-run `npm run build`
-for real.
+Both errors from the prior pass are fixed:
+- `src/lib/extensions/__tests__/pipeline.test.ts:122` — the `TEST_OK` fixture in
+  `makeFakeSuccessEvaluator` was missing `severity`. Added `severity: 'INFO'` (consistent with
+  `blocking: false`, since `blocking` is `@deprecated` and derives as `severity !== 'INFO'`).
+- `src/lib/extensions/__tests__/pipeline.test.ts:293` — `record!.reasons.find(r => ...)` had an
+  implicit-`any` `r`. Added `import type { ReasonEntry } from '@/lib/types/reasons'` and typed
+  the callback param as `(r: ReasonEntry) => ...`.
 
-### 1.3 ESLint — 🟡 19 errors, 33 warnings; two are in engine code, not just UI
+Both fixes are type-level only (a fixture literal gaining a field, a callback param gaining a
+type annotation) — no evaluator logic, golden fixtures, or runtime behavior changed. `tsc
+--noEmit` now exits clean with zero errors.
+
+### 1.3 ESLint — ✅ `src/lib` now zero errors (repo-wide UI errors unchanged/accepted)
 
 ```
-npx eslint .
-✖ 52 problems (19 errors, 33 warnings)
+npx eslint src/lib
+✖ 15 problems (0 errors, 15 warnings)
 ```
 
-17 of the 19 errors are in UI/page components (`src/app/demo/page.tsx`,
-`src/app/guided/page.tsx`, `src/components/AgentDemoStrip.tsx`,
-`src/components/layout/NavBar.tsx`, `src/app/sandbox/**`) — React-hooks and
-`no-explicit-any` issues. `CHANGES.md` already documents "pre-existing lint errors — left
-untouched (pre-date this session)," so these are known and accepted, not new.
+The two `@typescript-eslint/no-explicit-any` errors previously at `src/lib/extensions/
+registry.ts:91` are fixed: `manifestSubset()`'s local `result: UcpExtension<any, any>[]` became
+`UcpExtension<unknown, unknown>[]`. This is a pure narrowing of an internal local variable's
+type from `any` to `unknown` (still a heterogeneous list — `unknown` is the correct
+"don't know statically, don't allow silent misuse" type here); the function's declared return
+type, the registry's internal `Map<string, UcpExtension<any, any>>`, and all other
+already-`eslint-disable`d `any` usages in this file (lines 21, 36, 51, 53, 89) were left
+untouched per the task's engine-API-surface-stability constraint. Runtime behavior (which
+extensions get returned, in what order) is unchanged — confirmed by `npx vitest run` staying at
+328/328 after the fix.
 
-**The two worth flagging specifically:** `src/lib/extensions/registry.ts:91` has two
-`@typescript-eslint/no-explicit-any` errors — this file is inside the reference-implementation
-engine surface (`packages/engine` re-exports from it), and `PROJECT_CONTEXT.md`'s stated
-engineering principle is "strong typing." This is a small, concrete, fixable gap between the
-stated principle and the code, worth a one-line mention in `specs/reference-implementation/engine.md`
-rather than silently ignoring it.
+The remaining 15 findings in `src/lib` are pre-existing `@typescript-eslint/no-unused-vars`
+**warnings** (not errors) on intentionally-unused destructured params/imports (e.g. `_variant`,
+`_htmlContent`) — zero errors, so the stated bar ("zero eslint errors in src/lib") is met.
+Repo-wide UI lint errors (`src/app/**`, `src/components/**`) were **not** touched — out of
+scope for this batch and still the known/accepted 17 errors from the original pass.
 
-### 1.4 Line coverage % — 🔴 UNVERIFIED (could not complete in this sandbox)
+### 1.4 Line coverage % — ✅ VERIFIED (real number, not the stale "96%")
 
-`npx vitest run --coverage` timed out in this environment. The "96% line coverage" figure
-quoted in `POSITIONING.md` and `HOMEPAGE-COPY.md` was **not** re-confirmed this pass — it is
-carried forward from the original 2026-06-10 assessment, unchanged, and should be treated as
-stale until someone runs the coverage command successfully (locally, or in an environment
-without this sandbox's native-module + timeout constraints) and reports the real number.
+```
+npx vitest run --coverage
+Statements   : 92.8%  ( 413/445 )
+Branches     : 89.18% ( 297/333 )
+Functions    : 82.25% ( 51/62 )
+Lines        : 93.8%  ( 394/420 )
+```
 
-### 1.5 `npm run build` (the real Next.js production build) — 🔴 INCONCLUSIVE
+**Important scope caveat:** `vitest.config.ts`'s `coverage.include` is `['src/lib/rules/**']`
+only — it does **not** cover `src/lib/extensions/**`, `src/lib/trace/**`, `src/lib/types/**`,
+or `src/lib/aeo/**`. So "93.8% line coverage" is the real, freshly-measured number **for
+`src/lib/rules` specifically**, not all of `src/lib`. The "96% line coverage" figure in
+`POSITIONING.md` / `HOMEPAGE-COPY.md` should be replaced with **93.8%** (lines) — it does not
+match either the old or new number, and is superseded. The under-covered files, for anyone
+picking this up: `pricingValidation.ts` (51.85% stmts, lines 88–112 uncovered),
+`pricing.ts` (line 339, 454, 463–479 uncovered), `quote.ts` (lines 188, 351, 412 uncovered).
+The coverage command completed without timing out in this pass (contrary to the prior
+sandbox's timeout) — no environment changes were made to achieve this; it may simply be
+sandbox-to-sandbox variance.
 
-Attempting `npm run build` in this sandbox failed with `EPERM: operation not permitted, unlink
-'.next/BUILD_ID'` — a filesystem-permission artifact of this specific sandbox mount (the `.next`
-directory couldn't even be removed with `rm -rf` afterward — every file inside it refused
-`unlink`). **This is not evidence the build is broken** — it's evidence this sandbox couldn't
-run the check. Someone needs to run `npm run build` in a normal local environment and report
-pass/fail, especially given §1.2's `tsc` finding above.
+### 1.5 `npm run build` (the real Next.js production build) — ✅ PASSED
+
+```
+npm run build
+▲ Next.js 16.2.6 (Turbopack)
+✓ Compiled successfully in 2.5s
+  Running TypeScript ...
+  Finished TypeScript in 4.6s ...
+✓ Generating static pages using 7 workers (24/24) in 486ms
+```
+
+24 routes generated successfully (mix of static `○` and dynamic `ƒ`, including
+`/.well-known/ucp` and `/aeo-score/api/analyze`). No `EPERM` filesystem error this pass — the
+prior sandbox's `EPERM: operation not permitted, unlink '.next/BUILD_ID'` was, as noted at the
+time, a mount-permission artifact of that specific sandbox rather than a compile failure; this
+run in a clean `.next` state confirms the build itself is sound now that `tsc` is clean too.
+
+### 1.6 `@retailagentos/engine` tarball — ✅ VERIFIED, installs and runs externally
+
+Rebuilt first (the shipped `.tgz` predated the `registry.ts` fix in §1.3, which is re-exported
+by this package):
+```
+npm run build -w @retailagentos/engine   # tsup: ESM + CJS + .d.ts, all succeeded
+cd packages/engine && npm pack           # regenerated retailagentos-engine-0.1.0.tgz (73.4 kB)
+```
+
+Then, in a throwaway project outside this repo (`/private/tmp/.../scratchpad/engine-smoke`,
+`"type": "module"`, no other dependencies):
+```
+npm install <repo>/packages/engine/retailagentos-engine-0.1.0.tgz
+node smoke.mjs   # import { evaluateOffer, buildManifest } from '@retailagentos/engine'
+→ ESM smoke test PASSED: evaluateOffer and buildManifest are both functions.
+node smoke.cjs   # const { evaluateOffer, buildManifest } = require('@retailagentos/engine')
+→ CJS smoke test PASSED: evaluateOffer and buildManifest are both functions.
+```
+
+Both the ESM and CJS entry points resolve and export working functions in a genuinely separate
+Node project/toolchain (not this repo's `tsconfig`/`vitest` environment) — this closes the gap
+flagged in the prior pass's §2 ("nobody in this session actually ran `npm install
+./packages/engine/....tgz` ... and called `evaluateOffer`").
 
 ---
 
@@ -102,14 +148,9 @@ pass/fail, especially given §1.2's `tsc` finding above.
   (§1.1), which is consistent with this being true, but it wasn't independently re-derived
   (i.e., nobody this pass cross-checked the helper's registry argument against the *current*
   full reason-code list across all seven built specs).
-- **`@retailagentos/engine` tarball actually installs and runs externally** — `packages/engine/dist/`
-  and the `.tgz` exist on disk (confirmed by directory listing), and `package.json`'s
-  `exports` map looks correct, but nobody in this session actually ran `npm install
-  ./packages/engine/retailagentos-engine-0.1.0.tgz` in a throwaway project and called
-  `evaluateOffer`. That's the actual acceptance bar in
-  `specs/reference-implementation/thecustomhub/TRACK-B-FOR-THECUSTOMHUB.md` B0 — "the import
-  above runs in this repo's toolchain" — and it hasn't been executed against a *different*
-  toolchain, which is the entire point of packaging it.
+- ~~**`@retailagentos/engine` tarball actually installs and runs externally**~~ — **RESOLVED
+  2026-07-04, see §1.6.** Rebuilt, repacked, and installed into a throwaway external project;
+  both `evaluateOffer` and `buildManifest` resolve and run via ESM `import` and CJS `require`.
 - **TheCustomHub Track A "done" claim** — `TRACK-B-FOR-THECUSTOMHUB.md` states "Track A (the
   kit) is done." This is true insofar as `packages/engine` exists and builds, but nobody
   re-verified every Track A acceptance line item (A1–A4 in `03-implementation-plan.md`)
@@ -169,14 +210,25 @@ map is the whole picture. **This is the single most important item in this file.
 - `POSITIONING.md`'s scorecard had one row (e3, promo stacking) marked 🟡 "partial" when the
   actual state is 📐 "fully designed, zero code" — corrected downward, not just upward, since
   overstating an unbuilt differentiator is the worse credibility risk.
+- **2026-07-04:** the two `tsc --noEmit` errors (§1.2) and two `registry.ts` lint errors (§1.3)
+  were fixed (type-level only), `npx vitest run --coverage` and `npm run build` were run to
+  completion for the first time (§1.4, §1.5), and the engine tarball was verified to install
+  and run in an external throwaway project (§1.6). See `specs/BUILD-PLAN.md` §3 task Q1.
 
 ---
 
 ## 5. How to use this file
 
 - If you are a human: run the commands in §1 yourself in a real (non-sandboxed) environment
-  before publishing any of the numbers in `POSITIONING.md` externally.
+  before publishing any of the numbers in `POSITIONING.md` externally. As of 2026-07-04, §1.1
+  through §1.6 have all been run to completion in at least one environment (this session's) —
+  but re-verify before quoting numbers publicly, since sandbox-to-sandbox variance was observed
+  (§1.4's coverage command timed out in one sandbox and completed in another with no code
+  changes in between).
 - If you are a reviewing agent building a strategy from the MD files alone: treat every ✅ in
-  `specs/WIKI.md` / `specs/wiki/*.md` as "built and tested" (§1.1 backs this), but treat
-  coverage %, build-pass, and the three undocumented surfaces in §3 as open questions your
-  strategy must explicitly call out — not facts to assume.
+  `specs/WIKI.md` / `specs/wiki/*.md` as "built and tested" (§1.1 backs this). §1.2–§1.6 are now
+  ✅ as of 2026-07-04 with real numbers attached — cite the numbers in this file, not the
+  "96% coverage" / "TypeScript clean" claims still sitting unchanged in `POSITIONING.md` /
+  `HOMEPAGE-COPY.md` / `MASTER-BUILD-PLAN.md` until someone updates those source docs to match.
+  The three undocumented surfaces in §3 remain open questions your strategy must explicitly
+  call out — not facts to assume.
