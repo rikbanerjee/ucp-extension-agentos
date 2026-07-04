@@ -48,7 +48,10 @@ mapped 1:1 to conformance tiers for engineers.
 
 ## 2. The work packages (in order)
 
-### SWP-1 · Homepage rebuild — education-first, broader audience `(M)`
+### SWP-1 · Homepage rebuild — education-first, broader audience `(M)` — ✅ done 2026-07-04
+*(Note: the old "Where RAOS fits" diagram + founder bio sections were dropped from the
+homepage as protocol-heavy; founder story remains at `/profile` — surface it via About nav
+in SWP-7.)*
 **Files:** `src/app/page.tsx` (+ `src/components/AgentDemoStrip.tsx` wrapped, not edited).
 **Do:** merge the two existing design docs:
 - Structure/ordering: [`homepage-reorder.md`](./homepage-reorder.md) (cold-traffic,
@@ -63,7 +66,7 @@ mapped 1:1 to conformance tiers for engineers.
 **Acceptance:** no protocol vocabulary above the fold; hero CTA scroll-to-demo works;
 both doors resolve; build + tsc clean.
 
-### SWP-2 · `/adopt` — the Adoption Guide as a product page `(M)`
+### SWP-2 · `/adopt` — the Adoption Guide as a product page `(M)` — ✅ done 2026-07-04
 The reference architecture becomes a public URL, not a repo file.
 **Files:** new `src/app/adopt/page.tsx` (clone an existing spec-page pattern for layout).
 **Do:** render [`ADOPTION-GUIDE.md`](./ADOPTION-GUIDE.md) as a designed page: the
@@ -74,7 +77,7 @@ the repo / email for a pilot slot.
 **Acceptance:** an outside engineer can go hero → `/adopt` → a specific RFC without
 reading the repo; content stays consistent with ADOPTION-GUIDE.md (link to it as canonical).
 
-### SWP-3 · `/evidence` — the public scorecard (EVIDENCE-PLAN E1) `(S–M)`
+### SWP-3 · `/evidence` — the public scorecard (EVIDENCE-PLAN E1) `(S–M)` — ✅ done 2026-07-04
 **Files:** new `src/app/evidence/page.tsx`; data as a typed constant module.
 **Do:** publish the POSITIONING Part II scorecard as a live page: requirement rows with
 ✅/🟡/📐/⬜/🚫 status, each ✅ linking to the file/test that proves it; summary stats from
@@ -83,7 +86,7 @@ VERIFICATION-NEEDED (328/328 tests, tsc clean, build passing, tarball smoke-test
 **Acceptance:** every row's status matches VERIFICATION-NEEDED at ship time; page linked
 from homepage proof section and footer.
 
-### SWP-4 · `/agents.md` + agent footer (EVIDENCE-PLAN E2) `(S)`
+### SWP-4 · `/agents.md` + agent footer (EVIDENCE-PLAN E2) `(S)` — ✅ done 2026-07-04
 **Files:** new route serving markdown/plaintext (e.g. `src/app/agents.md/route.ts` — check
 Next 16 route-handler docs for the exact pattern); footer strip in `layout.tsx`.
 **Do:** a curl-able onboarding file: how an agent fetches `/.well-known/ucp`, negotiates
