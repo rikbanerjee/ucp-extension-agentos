@@ -251,7 +251,10 @@ function CurrentlyBuilding({ view }: { view: 'business' | 'technical' }) {
 
 function FounderStrip() {
   return (
-    <div id="founder" className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mt-16 scroll-mt-24">
+    <div id="founder" className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 to-slate-50 p-6 shadow-sm mt-16 scroll-mt-24">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-500 mb-4">
+        Founder story
+      </div>
       <div className="flex items-start gap-5">
         <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0 flex items-center justify-center text-slate-500 text-sm font-bold">
           RB
