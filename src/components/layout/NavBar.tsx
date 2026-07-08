@@ -28,6 +28,7 @@ const navGroups: NavGroup[] = [
       { href: '/specs', label: 'Specs' },
       { href: '/demo', label: 'Playground' },
       { href: '/architecture', label: 'How it Works' },
+      { href: '/profile', label: 'UCP Profile Viewer' },
       { href: '/sandbox/reference', label: 'Cookbook' },
     ],
   },
@@ -44,7 +45,7 @@ const navGroups: NavGroup[] = [
     label: 'About',
     items: [
       { href: '/vision', label: 'Vision' },
-      { href: '/profile', label: 'Founder Story' },
+      { href: '/vision#founder', label: 'Founder Story' },
     ],
   },
 ];
