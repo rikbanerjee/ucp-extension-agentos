@@ -274,10 +274,30 @@ function FounderStrip() {
               <span key={b} className="text-xs bg-slate-100 text-slate-600 border border-slate-200 rounded px-2 py-0.5">{b}</span>
             ))}
           </div>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            The gap between UCP and what agents need isn&apos;t theoretical — it&apos;s diagnosed
-            from years inside rules-enforcement systems where correctness has real consequences.
-          </p>
+          <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+            <p>
+              I&apos;ve spent my career inside systems that can&apos;t afford to be wrong: POS
+              modernization, mobile Store OS, AI-driven pharmacy verification, and omnichannel
+              fulfillment across thousands of stores. The pattern was always the same: the
+              business had clear intent, but pricing, eligibility, and fulfillment rules were
+              buried in decks, tribal knowledge, and legacy config instead of a clean, testable
+              layer.
+            </p>
+            <p>
+              In pharmacy, every substitution and compliance rule had to be encoded so virtual
+              verification could keep patients safe at scale. In stores, the same item had to be
+              promised, priced, and fulfilled consistently across web, app, and front-end POS.
+            </p>
+            <p>
+              RetailAgentOS is my answer to that problem in the age of AI agents: a rules-first
+              layer that makes merchant intent machine-readable so both humans and agents can
+              execute it correctly.
+            </p>
+            <p className="font-medium text-slate-800">
+              The goal is simple: make the smallest merchant just as agent-ready as the biggest
+              retailer on the UCP rails.
+            </p>
+          </div>
           <div className="flex items-center gap-3 mt-3">
             <a href="#" className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">{/* TODO: LinkedIn URL */}LinkedIn</a>
             <span className="text-slate-200">·</span>
