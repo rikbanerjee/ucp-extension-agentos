@@ -12,7 +12,7 @@ export default function ProfilePage() {
   const activeMerchant = mockMerchants.find(m => m.merchantId === activeMerchantId)!;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex flex-col md:flex-row gap-8 h-full">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex flex-col md:flex-row gap-8 items-start">
       <div className="w-full md:w-2/3 flex flex-col gap-6">
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -77,7 +77,7 @@ export default function ProfilePage() {
         </Panel>
       </div>
 
-      <div className="w-full md:w-1/3 flex flex-col h-full">
+      <div className="w-full md:w-1/3 flex flex-col md:sticky md:top-6">
         <h3 className="text-sm font-semibold text-slate-900 mb-4">Raw Payload (/.well-known/ucp)</h3>
         <JsonViewer 
           data={activeMerchant} 
