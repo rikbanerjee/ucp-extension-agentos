@@ -226,6 +226,9 @@ export const mockMerchants: MerchantProfile[] = [
       cart: 'https://api.boutique-a.test/ucp/cart',
       checkout: 'https://api.boutique-a.test/ucp/checkout'
     },
+    // RAOS-0001 OQ-2 (2026-08-01): servesRegions is now required on
+    // MerchantProfile. Boutique A is a US/CA DTC store.
+    servesRegions: ['US', 'CA'],
     capabilities: coreCapabilities,
     manifest: {
       protocol: '1.0',
@@ -256,6 +259,12 @@ export const mockMerchants: MerchantProfile[] = [
       cart: 'https://api.wholesale-b.test/ucp/cart',
       checkout: 'https://api.wholesale-b.test/ucp/checkout'
     },
+    // RAOS-0001 OQ-2 (2026-08-01): servesRegions is now required on
+    // MerchantProfile. Wholesale B ships domestically incl. HI (see the
+    // Parallel Basis compliance-hold demo, marketing/partners/parallel/demo/
+    // scenario.test.ts, which exercises a CA buyer and a HI buyer against
+    // this exact merchant).
+    servesRegions: ['US', 'CA', 'HI'],
     capabilities: coreCapabilities,
     manifest: {
       protocol: '1.0',
@@ -289,6 +298,12 @@ export const mockMerchants: MerchantProfile[] = [
       cart: 'https://api.grocery-c.test/ucp/cart',
       checkout: 'https://api.grocery-c.test/ucp/checkout'
     },
+    // RAOS-0001 OQ-2 (2026-08-01): servesRegions is now required on
+    // MerchantProfile. Grocery C serves the US, incl. HI/AK — its own
+    // per-variant fulfillmentConstraints.restrictedRegions (bananas) still
+    // blocks HI/AK for THAT variant specifically; this allowlist is the
+    // separate, merchant-level "do we ship here at all" gate (RAOS-0001 §9).
+    servesRegions: ['US', 'HI', 'AK'],
     capabilities: coreCapabilities,
     manifest: {
       protocol: '1.0',

@@ -128,16 +128,29 @@ Mechanical, because the model is already Shopify-shaped.
 | custom/bulk (CustomOrders flow) | `callForPrice: true` (+ quote config) | the follow-on intent-capture path (B6) |
 
 - `merchantProfile()`: set tier + capabilities (eligibility, contextual price, inventory, quote) +
-  endpoints + `servesRegions: ['US','CA']`.
-- Use `checkServesRegion(['US','CA'], context.marketRegion)` for the region gate (normalize region
-  codes to upper-case before calling — the helper is case-sensitive by contract).
+  endpoints + `servesRegions: ['US','CA']` (now a **required** field on `MerchantProfile` — the
+  adapter will not compile without it).
+- **Corrected 2026-08-01 (OQ-2, RAOS-0001 §9):** the region gate is now enforced by the engine
+  itself — `evaluateOffer` short-circuits on `merchant.servesRegions` before running any
+  per-variant evaluator. Manually calling `checkServesRegion` as a pre-check before
+  `evaluateOffer` is **no longer required for correctness** (the audit's finding #2 — a
+  `BLOCK`-severity rule living outside the engine — is what this fixes). `checkServesRegion`
+  remains exported and adapters MAY still call it as a cheap pre-check to skip constructing an
+  `EvaluateOfferInput` entirely, but it is no longer the only thing standing between an agent
+  and a sale into an unserved region.
 - **Acceptance:** `listVariants()` returns N normalized variants; `evaluateOffer` runs over each
-  without throwing; a **guest in CA is eligible**, a **guest in GB gets `REGION_RESTRICTED`**.
+  without throwing; a **guest in US is eligible**, a **guest in CA is eligible**, a **guest in
+  GB is `REGION_RESTRICTED` from `evaluateOffer` alone** — no adapter-side pre-check required to
+  prove it (verified by direct engine call, not through a server wrapper; see
+  `04-pilot-evidence.md` §8 OQ-2).
 
 ## B3 · Serve `/.well-known/ucp`
 - Cloud Function / Cloud Run handler returning `buildManifest(adapter.merchantProfile())`.
 - **Acceptance:** `GET https://thecustomhub.com/.well-known/ucp` returns the manifest JSON listing
-  `tier` + `capabilities[]` + endpoints.
+  `tier` + `capabilities[]` + `endpoints` + `servesRegions: ['US','CA']`. (Corrected 2026-08-01,
+  OQ-1: `buildManifest` previously dropped `endpoints` and there was nowhere for `servesRegions`
+  to live at all — see `04-pilot-evidence.md` §8. As of the OQ-1 fix, `buildManifest(profile)`
+  composes both onto the returned manifest, so this acceptance line is now actually satisfiable.)
 
 ## B4 · Serve crawlable product data (schema.org)
 - The SPA is **client-rendered**, so agents/crawlers won't run it. Inject `Product`+`Offer` JSON-LD

@@ -41,6 +41,9 @@ const SAMPLE_PROFILE: MerchantProfile = {
     cart: 'https://thecustomhub.com/ucp/cart',
     checkout: 'https://thecustomhub.com/ucp/checkout',
   },
+  // Per TRACK-B-FOR-THECUSTOMHUB.md §B2: the merchant declares its region
+  // allowlist on the profile. OQ-1 fix: this now surfaces on the manifest.
+  servesRegions: ['US', 'CA'],
   capabilities: [],
   manifest: {
     protocol: '1.0',
@@ -158,16 +161,76 @@ describe('buildManifest', () => {
     expect(manifest).toMatchSnapshot();
   });
 
-  it('returns the manifest embedded on the profile (reference equality)', () => {
-    // buildManifest is a deliberate pass-through; no cloning. Callers who need
-    // to mutate must clone first — this test guards the contract.
+  it('is a new object, not the profile-embedded manifest by reference', () => {
+    // OQ-1 fix: buildManifest now COMPOSES profile.manifest with
+    // profile.endpoints (and profile.servesRegions, when declared) rather
+    // than passing profile.manifest through untouched. Callers must not
+    // rely on reference equality with SAMPLE_PROFILE.manifest.
     const manifest = buildManifest(SAMPLE_PROFILE);
-    expect(manifest).toBe(SAMPLE_PROFILE.manifest);
+    expect(manifest).not.toBe(SAMPLE_PROFILE.manifest);
   });
 
   it('manifest protocol field matches profile protocolVersion prefix', () => {
     const manifest = buildManifest(SAMPLE_PROFILE);
     expect(manifest.protocol).toBe('1.0');
+  });
+
+  it('includes endpoints sourced from the profile — the OQ-1 fix', () => {
+    // Before the fix, an agent reading the manifest alone could not locate
+    // the catalog/cart/checkout endpoints at all (04-pilot-evidence.md OQ-1).
+    const manifest = buildManifest(SAMPLE_PROFILE);
+    expect(manifest.endpoints).toEqual(SAMPLE_PROFILE.endpoints);
+  });
+
+  it('includes servesRegions when the profile declares it', () => {
+    const manifest = buildManifest(SAMPLE_PROFILE);
+    expect(manifest.servesRegions).toEqual(['US', 'CA']);
+  });
+
+  it('omits servesRegions (rather than defaulting to []) when the profile does not declare it, and emits REGION_POLICY_UNDECLARED once', () => {
+    // Undeclared (`undefined`) and declared-empty (`[]`) are distinct states —
+    // see the RAOS-0001 §9 region-policy fork resolution (OQ-2). buildManifest
+    // must not collapse "not declared" into "declared: serves nowhere".
+    //
+    // RAOS-0001 OQ-2 (2026-08-01): servesRegions is now a REQUIRED field on
+    // MerchantProfile — TypeScript refuses to construct a profile without it.
+    // The undeclared runtime state is therefore only reachable by a
+    // JS/JSON-constructed profile that bypasses the type, which is exactly
+    // what this test simulates via the `as MerchantProfile` cast below.
+    const { servesRegions: _omit, ...rest } = SAMPLE_PROFILE;
+    const profileWithoutServesRegions = rest as MerchantProfile;
+    const manifest = buildManifest(profileWithoutServesRegions);
+
+    expect(manifest.servesRegions).toBeUndefined();
+    expect('servesRegions' in manifest).toBe(false);
+
+    // The INFO reason is attached once, at manifest-build time — not
+    // per-evaluation (see manifest.ts doc comment for the trace-noise argument).
+    expect(manifest.reasons).toEqual([
+      expect.objectContaining({
+        code: 'REGION_POLICY_UNDECLARED',
+        severity: 'INFO',
+        blocking: false,
+        source: 'com.os.retailagent.shopping.eligibility',
+      }),
+    ]);
+  });
+
+  it('a caller holding only the return value can serve a complete /.well-known/ucp response', () => {
+    // The architectural point of the projection: buildManifest(profile) must
+    // be sufficient on its own, without the caller reaching back into the
+    // profile for endpoints or servesRegions.
+    const manifest = buildManifest(SAMPLE_PROFILE);
+    expect(manifest).toMatchObject({
+      protocol: expect.any(String),
+      tier: expect.any(Number),
+      capabilities: expect.any(Array),
+      endpoints: {
+        catalog: expect.any(String),
+        cart: expect.any(String),
+        checkout: expect.any(String),
+      },
+    });
   });
 });
 

@@ -51,6 +51,8 @@ const BASE_MERCHANT: MerchantProfile = {
   merchantName: 'Test Merchant',
   protocolVersion: '1.0.0',
   endpoints: { catalog: '', cart: '', checkout: '' },
+  // RAOS-0001 OQ-2 (2026-08-01): required field. Matches BASE_CONTEXT.marketRegion.
+  servesRegions: ['CA'],
   capabilities: [],
   manifest: {
     protocol: '1.0',
@@ -505,5 +507,94 @@ describe('pipeline: DecisionRecord shape', () => {
     const hash2 = evaluateOffer({ ...base, quantity: 2 }).inputsHash;
 
     expect(hash1).not.toBe(hash2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RAOS-0001 OQ-2 (2026-08-01): merchant region allowlist short-circuit.
+//
+// Asserted against evaluateOffer directly — NOT against checkServesRegion in
+// isolation. Isolation testing (calling checkServesRegion but never
+// evaluateOffer) is exactly what let the original defect hide for a month:
+// the audit proved evaluateOffer alone did not block a GB buyer even though
+// checkServesRegion, called in isolation, worked correctly the whole time.
+// See specs/reference-implementation/thecustomhub/04-pilot-evidence.md §8 OQ-2.
+// ---------------------------------------------------------------------------
+
+describe('pipeline: region allowlist (RAOS-0001 OQ-2)', () => {
+  const REGION_MERCHANT: MerchantProfile = {
+    ...BASE_MERCHANT,
+    servesRegions: ['US', 'CA'],
+  };
+
+  function regionContext(marketRegion: string) {
+    return { ...BASE_CONTEXT, marketRegion };
+  }
+
+  it('guest/US is eligible — no REGION_RESTRICTED reason from the allowlist gate', () => {
+    const record = evaluateOffer({
+      merchant: REGION_MERCHANT,
+      variant: BASE_VARIANT,
+      quantity: 1,
+      context: regionContext('US'),
+      now: 0,
+    });
+
+    expect(record.reasons.map(r => r.code)).not.toContain('REGION_RESTRICTED');
+  });
+
+  it('guest/CA is eligible — no REGION_RESTRICTED reason from the allowlist gate', () => {
+    const record = evaluateOffer({
+      merchant: REGION_MERCHANT,
+      variant: BASE_VARIANT,
+      quantity: 1,
+      context: regionContext('CA'),
+      now: 0,
+    });
+
+    expect(record.reasons.map(r => r.code)).not.toContain('REGION_RESTRICTED');
+  });
+
+  it('guest/GB is blocked — evaluateOffer alone emits REGION_RESTRICTED, no per-variant stages run', () => {
+    const record = evaluateOffer({
+      merchant: REGION_MERCHANT,
+      variant: BASE_VARIANT,
+      quantity: 1,
+      context: regionContext('GB'),
+      now: 0,
+    });
+
+    const regionReason = record.reasons.find(r => r.code === 'REGION_RESTRICTED');
+    expect(regionReason).toBeDefined();
+    expect(regionReason?.severity).toBe('BLOCK');
+    expect(regionReason?.source).toBe('com.os.retailagent.shopping.eligibility');
+    // Short-circuit before the per-variant evaluator chain: no stage ran.
+    expect(record.stages).toEqual({});
+  });
+
+  it('a declared-empty servesRegions ([]) blocks every region, including one that would otherwise be served', () => {
+    const record = evaluateOffer({
+      merchant: { ...BASE_MERCHANT, servesRegions: [] },
+      variant: BASE_VARIANT,
+      quantity: 1,
+      context: regionContext('CA'),
+      now: 0,
+    });
+
+    expect(record.reasons.map(r => r.code)).toContain('REGION_RESTRICTED');
+    expect(record.stages).toEqual({});
+  });
+
+  it('an undeclared servesRegions (JS/JSON backstop path) does not block', () => {
+    const { servesRegions: _omit, ...merchantWithoutServesRegions } = BASE_MERCHANT;
+    const record = evaluateOffer({
+      merchant: merchantWithoutServesRegions as MerchantProfile,
+      variant: BASE_VARIANT,
+      quantity: 1,
+      context: regionContext('GB'),
+      now: 0,
+    });
+
+    expect(record.reasons.map(r => r.code)).not.toContain('REGION_RESTRICTED');
   });
 });

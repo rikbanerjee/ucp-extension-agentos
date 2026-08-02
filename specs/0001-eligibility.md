@@ -173,6 +173,7 @@ Messages are localizable; codes are stable. Each entry uses the unified `ReasonE
 | `RESALE_CERTIFICATE_REQUIRED` | Resale certificate must be on file | `BLOCK` | `…eligibility` | Yes — upload certificate |
 | `TIER_RESTRICTION` | Requires a higher membership tier | `BLOCK` + `requirements[]` → derives `CONDITIONAL` | `…eligibility` | Yes — upgrade tier |
 | `FULFILLMENT_UNAVAILABLE` | Not available for the requested fulfillment mode | `BLOCK` | `…eligibility` | No (in this mode) |
+| `REGION_POLICY_UNDECLARED` | Merchant has not declared `servesRegions` (added 2026-08-01, OQ-2 — §9.6) | `INFO` | `…eligibility` | No — merchant-side conformance gap, not buyer-resolvable |
 
 **Deprecated field:** The `blocking` boolean field on each reason entry is **deprecated as
 of v1.1.0**. It is still emitted, derived as `severity !== 'INFO'`, with
@@ -307,6 +308,76 @@ These are genuine forks. Tell me I'm wrong.
 5. **Tier hierarchy.** It's currently an ordered list (`none < gold < reseller_plus <
    distributor`). Should tiers be a partial order / capability set instead of a strict ladder?
 
+6. **Region-policy fork (`servesRegions` allowlist) — RESOLVED (2026-08-01, OQ-2).**
+   `regionAllowlist.ts` documented, by design, that "adapters call `checkServesRegion`
+   themselves," with the canonical fold into this spec deferred and TheCustomHub named as the
+   eventual forcing case. The 2026-08-01 Track B pilot audit forced it: `evaluateOffer` in
+   isolation did not block a GB buyer from an unserved-region merchant — region gating existed
+   only because the pilot's own server pre-checked manually, outside the engine (a
+   `BLOCK`-severity safety rule living outside the single decision implementation). Full
+   findings: `specs/reference-implementation/thecustomhub/04-pilot-evidence.md` §8 OQ-2.
+
+   **The fork:** what should `calculateEligibility`/`evaluateOffer` do when a merchant profile
+   has not declared `servesRegions`? Three options were on the table:
+   - **(a) Undeclared → block all regions** (the literal reading of RAOS-0000 §7.2's
+     most-restrictive-default rule, extended from `BuyerContext` to a merchant's own config).
+     Rejected: §7.2 is explicitly scoped to buyer context (unknown/untrusted claims *about the
+     buyer*), not a merchant's own unset config field. Extending it here by fiat — rather than
+     by a documented decision — is exactly the undocumented scope creep this spec exists to
+     prevent. It would also have meant every merchant profile not yet carrying `servesRegions`
+     (all of them, pre-2026-08-01) instantly sells to nobody.
+   - **(b) Undeclared → not enforced, silently** (the pre-fix status quo). Rejected: this is
+     the audit's own finding, restated as a permanent default — it targets neither silence nor
+     permissiveness, it ratifies both.
+   - **(c) Three-state, undeclared is loud but non-blocking — CHOSEN.** Non-empty array →
+     enforced allowlist. `[]` → declared, literally, "serves nowhere" — blocks all (this falls
+     out of `checkServesRegion`'s existing contract for free). `undefined` → does not block, but
+     is made loud: a new `REGION_POLICY_UNDECLARED` (`INFO`, additive, reuses no existing code)
+     surfaces on the `/.well-known/ucp` manifest (`buildManifest`, RAOS-0000 — see its §13
+     changelog), and Tier 1 "Qualified" conformance now requires the field be declared.
+
+   **Amendment on top of (c), decided the same day:** rather than rely on runtime discipline to
+   keep the undeclared state rare, `servesRegions: string[]` is now **required** (non-optional)
+   on `MerchantProfile` — TypeScript refuses to compile a profile that omits it. This converts
+   the failure mode from "runtime silent sale into an unserved region" to "compile error at
+   integration time," which is a stronger guarantee than (a) without (a)'s blast radius:
+   existing fixtures break at *construction* (a mechanical one-line add per fixture — see the
+   engine 0.2.0 changelog for the full list) rather than at *behavior* (every prior fixture's
+   marketRegion suddenly getting blocked). The three-state runtime handling in
+   `calculateEligibility`/`evaluateOffer` is kept as-is: it is the backstop for the callers the
+   TypeScript type cannot reach — a JS consumer, or a profile deserialized from JSON with no
+   validation layer in front of it. Required-field prevents; three-state-plus-Tier-1-gating
+   makes it loud for the paths types can't reach.
+
+   **Where the allowlist is enforced:** folded into `evaluateOffer`
+   (`src/lib/extensions/pipeline.ts`), NOT into `calculateEligibility`. `servesRegions` is a
+   merchant-level invariant — true or false once per merchant, not once per variant — so it is
+   checked as a short-circuit before the per-variant evaluator chain runs, reusing the existing
+   `REGION_RESTRICTED` code via `checkServesRegion`. This mirrors the existing `TRUST_SIMULATED`
+   central-attachment pattern (RAOS-0008) for the same reason: a fact that doesn't vary per
+   variant shouldn't be re-derived per variant. `calculateEligibility`'s signature is unchanged;
+   `checkServesRegion` remains exported for adapters that want a cheaper pre-check before ever
+   constructing an `EvaluateOfferInput`, but it is no longer the *only* enforcement point.
+
+   **Emission timing — manifest-build time, not per-evaluation.** `REGION_POLICY_UNDECLARED` is
+   attached once by `buildManifest()` when `servesRegions` is undefined, not re-emitted on every
+   `evaluateOffer` call. Rationale: the fact ("this merchant hasn't declared a region policy")
+   never varies per product or per evaluation — repeating it in every `DecisionRecord.reasons`
+   (as derived by `src/lib/trace/derive.ts`) would mean one identical `INFO` entry per SKU per
+   catalog listing, pure trace noise with no new information on the 2nd through Nth occurrence.
+   Manifest-build time is also where an agent (or a conformance checker) can see the gap
+   *before* evaluating a single offer, rather than discovering it product-by-product.
+
+   **What broke / what didn't:** the required-field change broke construction (not behavior) of
+   every hand-authored `MerchantProfile` fixture across the codebase — mechanical, one line
+   each. Zero golden fixtures changed: `golden.test.ts` calls `calculateEligibility` and friends
+   directly, never `evaluateOffer` or `buildManifest`, so neither the allowlist short-circuit
+   nor the manifest-build reason code can appear there; `REGION_POLICY_UNDECLARED` is
+   consequently excluded from golden reason-code coverage the same way
+   `CATALOG_UNREACHABLE_REASON_CODES` excludes an unreachable code, and is covered instead by
+   `src/lib/projections/__tests__/projections.test.ts` and
+   `src/lib/extensions/__tests__/pipeline.test.ts`.
+
 If you have an opinion on any of these, email me or reply on the build-log post. This is being
 built in the open precisely so the answers come from people who run real catalogs.
 
@@ -326,6 +397,27 @@ agent-readiness for free. The spec is the leverage.
 ---
 
 ## 11. Changelog
+
+### v1.2.0 — 2026-08-01 (OQ-2: region-policy fork resolved)
+
+**Additive changes:**
+
+- **New reason code `REGION_POLICY_UNDECLARED`** (`INFO`, additive — §6 registry table).
+  Emitted by `buildManifest()` (RAOS-0000) at manifest-build time, not per-evaluation, when a
+  merchant profile has not declared `servesRegions`.
+- **§9.6 Open Question resolved:** the region-allowlist fold, deferred since the A3 helper
+  (`checkServesRegion`) shipped, is now folded into `evaluateOffer` as a merchant-level
+  short-circuit — see §9.6 for the full fork write-up, the three options considered, and why
+  (c) plus the required-field amendment was chosen over (a) and (b).
+- **`MerchantProfile.servesRegions: string[]` is now REQUIRED** (was absent from the type
+  entirely before this pilot; RAOS-0000 §13 changelog covers the manifest-surfacing half).
+
+**Breaking change (engine 0.2.0, not this spec's severity contract):** `evaluateOffer` now
+blocks a buyer whose `marketRegion` is outside a merchant's declared `servesRegions` — behavior
+that did not exist before. A merchant that declares `servesRegions` and relied on
+`evaluateOffer` alone not enforcing it (i.e. was depending on the pre-fix gap) will see new
+`REGION_RESTRICTED` blocks. No existing reason code was repurposed; `REGION_POLICY_UNDECLARED`
+is additive per RAOS-0000 §7.4.
 
 ### v1.1.0 — 2026-06-10 (WP-03 retrofit)
 

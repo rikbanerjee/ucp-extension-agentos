@@ -23,6 +23,15 @@
  *     is omitted from the DecisionRecord with a logged warning. The sale
  *     proceeds without that evaluator's output.
  *
+ * OQ-2 (2026-08-01, RAOS-0001 §9): `evaluateOffer` now enforces the merchant
+ * region allowlist (`MerchantProfile.servesRegions`) itself, as a short-
+ * circuit before the per-variant evaluator chain — see the comment at that
+ * check for why it lives here rather than inside `calculateEligibility`.
+ * Previously this was enforced only by adapter-side pre-checks calling
+ * `checkServesRegion` manually (`src/lib/rules/regionAllowlist.ts`), which
+ * the TheCustomHub pilot audit found meant `evaluateOffer` alone did not
+ * block an unserved region (`04-pilot-evidence.md` §8 OQ-2).
+ *
  * DETERMINISM: `now` is always injected. This module never calls Date.now().
  */
 
@@ -41,6 +50,7 @@ import { byStage, manifestSubset } from './registry';
 import { signEnvelope, buildTrustReasonEntries, TRUST_REASON_CODES, TRUST_NAMESPACE } from '@/lib/rules/trust';
 import { STAGE_TTL_DEFAULTS } from '@/lib/types/envelope';
 import type { ReasonEntry as TrustReasonEntry } from '@/lib/types/reasons';
+import { checkServesRegion } from '@/lib/rules/regionAllowlist';
 
 // ---------------------------------------------------------------------------
 // DecisionRecord — the trace substrate (WP-08 will render it)
@@ -272,6 +282,99 @@ export function evaluateOffer(input: EvaluateOfferInput): DecisionRecord {
 
   const inputsHash = hashInputs(merchant.merchantId, variant.id, quantity, normalizedContext);
 
+  // ---------------------------------------------------------------------------
+  // WP-06 / RAOS-0008: Central envelope + trust reasons.
+  //
+  // Hoisted above the per-variant evaluator chain (rather than computed only
+  // after it, as before OQ-2) because the region-allowlist short-circuit
+  // immediately below needs a fully-formed envelope too — a merchant-level
+  // BLOCK is still a real DecisionRecord, not a bare error.
+  // ---------------------------------------------------------------------------
+
+  const merchantIssuer = merchant.endpoints.catalog.replace(/\/ucp\/catalog$/, '');
+  // Pick the first valid key from the merchant manifest (or fall back to 'k1').
+  const manifestKeys = merchant.manifest.keys ?? [];
+  const activeKey = manifestKeys.find(k => k.validTo === null || k.validTo > now) ?? manifestKeys[0];
+  const keyId = activeKey?.keyId ?? 'k1';
+
+  // Sign the evaluation using the PRICE stage TTL as a reasonable outer default
+  // (covers the most time-sensitive non-inventory data).
+  const outerTtlSeconds = STAGE_TTL_DEFAULTS['PRICE'] ?? 300;
+  const signedEnvelope = signEnvelope(inputsHash, keyId, now, merchantIssuer, outerTtlSeconds);
+
+  const trustReasons = buildTrustReasonEntries({
+    valid: true,
+    code: TRUST_REASON_CODES.TRUST_SIMULATED,
+    severity: 'INFO',
+    message: 'Envelope produced with simulated crypto (SIMULATED — not cryptographically verified).',
+    stale: false,
+    ageSeconds: 0,
+  });
+
+  const trustAttributedReasons: AttributedReasonEntry[] = trustReasons.map(r => ({
+    ...r,
+    source: TRUST_NAMESPACE,
+  }));
+
+  // Suppress unused variable warning — TrustReasonEntry is used for type checking.
+  void (undefined as unknown as TrustReasonEntry);
+
+  const envelope = {
+    issuer: signedEnvelope.provenance.issuer,
+    keyId: signedEnvelope.provenance.keyId,
+    signature: signedEnvelope.provenance.signature,
+    trustMode: signedEnvelope.provenance.trustMode,
+    computedAt: signedEnvelope.freshness.computedAt,
+    ttlSeconds: signedEnvelope.freshness.ttlSeconds,
+  };
+
+  // ---------------------------------------------------------------------------
+  // OQ-2 (RAOS-0001 §9): merchant-level region allowlist short-circuit.
+  //
+  // servesRegions is a MERCHANT-level invariant (does this merchant serve
+  // this buyer's region AT ALL?), not a per-variant rule — unlike
+  // fulfillmentConstraints.restrictedRegions, which stays exactly where it
+  // was, evaluated per-variant inside calculateEligibility. Re-deriving a
+  // merchant-level fact once per registered evaluator (or worse, once per
+  // SKU in a cart) would be the same wasted-recomputation mistake the
+  // TRUST_SIMULATED central-attachment pattern above already avoids — so it
+  // runs ONCE here, before the per-variant evaluator chain, and short-
+  // circuits the whole chain when it fails. This is also exactly where the
+  // pilot's own server.js pre-check ran; the defect audited in
+  // 04-pilot-evidence.md OQ-2 was that it ran OUTSIDE the engine, not that
+  // it ran early.
+  //
+  // Three-state (RAOS-0001 §9 / core.ts MerchantProfile.servesRegions):
+  //   - non-empty array → enforce via checkServesRegion (reuses REGION_RESTRICTED).
+  //   - `[]` → checkServesRegion already treats empty-array as "serves
+  //     nobody" by contract, so this falls out of the same call for free.
+  //   - `undefined` at runtime (JS/JSON callers only — TS requires the field)
+  //     → do not block. The manifest-build-time REGION_POLICY_UNDECLARED
+  //     INFO reason (buildManifest) is the loud signal for this case, not a
+  //     per-evaluation one.
+  //
+  // checkServesRegion remains exported for adapters that want a cheap
+  // pre-check before ever constructing an EvaluateOfferInput — it is no
+  // longer the ONLY enforcement point, but it may remain AN enforcement point.
+  // ---------------------------------------------------------------------------
+
+  if (merchant.servesRegions !== undefined) {
+    const regionCheck = checkServesRegion(merchant.servesRegions, normalizedContext.marketRegion);
+    if (regionCheck.status === 'BLOCKED') {
+      // EligibilityReason already carries { code, message, severity, source,
+      // blocking } — the same shape AttributedReasonEntry requires.
+      const regionAttributedReasons: AttributedReasonEntry[] = regionCheck.reasons;
+      return {
+        inputsHash,
+        stages: {},
+        reasons: [...trustAttributedReasons, ...regionAttributedReasons],
+        computedAt: now,
+        normalizedContext,
+        envelope,
+      };
+    }
+  }
+
   // Resolve the enabled evaluators for this merchant's manifest.
   const enabled = manifestSubset(merchant.manifest);
   const enabledByNamespace = new Set(enabled.map(e => e.namespace));
@@ -347,9 +450,10 @@ export function evaluateOffer(input: EvaluateOfferInput): DecisionRecord {
   // ---------------------------------------------------------------------------
   // WP-06 / RAOS-0008: Central envelope attachment
   //
-  // The envelope is signed once per evaluation over the inputsHash (a stable
-  // fingerprint of all inputs). This covers the entire DecisionRecord without
-  // requiring each evaluator to produce its own envelope.
+  // The envelope (signed above, before the region short-circuit) covers the
+  // entire DecisionRecord without requiring each evaluator to produce its
+  // own. Per-stage envelopes are still signed individually below (different
+  // TTLs per stage) and attached to each ExtensionResult.
   //
   // Reconciliation with WP-05 (inventory): ComputedAvailability.freshness
   // (per-item, from the inventory evaluator) is preserved as-is — it represents
@@ -360,17 +464,6 @@ export function evaluateOffer(input: EvaluateOfferInput): DecisionRecord {
   // The TRUST_SIMULATED reason is prepended to the reasons list so it appears
   // first — it is always emitted while crypto is simulated (INFO, non-blocking).
   // ---------------------------------------------------------------------------
-
-  const merchantIssuer = merchant.endpoints.catalog.replace(/\/ucp\/catalog$/, '');
-  // Pick the first valid key from the merchant manifest (or fall back to 'k1').
-  const manifestKeys = merchant.manifest.keys ?? [];
-  const activeKey = manifestKeys.find(k => k.validTo === null || k.validTo > now) ?? manifestKeys[0];
-  const keyId = activeKey?.keyId ?? 'k1';
-
-  // Sign the evaluation using the PRICE stage TTL as a reasonable outer default
-  // (covers the most time-sensitive non-inventory data).
-  const outerTtlSeconds = STAGE_TTL_DEFAULTS['PRICE'] ?? 300;
-  const signedEnvelope = signEnvelope(inputsHash, keyId, now, merchantIssuer, outerTtlSeconds);
 
   // Attach envelope to every ExtensionResult in stages.
   // Note: stageResultMap values may be frozen (priorResults uses Object.freeze),
@@ -391,37 +484,12 @@ export function evaluateOffer(input: EvaluateOfferInput): DecisionRecord {
     stages[stageKey] = augmented;
   }
 
-  // Build trust reason entries and prepend to the reasons list.
-  const trustReasons = buildTrustReasonEntries({
-    valid: true,
-    code: TRUST_REASON_CODES.TRUST_SIMULATED,
-    severity: 'INFO',
-    message: 'Envelope produced with simulated crypto (SIMULATED — not cryptographically verified).',
-    stale: false,
-    ageSeconds: 0,
-  });
-
-  const trustAttributedReasons: AttributedReasonEntry[] = trustReasons.map(r => ({
-    ...r,
-    source: TRUST_NAMESPACE,
-  }));
-
-  // Suppress unused variable warning — TrustReasonEntry is used for type checking.
-  void (undefined as unknown as TrustReasonEntry);
-
   return {
     inputsHash,
     stages,
     reasons: [...trustAttributedReasons, ...reasons],
     computedAt: now,
     normalizedContext,
-    envelope: {
-      issuer: signedEnvelope.provenance.issuer,
-      keyId: signedEnvelope.provenance.keyId,
-      signature: signedEnvelope.provenance.signature,
-      trustMode: signedEnvelope.provenance.trustMode,
-      computedAt: signedEnvelope.freshness.computedAt,
-      ttlSeconds: signedEnvelope.freshness.ttlSeconds,
-    },
+    envelope,
   };
 }

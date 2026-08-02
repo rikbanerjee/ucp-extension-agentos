@@ -89,6 +89,12 @@ export function collectCodesFromDecisionReasons(
 /**
  * The canonical RAOS-0001 reason code registry.
  * Source of truth: specs/0001-eligibility.md
+ *
+ * REGION_POLICY_UNDECLARED (added 2026-08-01, OQ-2 resolution — §9): INFO
+ * severity, additive. NOT emitted by calculateEligibility or the eligibility
+ * evaluator — it is emitted by buildManifest() at manifest-build time (see
+ * RAOS_0001_MANIFEST_ONLY_CODES below), so it can never appear in golden
+ * fixtures, which only ever call calculateEligibility/evaluateOffer directly.
  */
 export const RAOS_0001_REASON_CODES = [
   'HIDDEN_PRODUCT',
@@ -97,7 +103,20 @@ export const RAOS_0001_REASON_CODES = [
   'RESALE_CERTIFICATE_REQUIRED',
   'TIER_RESTRICTION',
   'FULFILLMENT_UNAVAILABLE',
+  'REGION_POLICY_UNDECLARED',
 ] as const;
+
+/**
+ * RAOS-0001 codes that are emitted by `buildManifest()` (manifest-build
+ * time — RAOS-0000's projection layer) rather than by the eligibility
+ * evaluator or `calculateEligibility` directly. Structurally the same
+ * "can't appear in the golden fixture grid" situation as
+ * `CATALOG_UNREACHABLE_REASON_CODES` and the various `*_SYNTHETIC_ONLY_CODES`
+ * lists below, but for a different reason: golden.test.ts never calls
+ * buildManifest. Covered instead by
+ * src/lib/projections/__tests__/projections.test.ts.
+ */
+export const RAOS_0001_MANIFEST_ONLY_CODES = ['REGION_POLICY_UNDECLARED'] as const;
 
 /**
  * The canonical RAOS-0002 reason code registry.

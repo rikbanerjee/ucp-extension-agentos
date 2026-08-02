@@ -122,6 +122,8 @@ function merchantActionHint(code: string): string {
       return 'Upgrade to signed trust envelopes for production';
     case 'DATA_STALE':
       return 'Data freshness exceeded TTL — re-evaluate before acting';
+    case 'REGION_POLICY_UNDECLARED':
+      return 'Declare servesRegions on your MerchantProfile — Tier 1 conformance requires it';
     default:
       return 'Review merchant configuration for ' + code;
   }

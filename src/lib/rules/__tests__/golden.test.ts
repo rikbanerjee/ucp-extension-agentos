@@ -45,6 +45,7 @@ import {
   RAOS_0008_REASON_CODES,
   RAOS_0008_SYNTHETIC_ONLY_CODES,
   CATALOG_UNREACHABLE_REASON_CODES,
+  RAOS_0001_MANIFEST_ONLY_CODES,
 } from './helpers/reasonCodeCoverage';
 import { signEnvelope, buildTrustReasonEntries, TRUST_REASON_CODES, TRUST_NAMESPACE } from '@/lib/rules/trust';
 import { STAGE_TTL_DEFAULTS } from '@/lib/types/envelope';
@@ -654,8 +655,15 @@ describe('Golden fixtures: byte-identical comparison', () => {
 describe('Reason code coverage', () => {
   it('all catalog-reachable RAOS-0001 reason codes appear in at least one fixture', () => {
     const fixtures = IS_UPDATE_MODE ? generatedFixtures : (fixturesOnDisk ?? generatedFixtures);
+    // REGION_POLICY_UNDECLARED (OQ-2, 2026-08-01) is emitted by buildManifest()
+    // at manifest-build time, not by calculateEligibility — golden.test.ts
+    // never calls buildManifest, so it's excluded here the same way
+    // CATALOG_UNREACHABLE_REASON_CODES excludes a dead code path. Covered by
+    // src/lib/projections/__tests__/projections.test.ts instead.
     const reachable = RAOS_0001_REASON_CODES.filter(
-      code => !(CATALOG_UNREACHABLE_REASON_CODES as readonly string[]).includes(code),
+      code =>
+        !(CATALOG_UNREACHABLE_REASON_CODES as readonly string[]).includes(code) &&
+        !(RAOS_0001_MANIFEST_ONLY_CODES as readonly string[]).includes(code),
     );
     assertReasonCodeCoverage(reachable, fixtures);
   });

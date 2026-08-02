@@ -6,13 +6,19 @@
  * explicit set of countries ("US and CA only"), an ALLOWLIST is cleaner: declare
  * the countries you DO serve rather than every country you don't.
  *
- * This helper bridges the gap at the adapter layer without touching the blocklist
- * path in `calculateEligibility`. Adapters call `checkServesRegion` themselves —
- * typically inside `BuyerContextResolver.resolve` or as a pre-check before
- * forwarding to `evaluateOffer`.
+ * OQ-2 fold (2026-08-01, RAOS-0001 §9): `evaluateOffer` now calls this
+ * function itself as a short-circuit at the top of the pipeline
+ * (`src/lib/extensions/pipeline.ts`) — it is no longer true that "adapters
+ * call `checkServesRegion` themselves" is the ONLY enforcement path. The
+ * pilot audit (`04-pilot-evidence.md` §8 OQ-2) found that when the pipeline
+ * didn't enforce it, a merchant that forgot the adapter-side pre-check
+ * shipped a store that silently sold into unserved regions.
  *
- * The canonical spec fold (adding allowlist semantics to RAOS-0001) is deferred;
- * TheCustomHub is the forcing case. See `case-studies/thecustomhub/02-spine-design.md §4`.
+ * `checkServesRegion` stays exported: adapters may still call it directly as
+ * a cheap pre-check (e.g. inside `BuyerContextResolver.resolve`, before ever
+ * constructing an `EvaluateOfferInput`) — that remains a valid, cheaper
+ * short-circuit for callers who want to skip the rest of the pipeline
+ * entirely. It is now AN enforcement point, not the only one.
  *
  * DETERMINISM: no Date.now() / Math.random() / fetch() — pure function.
  */

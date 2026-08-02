@@ -8,6 +8,14 @@ of** re-deriving these facts from the source tree by hand.
 
 **Verified as of:** 2026-07-04, this session, `aarch64` sandbox, Node v22.22.3.
 
+**2026-08-01 refresh (Q2b — OQ-1/OQ-2 kit defects, `specs/BUILD-PLAN.md` §1):** the two kit
+defects the Track B pilot audit surfaced (lossy manifest projection; region allowlist
+unenforced by `evaluateOffer`) are fixed. `MerchantProfile.servesRegions` is now required — a
+breaking change — so the engine was bumped to 0.2.0 and re-tarballed/re-smoke-tested. §1.1,
+§1.2, §1.5, and §1.6 below are updated in place with this session's actual re-run output; the
+2026-07-04 numbers are preserved as struck-through context. §2 gets a new entry for the
+pre-existing, out-of-scope `marketing/` build failure (found, not fixed, this pass).
+
 **2026-07-04 refresh (Q1 hygiene batch, `specs/BUILD-PLAN.md` §3):** the two `tsc` errors and
 two `registry.ts` lint errors flagged in the original §1.2/§1.3 below have been fixed
 (type-level only; no runtime/golden-fixture changes). All five §1 checks were re-run for real
@@ -21,6 +29,26 @@ context where useful.
 
 ### 1.1 Test suite — ✅ VERIFIED
 
+**2026-08-01 (Q2b, engine 0.2.0):**
+```
+npm test   # vitest run --coverage
+Test Files  14 passed (14)
+     Tests  348 passed (348)
+  Duration  1.72s
+```
+
+348/348, up from 328 (2026-07-04): +14 tests in `src/lib/extensions/__tests__/pipeline.test.ts`
+(the RAOS-0001 OQ-2 region-allowlist describe block — guest/US, guest/CA eligible; guest/GB,
+declared-`[]`, and undeclared-backstop cases, all asserted against `evaluateOffer` directly per
+the audit's own point that isolation testing hid the original defect) + 6 in
+`src/lib/projections/__tests__/projections.test.ts` (the RAOS-0000 OQ-1 manifest-composition
+tests). Zero golden fixture changes — `golden.test.ts` calls `calculateEligibility` and friends
+directly, never `evaluateOffer`/`buildManifest`, so neither the allowlist short-circuit nor the
+manifest-build reason code touches it; confirmed by the "every fixture entry matches the
+committed golden exactly" test passing unchanged.
+
+<details><summary>2026-07-04 result (superseded)</summary>
+
 ```
 npx vitest run
 Test Files  13 passed (13)
@@ -33,7 +61,22 @@ Unchanged from the prior pass (328/328). The two stale historical counts noted b
 `specs/reference-implementation/thecustomhub/03-implementation-plan.md`) are still stale
 relative to this real count; not re-touched in this pass beyond confirming 328 still holds.
 
-### 1.2 TypeScript — ✅ FIXED, now clean
+</details>
+
+### 1.2 TypeScript — ✅ clean for `src/` (repo-wide `tsc` has a pre-existing, unrelated `marketing/` failure — see §2)
+
+**2026-08-01 (Q2b, engine 0.2.0):**
+```
+npx tsc --noEmit -p .
+(zero output for everything under src/ and packages/engine/)
+marketing/partners/parallel/demo/ingest.ts(245,22): error TS2741 — pre-existing, see §2
+marketing/partners/parallel/demo/scenario.test.ts(43,3): error TS2322 — pre-existing, see §2
+```
+Confirmed pre-existing (not introduced this pass) via `git stash -u && npx tsc --noEmit -p .` —
+identical errors on the unmodified branch. `marketing/` is gitignored
+(`.gitignore:41`) and out of scope for this task. Full detail in §2.
+
+<details><summary>2026-07-04 result (superseded — repo had no marketing/ tsc errors at that time)</summary>
 
 ```
 npx tsc --noEmit
@@ -51,6 +94,8 @@ Both errors from the prior pass are fixed:
 Both fixes are type-level only (a fixture literal gaining a field, a callback param gaining a
 type annotation) — no evaluator logic, golden fixtures, or runtime behavior changed. `tsc
 --noEmit` now exits clean with zero errors.
+
+</details>
 
 ### 1.3 ESLint — ✅ `src/lib` now zero errors (repo-wide UI errors unchanged/accepted)
 
@@ -98,7 +143,15 @@ The coverage command completed without timing out in this pass (contrary to the 
 sandbox's timeout) — no environment changes were made to achieve this; it may simply be
 sandbox-to-sandbox variance.
 
-### 1.5 `npm run build` (the real Next.js production build) — ✅ PASSED
+### 1.5 `npm run build` (the real Next.js production build) — ❌ RED as of 2026-08-01, pre-existing and unrelated to Q2b (see §2)
+
+**2026-08-01 (Q2b, engine 0.2.0):** `npm run build` currently fails — but on a `marketing/`
+TypeScript error that predates this session's changes (confirmed via `git stash -u`; see §2 for
+full detail and the exact commands run). All `src/`-side work for Q2b is independently verified
+via `npx tsc --noEmit -p .` (§1.2, clean outside `marketing/`) and `npm test` (§1.1, 348/348).
+Not fixed in this pass per instruction — `marketing/` is a different, out-of-scope queue.
+
+<details><summary>2026-07-04 result (superseded — repo had no marketing/ tsc errors at that time, so the build was genuinely green)</summary>
 
 ```
 npm run build
@@ -115,10 +168,37 @@ prior sandbox's `EPERM: operation not permitted, unlink '.next/BUILD_ID'` was, a
 time, a mount-permission artifact of that specific sandbox rather than a compile failure; this
 run in a clean `.next` state confirms the build itself is sound now that `tsc` is clean too.
 
+</details>
+
 ### 1.6 `@retailagentos/engine` tarball — ✅ VERIFIED, installs and runs externally
 
-Rebuilt first (the shipped `.tgz` predated the `registry.ts` fix in §1.3, which is re-exported
-by this package):
+**2026-08-01 (Q2b): rebuilt and re-tarballed for the 0.2.0 breaking change** (required
+`servesRegions` field, manifest shape, `evaluateOffer` region-blocking behavior):
+```
+npm run build -w @retailagentos/engine   # tsup: ESM + CJS + .d.ts, all succeeded
+cd packages/engine && npm pack           # regenerated retailagentos-engine-0.2.0.tgz (78.6 kB)
+```
+
+Then, in a throwaway project outside this repo
+(`/private/tmp/.../scratchpad/engine-smoke-02`, `"type": "module"`, no other dependencies):
+```
+npm install <repo>/packages/engine/retailagentos-engine-0.2.0.tgz
+node smoke.mjs
+→ ESM smoke: function function
+→ manifest.endpoints present: true
+→ manifest.servesRegions: [ 'US', 'CA' ]
+→ GB blocked: true          # evaluateOffer alone, no pre-check, no server wrapper
+node smoke.cjs
+→ CJS smoke: function function
+```
+
+This is the strongest form of the "direct engine call" verification requested for OQ-2: not an
+in-repo `tsx` script against source, but the actual packaged tarball, installed fresh in an
+isolated project with no access to this repo's source tree, proving `evaluateOffer` alone
+blocks an unserved region and `buildManifest` alone carries `endpoints`/`servesRegions`.
+
+<details><summary>2026-07-04 result (superseded — engine 0.1.0)</summary>
+
 ```
 npm run build -w @retailagentos/engine   # tsup: ESM + CJS + .d.ts, all succeeded
 cd packages/engine && npm pack           # regenerated retailagentos-engine-0.1.0.tgz (73.4 kB)
@@ -139,10 +219,33 @@ Node project/toolchain (not this repo's `tsconfig`/`vitest` environment) — thi
 flagged in the prior pass's §2 ("nobody in this session actually ran `npm install
 ./packages/engine/....tgz` ... and called `evaluateOffer`").
 
+</details>
+
 ---
 
 ## 2. Claims still resting on the original 2026-06-10 pass (not re-run this session)
 
+- **`npm run build` is RED — known, tracked, NOT fixed this pass (2026-08-01).** Repo-wide
+  `npm run build` fails Next.js's TypeScript pass on
+  `marketing/partners/parallel/demo/ingest.ts:245` (`ReasonEntry.blocking` missing) and
+  `marketing/partners/parallel/demo/scenario.test.ts:43` (`MembershipTier` mismatch, `'wholesale'`
+  not a valid value). Both are inside `marketing/`, which is gitignored (`.gitignore:41`,
+  "LinkedIn planning only, not part of the app") and out of scope for Q2b (site/positioning work
+  is a different queue, `SITE-PLAN.md`). **Confirmed pre-existing, not introduced by this
+  session's changes:**
+  ```
+  git stash -u && npm run build
+  → same two errors, on the unmodified branch, before any Q2b change
+  git stash pop
+  ```
+  `BUILD-PLAN.md` §2.5 requires a green build as a task gate; a permanently-red repo-wide build
+  stops being a signal and starts being cover for real breakage introduced elsewhere. This entry
+  exists so the next session doesn't have to re-derive "is this new?" from scratch, and so a
+  genuinely new `src/`-side build break doesn't get silently absorbed into "oh, build's red
+  anyway." **Not fixed here** — the instruction for this task was to log it, not touch
+  `marketing/`. Whoever picks up `marketing/` next should either fix these two type errors or
+  formally exclude `marketing/` from the root `tsconfig.json`/Next build's typecheck scope so a
+  gitignored, admittedly-out-of-scope directory can't fail the one gate the whole repo builds on.
 - **Golden fixture coverage** — `MASTER-BUILD-PLAN.md` WP-00 requires a `reasonCodeCoverage`
   helper asserting every registered reason code appears in at least one fixture. Tests pass
   (§1.1), which is consistent with this being true, but it wasn't independently re-derived

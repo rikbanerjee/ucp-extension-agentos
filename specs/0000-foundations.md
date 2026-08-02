@@ -431,5 +431,51 @@ A foundation you can't see is doing its job. This spec is that foundation.
 
 ---
 
+## 13. Changelog
+
+### 2026-08-01 — OQ-1 fix: `endpoints` and `servesRegions` on the manifest (P0)
+
+**Defect (found by the TheCustomHub Track B pilot audit, `04-pilot-evidence.md` §8):**
+`buildManifest()` was a bare pass-through (`return profile.manifest`). `UcpManifest`
+carried only `protocol`, `tier`, `capabilities[]`, `keys?` — `MerchantProfile
+.endpoints` was silently dropped, and `servesRegions` existed on neither type even
+though the TheCustomHub integration brief instructed the merchant to set it. Proved
+live against `thecustomhub.com/.well-known/ucp`: an agent reading a conformant RAOS
+manifest could not locate the catalog/cart/checkout endpoints or tell which regions
+the merchant serves. **§6's Tier 0 claim — "an agent can find and correctly read my
+catalog" — was not achievable as specified.**
+
+**Fix:** `UcpManifest` (§6, `src/lib/types/core.ts`) gained `endpoints` and
+`servesRegions?`. `MerchantProfile` gained `servesRegions?: string[]`.
+`buildManifest()` (`src/lib/projections/manifest.ts`) no longer returns
+`profile.manifest` by reference; it composes a new object from
+`profile.manifest` + `profile.endpoints` + `profile.servesRegions`.
+
+**Where the fields live — the decision this changelog exists to record:**
+`endpoints`/`servesRegions` were added to `UcpManifest` itself, projected by
+`buildManifest`, rather than assembled ad hoc at each discovery handler. Rationale:
+the entire architectural point of `buildManifest` existing (see its original doc
+comment, now corrected) is that callers depend on the *function*, not on knowing
+where the pieces live inside a `MerchantProfile`. Composing `endpoints` at the
+handler instead would mean every handler re-implements the same assembly — which
+is exactly the kind of drift that let this defect ship in the first place (the
+TheCustomHub `raos-mcp` server hand-rolled its own manifest rather than calling
+`buildManifest`). `buildManifest(profile)` is now sufficient on its own: a caller
+holding only its return value can serve a complete `/.well-known/ucp` response.
+
+**`servesRegions` stays three-state on purpose.** `undefined` (the field is absent)
+means the merchant has not declared a region allowlist; `[]` means the merchant
+declared, literally, "serves nowhere"; a non-empty array is the allowlist. This
+changelog entry does **not** resolve what `calculateEligibility` (RAOS-0001) should
+*do* with the undeclared state — that is a separate, still-open fork (see
+`04-pilot-evidence.md` §8 OQ-2 and its write-up). This entry only makes the
+manifest capable of exposing the distinction once RAOS-0001 decides.
+
+**Not changed:** the `tier`/`capabilities[]` negotiation contract (§6.1–§6.2) is
+unaffected — `endpoints`/`servesRegions` are discovery data, not capability
+negotiation surface, and agents still negotiate on `capabilities[]` alone.
+
+---
+
 *Part of the RetailAgentOS open spec series. See [specs/README.md](./README.md)
 for the full set and how to contribute.*

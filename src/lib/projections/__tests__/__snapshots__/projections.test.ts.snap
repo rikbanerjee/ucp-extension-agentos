@@ -31,6 +31,11 @@ exports[`buildManifest > snapshot: projects MerchantProfile into UcpManifest 1`]
       "version": "1.0.0",
     },
   ],
+  "endpoints": {
+    "cart": "https://thecustomhub.com/ucp/cart",
+    "catalog": "https://thecustomhub.com/ucp/catalog",
+    "checkout": "https://thecustomhub.com/ucp/checkout",
+  },
   "keys": [
     {
       "keyId": "k1",
@@ -39,6 +44,10 @@ exports[`buildManifest > snapshot: projects MerchantProfile into UcpManifest 1`]
     },
   ],
   "protocol": "1.0",
+  "servesRegions": [
+    "US",
+    "CA",
+  ],
   "tier": 2,
 }
 `;

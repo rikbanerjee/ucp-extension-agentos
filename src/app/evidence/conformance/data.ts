@@ -114,6 +114,13 @@ const SYNTHETIC_ONLY_EXCEPTIONS: Record<string, SyntheticException> = {
   ISSUER_UNKNOWN: { testFile: 'src/lib/rules/__tests__/trust.test.ts', reason: "Requires a keyId not present in the merchant manifest's keys[]." },
   KEY_EXPIRED: { testFile: 'src/lib/rules/__tests__/trust.test.ts', reason: 'Requires a signing key with validTo < now.' },
   CLOCK_SKEW_SUSPECTED: { testFile: 'src/lib/rules/__tests__/trust.test.ts', reason: 'Requires computedAt > now + tolerance.' },
+  // RAOS-0001 — manifest-build attachment, not registry-evaluated (added
+  // 2026-08-01, OQ-2 resolution — see the REGION_POLICY_UNDECLARED note
+  // below and specs/0001-eligibility.md §9).
+  REGION_POLICY_UNDECLARED: {
+    testFile: 'src/lib/projections/__tests__/projections.test.ts',
+    reason: 'Emitted by buildManifest() at manifest-build time when MerchantProfile.servesRegions is undefined — a state the required TS field prevents for typed profiles; only reachable via JS/JSON-constructed profiles. golden.test.ts never calls buildManifest, so this can never appear in the fixture grid.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -198,6 +205,23 @@ function buildReasonCodeInventory(): ReasonCodeRow[] {
     });
   }
 
+  // RAOS-0001 — REGION_POLICY_UNDECLARED (added 2026-08-01, OQ-2 resolution):
+  // manifest-build attachment (buildManifest), not registry-evaluated —
+  // mirrors the RAOS-0008 central-attachment pattern immediately above.
+  // Not declared on the eligibility evaluator's reasonCodes[] because the
+  // evaluator never emits it; buildManifest does. See
+  // specs/0001-eligibility.md §9 for the full resolution.
+  rows.set('REGION_POLICY_UNDECLARED', {
+    code: 'REGION_POLICY_UNDECLARED',
+    specId: '0001',
+    sources: ['com.os.retailagent.shopping.eligibility (buildManifest — manifest-build time, not a registered evaluator)'],
+    fixtureCovered: fixtureCoveredCodes.has('REGION_POLICY_UNDECLARED'),
+    syntheticException: SYNTHETIC_ONLY_EXCEPTIONS['REGION_POLICY_UNDECLARED'],
+    covered:
+      fixtureCoveredCodes.has('REGION_POLICY_UNDECLARED') ||
+      Boolean(SYNTHETIC_ONLY_EXCEPTIONS['REGION_POLICY_UNDECLARED']),
+  });
+
   return Array.from(rows.values()).sort((a, b) => {
     if (a.specId !== b.specId) return a.specId.localeCompare(b.specId);
     return a.code.localeCompare(b.code);
@@ -240,6 +264,18 @@ export interface ArchetypeCell {
   exercised: boolean | null;
   /** Capability namespaces on this merchant that back the cell (empty if not exercised/derivable). */
   namespaces: string[];
+  /**
+   * RAOS-0001 OQ-2 (2026-08-01, §9): Tier 1 "Qualified" conformance now
+   * requires a merchant to have DECLARED its region-serving policy
+   * (`MerchantProfile.servesRegions !== undefined` — `[]` counts as
+   * declared, "serves nowhere"). Only meaningful on the '0001' cell; `null`
+   * for every other spec. This is the scoreboard-side half of OQ-2's
+   * loud-not-silent design: `buildManifest` makes the undeclared state
+   * visible on the wire (`REGION_POLICY_UNDECLARED`), and this flags it
+   * against the Tier 1 requirement for whoever is checking a merchant's
+   * conformance, not just an agent reading one manifest at a time.
+   */
+  regionPolicyDeclared: boolean | null;
 }
 
 export interface ArchetypeRow {
@@ -263,18 +299,23 @@ function buildArchetypeGrid(): ArchetypeRow[] {
         // surface RAOS-0000 defines. No dedicated capability id exists for
         // "foundations" itself — this is the closest programmatic proxy.
         const exercised = Boolean(merchant.manifest.protocol) && typeof merchant.manifest.tier === 'number' && merchant.manifest.capabilities.length > 0;
-        cells[specId] = { specId, exercised, namespaces: [] };
+        cells[specId] = { specId, exercised, namespaces: [], regionPolicyDeclared: null };
         continue;
       }
       if (specId === '0013pt1') {
         // Decision Trace is a rendering layer over DecisionRecord, not a
         // negotiated capability — there is no capability id to check against
         // per-merchant mock data. Honest answer: not derivable this way.
-        cells[specId] = { specId, exercised: null, namespaces: [] };
+        cells[specId] = { specId, exercised: null, namespaces: [], regionPolicyDeclared: null };
         continue;
       }
       const matches = namespaces.filter(ns => CAPABILITY_NAMESPACE_TO_SPEC[ns] === specId);
-      cells[specId] = { specId, exercised: matches.length > 0, namespaces: Array.from(new Set(matches)) };
+      cells[specId] = {
+        specId,
+        exercised: matches.length > 0,
+        namespaces: Array.from(new Set(matches)),
+        regionPolicyDeclared: specId === '0001' ? merchant.servesRegions !== undefined : null,
+      };
     }
 
     return {

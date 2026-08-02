@@ -131,6 +131,12 @@ export const MERCHANT_A: MerchantProfile = {
     cart: 'https://api.ref-boutique-a.test/ucp/cart',
     checkout: 'https://api.ref-boutique-a.test/ucp/checkout',
   },
+  // RAOS-0001 OQ-2 (2026-08-01): required field. Covers every marketRegion
+  // value the 0001/0002/0013 recipes exercise against this fixture (the
+  // 0001-eligibility recipe's region control includes HI/AK/CA/NY to
+  // demonstrate the per-variant restrictedRegions blocklist path — this
+  // merchant-level allowlist must not collide with that demo).
+  servesRegions: ['US', 'CA', 'HI', 'AK', 'NY'],
   capabilities: [],
   manifest: {
     protocol: '1.0',
@@ -161,6 +167,9 @@ export const MERCHANT_B: MerchantProfile = {
     cart: 'https://api.ref-wholesale-b.test/ucp/cart',
     checkout: 'https://api.ref-wholesale-b.test/ucp/checkout',
   },
+  // RAOS-0001 OQ-2 (2026-08-01): required field. Every recipe that uses this
+  // fixture (0007-quote, 0008-trust) exercises marketRegion: 'US' only.
+  servesRegions: ['US'],
   capabilities: [],
   manifest: {
     protocol: '1.0',

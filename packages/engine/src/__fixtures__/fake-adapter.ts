@@ -40,6 +40,8 @@ const FAKE_PROFILE: MerchantProfile = {
     cart: 'https://fake.example.com/cart',
     checkout: 'https://fake.example.com/checkout',
   },
+  // RAOS-0001 OQ-2 (2026-08-01): required field on MerchantProfile.
+  servesRegions: ['US'],
   capabilities: [],
   manifest: {
     protocol: '0.1.0',

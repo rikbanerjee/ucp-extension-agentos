@@ -24,21 +24,25 @@
 
 import type { NextRequest } from 'next/server';
 import { mockMerchants } from '@/lib/mock/merchants';
+import { buildManifest } from '@/lib/projections/manifest';
 
 // Force dynamic evaluation — no static caching (mock data, always fresh).
 export const dynamic = 'force-dynamic';
 
 /**
- * Map from query-param merchant ID to the corresponding mock merchant.
+ * Map from query-param merchant ID to the corresponding mock merchant
+ * profile, then project it through `buildManifest` (RAOS-0000, OQ-1 fix)
+ * so the served response includes `endpoints` and `servesRegions` — not
+ * just the profile's embedded `{ protocol, tier, capabilities[], keys? }`.
  * Fallback: boutique archetype (index 0).
  */
 function getMerchantManifest(merchantId: string | null) {
   if (merchantId) {
     const found = mockMerchants.find(m => m.merchantId === merchantId);
-    if (found) return found.manifest;
+    if (found) return buildManifest(found);
   }
   // Default: boutique archetype
-  return mockMerchants[0].manifest;
+  return buildManifest(mockMerchants[0]);
 }
 
 export function GET(request: NextRequest) {
