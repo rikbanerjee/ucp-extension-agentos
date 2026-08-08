@@ -47,3 +47,7 @@ next-env.d.ts
 # engine package build artifacts (reproducible via `npm run build -w @retailagentos/engine`)
 packages/*/dist/
 packages/*/*.tgz
+*.tgz
+
+# local Claude Code tool config
+/.claude/
