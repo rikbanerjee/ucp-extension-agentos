@@ -6,6 +6,8 @@ export interface BuildLogEntry {
   title: string;
   shipped: string;
   narrative: string;
+  /** Optional: id of a diagram component to render between narrative and bullets. See buildlog/page.tsx's DIAGRAMS map. */
+  diagramId?: string;
   bullets: string[];
   proves: string;
   next?: string;
@@ -13,10 +15,30 @@ export interface BuildLogEntry {
 
 export const buildLog: BuildLogEntry[] = [
   {
+    id: 'week-7',
+    week: 'Week 7',
+    date: 'August 2026',
+    current: true,
+    title: 'The manifest said one thing, the engine did another',
+    shipped: 'Manifest projection fixed + region allowlist folded into the engine',
+    narrative:
+      "TheCustomHub pilot audit found the failure mode I was most worried about: not a missing feature, but two true things quietly disagreeing. buildManifest() was a bare pass-through — it never copied a merchant's endpoints or servesRegions into the document an agent actually reads, so an agent had no reliable way to find checkout or know which regions were served. Worse, evaluateOffer() — the shared engine every integration is supposed to call — never enforced the region allowlist at all. It only worked because one pilot partner had bolted a manual pre-check onto their own server, outside the engine. Any other integration got silent, unenforced region gating. For an agent placing an order unattended, that's not a rough edge — it's the difference between a merchant's declared rules and what the merchant actually does.",
+    diagramId: 'manifest-engine-fix',
+    bullets: [
+      "buildManifest() now composes endpoints + servesRegions into the manifest instead of passing profile.manifest through untouched — the /.well-known/ucp document is complete by construction",
+      'servesRegions is now a required field on MerchantProfile — TypeScript refuses to compile a merchant profile that forgot to declare where it ships',
+      'Region allowlist enforced as a short-circuit inside evaluateOffer() itself — every caller of the shared engine gets region enforcement, not just the one partner who remembered to pre-check',
+      "Undeclared servesRegions (JS/JSON callers only, past the TypeScript gate) isn't silently permissive — a one-time REGION_POLICY_UNDECLARED (INFO) reason surfaces on the manifest, and Tier 1 conformance now requires the field",
+      '348 tests passing (+20) — engine bumped to 0.2.0 as a breaking change: required field, manifest shape, and evaluateOffer behavior all changed',
+    ],
+    proves:
+      "Declaration and enforcement have to be the same code path, or they drift — a rule that's merely documented and separately re-implemented per integration will eventually diverge, not from malice but because \"remembered to pre-check\" doesn't scale past one partner.",
+    next: 'The engine and specs are real, tested, and now closing the gaps a real pilot surfaces rather than the gaps I imagined in advance. Next: the remaining Track B closeout items, then the same discipline applied to the MCP server and crypto signing seams already flagged as simulated.',
+  },
+  {
     id: 'week-6',
     week: 'Week 6',
     date: 'June 2026',
-    current: true,
     title: 'One front door, one story',
     shipped: 'Guided demo rebuilt + reference cookbook live',
     narrative:

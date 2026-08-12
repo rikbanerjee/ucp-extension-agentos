@@ -1,6 +1,13 @@
+import type { ComponentType } from 'react';
 import Link from 'next/link';
 import { buildLog } from '@/lib/content/buildlog';
 import { ArrowRight, Link2 } from 'lucide-react';
+import ManifestEngineDiagram from '@/components/buildlog/ManifestEngineDiagram';
+
+// Keyed by BuildLogEntry.diagramId — add new diagram components here as entries need them.
+const DIAGRAMS: Record<string, ComponentType> = {
+  'manifest-engine-fix': ManifestEngineDiagram,
+};
 
 export const metadata = {
   title: 'Build Log — RetailAgentOS',
@@ -84,6 +91,16 @@ export default function BuildLogPage() {
 
               {/* Narrative — builder's voice */}
               <p className="text-[15px] leading-7 text-slate-600 mb-5">{entry.narrative}</p>
+
+              {/* Diagram, if this entry has one */}
+              {entry.diagramId && DIAGRAMS[entry.diagramId] && (
+                <div className="mb-5">
+                  {(() => {
+                    const Diagram = DIAGRAMS[entry.diagramId];
+                    return <Diagram />;
+                  })()}
+                </div>
+              )}
 
               {/* Bullets */}
               <ul className="space-y-2 mb-5">
