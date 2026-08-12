@@ -1,7 +1,9 @@
 # RAOS-0003 · Fulfillment Feasibility — Wiki & Pending Work
 
-**Status:** Not started · planned · Tier 4 · Plane 4
-**Full context:** `PROGRAM-PLAN.md` §6 (RAOS-0003 brief) · `MASTER-BUILD-PLAN.md` WP-13
+**Status:** Not started · planned · **Tier 1** (promoted from Tier 4 on 2026-08-12)
+**Full context:** [`../../work-packages/RAOS-0003-fulfillment-brief.md`](../../work-packages/RAOS-0003-fulfillment-brief.md) — the
+current, run-ready agent brief · `PROGRAM-PLAN.md` §6 (original scope brief, tier/plane there is
+stale) · `MASTER-BUILD-PLAN.md` WP-13
 **Depends on:** RAOS-0005 (Inventory, built) · RAOS-0011 (Restricted Goods, pending)
 
 ## The one-sentence problem

@@ -179,7 +179,10 @@ won't operate without*. Each is either its own spec or a mandatory section in ev
   tier boundary exactly met (`>=` vs `>`); negative/zero quantity; USD rounding (banker's vs
   half-up — pick one, spec it; multi-currency rounding deferred to V2); price of 0 (free sample) vs "call for price".
 
-### RAOS-0003 · Fulfillment Feasibility  `[Plane 4]`
+### RAOS-0003 · Fulfillment Feasibility  `[Plane 4 — STALE, promoted to Tier 1 on 2026-08-12]`
+> **Superseded:** see [`work-packages/RAOS-0003-fulfillment-brief.md`](./work-packages/RAOS-0003-fulfillment-brief.md)
+> for the current, run-ready agent brief. The entry below is retained only as historical scope
+> reference (its edge-case list is still accurate; its tier/plane is not).
 - **Goal:** deepen today's `fulfillment_constraints` from mode/region flags into real feasibility.
 - **Depends on:** 0000, 0005 (availability per location), 0001 (region → visibility/eligibility).
 - **In scope:** modes (ship/pickup/local-delivery/BOPIS), delivery windows, lead times, per-region
