@@ -101,6 +101,7 @@ active) do **not** live here; they live in the negotiated session manifest (§6)
   "accountLinked": false,
   "taxExempt": false,
   "resaleCertificateOnFile": false,
+  "needByDate": "2026-08-20",                 // optional, ISO 'YYYY-MM-DD' — RAOS-0003 (§4.3 exception)
   "trust": {                                  // how much to believe the above
     "mode": "asserted | signed",              // B6: simulated as 'asserted' now
     "issuer": "https://id.example.test",      // present when mode == 'signed'
@@ -154,6 +155,17 @@ interpretation (unknown `customerType` → `guest`; unknown `loyaltyTier` →
 `guest`; unknown `marketRegion` → treat region-gated items as restricted). See
 §7.1 for the determinism rule this implements.
 
+**Exception: `needByDate` (added 2026-08-12, RAOS-0003).** A naive
+most-restrictive reading of an absent `needByDate` would be "treat it as the
+most urgent deadline possible and block on lead time by default" — the
+opposite of what's useful, and it would break every existing fixture and
+every buyer who simply hasn't stated a deadline. `needByDate` is a
+**deliberate, spec-documented exception**: absent means "no deadline
+asserted ⇒ never blocks on lead time." This follows the RAOS-0001 §9.6
+`servesRegions` precedent of documenting an exception explicitly rather than
+extending §4.3 by fiat to a case it wasn't designed for. See
+`specs/0003-fulfillment.md` §4 for the full write-up.
+
 ---
 
 ## 5. Conformance tiers (the split axis, locked B1)
@@ -165,10 +177,10 @@ do for an agent* — not who the buyer is.
 | Tier | Name | Adds | What the *merchant can do* | Example archetype |
 |------|------|------|----------------------------|-------------------|
 | **0** | Discoverable | 0000, 0004, 0008 | "An agent can find and correctly read my catalog." | Any store |
-| **1** | Qualified | 0001, 0005, 0011 | "No dead-end carts — only eligible, in-stock items surface." | Boutique |
+| **1** | Qualified | 0001, 0003, 0005, 0011 | "No dead-end carts — only eligible, in-stock, *reachable* items surface." | Boutique |
 | **2** | Priced | 0002, 0006, 0007 | "The right price per buyer, and it's *honored* at checkout." | Wholesale |
 | **3** | Member-aware | 0009, 0010 | "Supports member/loyalty-aware pricing, earn preview, subscriptions." | Grocery |
-| **4** | Assisted | 0003, 0012, 0013, 0014 | "Full commerce — fulfillment, handoff, intent, returns." | Grocery chain |
+| **4** | Assisted | 0012, 0013, 0014 | "Full commerce — handoff, intent, returns." | Grocery chain |
 
 > **Tier 3 is "Member-aware," not "Loyal."** It describes merchant *capability*
 > (the merchant supports member-aware pricing and earn preview), **not** the
@@ -432,6 +444,36 @@ A foundation you can't see is doing its job. This spec is that foundation.
 ---
 
 ## 13. Changelog
+
+### 2026-08-12 — RAOS-0003 promotion: `BuyerContext.needByDate` + `MerchantProfile.timezone` (BREAKING, engine 0.3.0)
+
+RAOS-0003 (Fulfillment Feasibility) promoted Tier 4 → Tier 1 (§5 table updated above) and
+requires two contract changes to the shared substrate every spec binds to:
+
+- **`BuyerContext.needByDate?: string`** (§4) — the buyer's fulfillment deadline
+  (`'YYYY-MM-DD'`), consumed by RAOS-0003's `LEAD_TIME_EXCEEDS_NEED_BY`. **Optional**, and a
+  **deliberate exception** to the §4.3 most-restrictive-default rule — see §4.3 above for why.
+  `normalizeBuyerContext` (`src/lib/rules/normalizeBuyerContext.ts`) passes it through unchanged;
+  it is never defaulted or coerced.
+- **`MerchantProfile.timezone: string`** (IANA identifier, e.g. `'America/Los_Angeles'`) — the
+  merchant-local clock RAOS-0003's `CUTOFF_PASSED` and `LEAD_TIME_EXCEEDS_NEED_BY` are evaluated
+  against. **REQUIRED**, following the exact precedent and rationale of `MerchantProfile.
+  servesRegions` (RAOS-0001 §9.6, 2026-08-01): a merchant-level invariant, true once per merchant
+  not once per variant, where a silently-wrong default (e.g. defaulting to UTC) would be a silent
+  failure of the exact safety property the spec exists to fix. TypeScript refuses to compile a
+  profile that omits it — every hand-authored `MerchantProfile` fixture in the codebase required a
+  mechanical one-line addition (construction-time breakage, not behavior-time, same shape of
+  breaking change as `servesRegions`'s rollout).
+
+**Why this belongs here and not only in `specs/0003-fulfillment.md`:** `BuyerContext` and
+`MerchantProfile` are RAOS-0000 contracts every extension binds to (§4, §10). A change to either
+must be recorded at this level so specs that don't otherwise read RAOS-0003 still see that the
+shared substrate moved. Full write-up, worked examples, and the deterministic timezone-conversion
+approach (no `Date` object, ever — see the doc comment in `src/lib/rules/fulfillment.ts`):
+`specs/0003-fulfillment.md` §4.
+
+**Not changed:** every other `BuyerContext`/`MerchantProfile` field, the trust model (§4.2), the
+manifest/negotiation contract (§6), and the severity/reason envelope (§8).
 
 ### 2026-08-01 — OQ-1 fix: `endpoints` and `servesRegions` on the manifest (P0)
 

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ViewProvider } from "@/lib/context/ViewContext";
-import { NavBar } from "@/components/layout/NavBar";
-import { Footer } from "@/components/layout/Footer";
+import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -51,23 +50,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full bg-slate-50 antialiased`}>
       <body className="flex h-full flex-col font-sans text-slate-900 bg-slate-50">
         <ViewProvider>
-          <NavBar />
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
-          <Footer />
-          <div className="border-t border-slate-200 bg-slate-50 shrink-0">
-            <p className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 text-[11px] text-slate-400">
-              For developers: open{' '}
-              <a href="/specs" className="text-slate-500 hover:text-slate-700 transition-colors">specs</a>,{' '}
-              reference implementation, live{' '}
-              <a href="/demo" className="text-slate-500 hover:text-slate-700 transition-colors">playground</a>.
-              {' '}For AI agents: start at{' '}
-              <a href="/agents.md" className="text-slate-500 hover:text-slate-700 transition-colors">/agents.md</a>
-              {' '}and{' '}
-              <a href="/.well-known/ucp" className="text-slate-500 hover:text-slate-700 transition-colors">/.well-known/ucp</a>.
-            </p>
-          </div>
+          <AppShell>{children}</AppShell>
         </ViewProvider>
       </body>
     </html>

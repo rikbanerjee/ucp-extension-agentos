@@ -668,4 +668,107 @@ export const mockProducts: Product[] = [
       }
     ]
   },
+
+  // -------------------------------------------------------------------------
+  // RAOS-0003 additions (2026-08-12) — fulfillment feasibility mock variants,
+  // one per shipped reason code not already covered by the bananas
+  // (v_g_003_1, above: FULFILLMENT_MODE_UNAVAILABLE + REGION_NOT_SERVED).
+  // -------------------------------------------------------------------------
+
+  // --- Atlas Wholesale: carrier restrictions (HAZMAT_RESTRICTION, OVERSIZE_RESTRICTION) ---
+  {
+    // Hazmat: industrial-strength solvent — cannot ship by parcel carrier.
+    id: 'p_w_fulfill_001',
+    merchantId: 'm_wholesale_002',
+    title: 'Industrial Degreaser Solvent (Hazmat)',
+    description: 'DOT-classified hazardous solvent for commercial kitchens — pickup or local delivery only.',
+    category: 'Facility Supplies',
+    variants: [
+      {
+        id: 'v_w_fulfill_001_1',
+        sku: 'SOLVENT-HAZMAT-5GAL',
+        title: '5-Gallon Drum',
+        basePrice: 129.00,
+        currency: 'USD',
+        eligibilityRules: {
+          hideFromGuests: true,
+          requireWholesale: true,
+        },
+        fulfillmentConstraints: {
+          hazmat: true,
+        },
+      },
+    ],
+  },
+  {
+    // Oversize: commercial oven — exceeds standard parcel dimensions.
+    id: 'p_w_fulfill_002',
+    merchantId: 'm_wholesale_002',
+    title: 'Commercial Convection Oven (Freight)',
+    description: 'Full-size commercial convection oven — freight/pickup only, cannot ship by parcel carrier.',
+    category: 'Equipment',
+    variants: [
+      {
+        id: 'v_w_fulfill_002_1',
+        sku: 'OVEN-CONV-COMMERCIAL',
+        title: 'Standard',
+        basePrice: 4200.00,
+        currency: 'USD',
+        eligibilityRules: {
+          hideFromGuests: true,
+          requireWholesale: true,
+        },
+        fulfillmentConstraints: {
+          oversize: true,
+        },
+      },
+    ],
+  },
+
+  // --- Fresh Corner Market: lead time & same-day cutoff ---
+  // (LEAD_TIME_EXCEEDS_NEED_BY and CUTOFF_PASSED are synthetic-only reason
+  // codes — see RAOS_0003_SYNTHETIC_ONLY_CODES; these two variants document
+  // the worked examples used in specs/0003-fulfillment.md §8 and
+  // fulfillment.test.ts. Fresh Corner Market's timezone is America/New_York
+  // — see src/lib/mock/merchants.ts.)
+  {
+    // Custom bakery order: needs 3 days' lead time.
+    id: 'p_g_fulfill_001',
+    merchantId: 'm_grocery_003',
+    title: 'Custom Celebration Cake (Bakery, 3-Day Lead Time)',
+    description: 'Made-to-order celebration cake — requires 3 days to prepare.',
+    category: 'Bakery',
+    variants: [
+      {
+        id: 'v_g_fulfill_001_1',
+        sku: 'CAKE-CUSTOM-BAKERY',
+        title: 'Standard (serves 12)',
+        basePrice: 45.00,
+        currency: 'USD',
+        fulfillmentConstraints: {
+          leadTimeDays: 3,
+        },
+      },
+    ],
+  },
+  {
+    // Hot deli tray: same-day pickup only, 2pm local cutoff.
+    id: 'p_g_fulfill_002',
+    merchantId: 'm_grocery_003',
+    title: 'Hot Deli Party Tray (Same-Day Pickup, 2pm Cutoff)',
+    description: 'Same-day hot deli tray — order by 2pm local time for same-day pickup.',
+    category: 'Deli',
+    variants: [
+      {
+        id: 'v_g_fulfill_002_1',
+        sku: 'DELI-TRAY-HOT-SAMEDAY',
+        title: 'Party Size',
+        basePrice: 38.00,
+        currency: 'USD',
+        fulfillmentConstraints: {
+          cutoffHourLocal: 14,
+        },
+      },
+    ],
+  },
 ];

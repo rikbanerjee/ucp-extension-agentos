@@ -15,9 +15,10 @@ export { register, byStage, manifestSubset } from './registry';
 export type { UcpExtension, ExtensionResult, PipelineStage, StageResults } from './contract';
 export { setInventoryHolds } from './evaluators/inventory';
 export { setQuoteMeta } from './evaluators/quote';
+export { setFulfillmentMerchantTimezone } from './evaluators/fulfillment';
 
 // ---------------------------------------------------------------------------
-// Register evaluators (WP-01 through WP-07)
+// Register evaluators (WP-01 through WP-07, RAOS-0003)
 // ---------------------------------------------------------------------------
 
 import { register } from './registry';
@@ -25,9 +26,11 @@ import { visibilityEvaluator, eligibilityEvaluator } from './evaluators/eligibil
 import { pricingEvaluator } from './evaluators/pricing';
 import { inventoryEvaluator } from './evaluators/inventory';
 import { quoteEvaluator } from './evaluators/quote';
+import { fulfillmentEvaluator } from './evaluators/fulfillment';
 
 register(visibilityEvaluator);
 register(eligibilityEvaluator);
 register(pricingEvaluator);
 register(inventoryEvaluator);
 register(quoteEvaluator);
+register(fulfillmentEvaluator);

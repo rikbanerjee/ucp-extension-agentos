@@ -137,6 +137,8 @@ export const MERCHANT_A: MerchantProfile = {
   // demonstrate the per-variant restrictedRegions blocklist path — this
   // merchant-level allowlist must not collide with that demo).
   servesRegions: ['US', 'CA', 'HI', 'AK', 'NY'],
+  // RAOS-0003 (2026-08-12): required field.
+  timezone: 'America/Los_Angeles',
   capabilities: [],
   manifest: {
     protocol: '1.0',
@@ -170,6 +172,8 @@ export const MERCHANT_B: MerchantProfile = {
   // RAOS-0001 OQ-2 (2026-08-01): required field. Every recipe that uses this
   // fixture (0007-quote, 0008-trust) exercises marketRegion: 'US' only.
   servesRegions: ['US'],
+  // RAOS-0003 (2026-08-12): required field.
+  timezone: 'America/Chicago',
   capabilities: [],
   manifest: {
     protocol: '1.0',

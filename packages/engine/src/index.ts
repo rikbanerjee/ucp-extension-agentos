@@ -35,6 +35,12 @@ export { evaluateOffer } from '@/lib/extensions/pipeline';
 // Evaluator-level configuration hooks used by callers before invoking evaluateOffer.
 export { setInventoryHolds } from '@/lib/extensions/evaluators/inventory';
 export { setQuoteMeta } from '@/lib/extensions/evaluators/quote';
+// RAOS-0003 (2026-08-12): merchant-timezone threading hook for the
+// FEASIBILITY-stage evaluator — same module-level-slot pattern as
+// setInventoryHolds/setQuoteMeta above. evaluateOffer calls this
+// automatically from merchant.timezone; exported for callers that invoke
+// the FEASIBILITY evaluator directly outside the pipeline.
+export { setFulfillmentMerchantTimezone } from '@/lib/extensions/evaluators/fulfillment';
 export type {
   DecisionRecord,
   EvaluateOfferInput,
@@ -82,6 +88,7 @@ export type {
 export type {
   EligibilityRules,
   FulfillmentConstraints,
+  ComputedFulfillmentFeasibility,
 } from '@/lib/types/extensions';
 
 export type { InventoryConfig } from '@/lib/types/inventory';

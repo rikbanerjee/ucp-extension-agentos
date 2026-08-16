@@ -24,20 +24,52 @@ export type { ReasonEntry as ExtensionReasonEntry };
 // ---------------------------------------------------------------------------
 
 /**
- * The five pipeline stages in their fixed evaluation order.
+ * The six pipeline stages in their fixed evaluation order.
  * An extension belongs to exactly one stage.
+ *
+ * RAOS-0003 (2026-08-12, engine 0.3.0, BREAKING): added `FEASIBILITY`,
+ * reordering the pipeline. See STAGE_ORDER doc comment below for the
+ * architectural call and its justification — recorded here, not only in
+ * the spec, because this is a shared contract every stage depends on.
  */
 export type PipelineStage =
   | 'VISIBILITY'
   | 'ELIGIBILITY'
+  | 'FEASIBILITY'
   | 'PRICE'
   | 'FULFILLMENT'
   | 'QUOTE';
 
-/** Fixed evaluation order — no extension may change this. */
+/**
+ * Fixed evaluation order — no extension may change this.
+ *
+ * RAOS-0003 (2026-08-12, engine 0.3.0, BREAKING): was
+ * `VISIBILITY → ELIGIBILITY → PRICE → FULFILLMENT → QUOTE`. `FULFILLMENT`
+ * (mode/region/carrier/lead-time/cutoff feasibility) ran AFTER `PRICE`,
+ * which meant computing a price for an item that cannot reach the buyer at
+ * all — wasted work, and a confusing trace where a price sits next to a
+ * hard, unconditional block. Every RAOS-0003 v1 reason code is `BLOCK`
+ * severity with no resolution path (dead-end-cart, same class as
+ * `ELIGIBILITY`), so it belongs where `ELIGIBILITY` belongs: before `PRICE`.
+ *
+ * THE CALL: a new `FEASIBILITY` stage is inserted between `ELIGIBILITY` and
+ * `PRICE`, carrying deterministic "can this reach this buyer at all" checks
+ * (mode, region, hazmat/oversize, lead-time-vs-need-by, cutoff — RAOS-0003
+ * §6). The renamed-in-place old `FULFILLMENT` stage is KEPT, empty for now,
+ * in its original position after `PRICE` — reserved for a future concern
+ * that genuinely depends on price and weight and therefore cannot run
+ * earlier: shipping-COST computation. Splitting "can we ship it" (early,
+ * feasibility) from "what does shipping it cost" (late, depends on price)
+ * is the future-proof shape: a stage-per-concern model rather than two
+ * unrelated things sharing one stage by the accident of a shared word
+ * ("fulfillment"). See `specs/0003-fulfillment.md` §2 for the full
+ * write-up and the alternative considered (folding feasibility into
+ * `ELIGIBILITY`) and rejected.
+ */
 export const STAGE_ORDER: readonly PipelineStage[] = [
   'VISIBILITY',
   'ELIGIBILITY',
+  'FEASIBILITY',
   'PRICE',
   'FULFILLMENT',
   'QUOTE',

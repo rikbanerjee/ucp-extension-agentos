@@ -80,9 +80,70 @@ export interface BulkPricing {
   purchaseLimit?: number;
 }
 
+/**
+ * RAOS-0003 · Fulfillment Feasibility config (per-variant).
+ *
+ * `availableModes` and `restrictedRegions` MOVED here from RAOS-0001's
+ * ownership (2026-08-12, engine 0.3.0, breaking) — the shape and field names
+ * are unchanged, only which evaluator reads and reasons about them. See
+ * `specs/0003-fulfillment.md` §3/§8 and `specs/0001-eligibility.md` §11
+ * changelog for the migration write-up.
+ */
 export interface FulfillmentConstraints {
+  /** Fulfillment modes this variant can be fulfilled through. Absent = no mode restriction. */
   availableModes?: import('./context').FulfillmentMode[];
-  restrictedRegions?: string[]; // e.g., states or country codes where it cannot be sold
+  /**
+   * Regions this SPECIFIC VARIANT cannot reach, even though the merchant
+   * generally serves the buyer's region (`MerchantProfile.servesRegions`,
+   * RAOS-0001 §9.6 — unchanged, untouched by this migration). Emits
+   * `REGION_NOT_SERVED` (RAOS-0003), a deliberately distinct code from
+   * RAOS-0001's `REGION_RESTRICTED` (merchant-level: "we don't do business
+   * in this region at all"). e.g. states or country codes where it cannot be sold.
+   */
+  restrictedRegions?: string[];
+  /**
+   * Hazmat-classified item. In v1, hazmat items are deterministically not
+   * shippable via the `shipping` (parcel-carrier) mode — pickup and
+   * local_delivery remain available. Emits `HAZMAT_RESTRICTION`.
+   */
+  hazmat?: boolean;
+  /**
+   * Oversize/freight item that a standard parcel carrier cannot move. In v1,
+   * oversize items are deterministically not shippable via the `shipping`
+   * mode. Emits `OVERSIZE_RESTRICTION`.
+   */
+  oversize?: boolean;
+  /**
+   * Minimum whole days between order and earliest possible fulfillment,
+   * evaluated against the merchant's local calendar date (`MerchantProfile.
+   * timezone`) and `BuyerContext.needByDate`. Absent = no lead-time
+   * constraint. Emits `LEAD_TIME_EXCEEDS_NEED_BY` when the buyer's
+   * `needByDate` is asserted AND is earlier than `today + leadTimeDays`
+   * (both evaluated in the merchant's local calendar).
+   */
+  leadTimeDays?: number;
+  /**
+   * Local hour (0–23, merchant timezone) after which same-day fulfillment
+   * (`pickup` / `local_delivery`) can no longer be promised for THIS
+   * evaluation instant. Absent = no cutoff constraint. Emits `CUTOFF_PASSED`
+   * when the buyer's `fulfillmentMode` is `pickup` or `local_delivery` and
+   * the merchant-local hour at the injected `now` is `>= cutoffHourLocal`.
+   */
+  cutoffHourLocal?: number;
+}
+
+/**
+ * RAOS-0003 · Computed fulfillment-feasibility output.
+ *
+ * Deliberately two-state (`FEASIBLE | BLOCKED`), unlike `ComputedEligibility`'s
+ * three states — every RAOS-0003 v1 reason code is `BLOCK` severity with no
+ * `requirements[]` path (see `specs/0003-fulfillment.md` §6), so a
+ * `CONDITIONAL` state would never be reachable. Reintroduce it only if a
+ * future, resolvable fulfillment code is added.
+ */
+export interface ComputedFulfillmentFeasibility {
+  status: 'FEASIBLE' | 'BLOCKED';
+  reasons: EligibilityReason[];
 }
 
 export interface PromoTier {

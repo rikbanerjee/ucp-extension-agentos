@@ -159,13 +159,20 @@ result for identical inputs.
 In dependency order: 0010 Subscriptions (← 0009) · 0015 Privacy · 0014 Returns · then 0013 pt 2
 Intent-capture routing (← 0015). Briefs: `MASTER-BUILD-PLAN.md` WP-12…WP-18.
 
-**Reclassified — write as adapters, not as rival specs:** 0003 Fulfillment Feasibility, 0012
-Cart Bridge, and 0004 Discovery/Match sit directly over ground UCP already occupies or is
-moving into (`dev.ucp.shopping.fulfillment` and `dev.ucp.shopping.discount` both extend
-`dev.ucp.shopping.checkout`; catalog search is native). The defensible RAOS contribution in
-these three is **only** the catalog-time / pre-cart evaluation, handing off to the native
-`dev.ucp.*` shapes at checkout. Do not re-specify what UCP already expresses; specify the
-shift-left and map to theirs.
+**Reclassified — write as adapters, not as rival specs:** 0012 Cart Bridge and 0004
+Discovery/Match sit directly over ground UCP already occupies or is moving into
+(`dev.ucp.shopping.discount` extends `dev.ucp.shopping.checkout`; catalog search is native). The
+defensible RAOS contribution in these two is **only** the catalog-time / pre-cart evaluation,
+handing off to the native `dev.ucp.*` shapes at checkout. Do not re-specify what UCP already
+expresses; specify the shift-left and map to theirs.
+
+**0003 Fulfillment Feasibility — SHIPPED (2026-08-12), promoted Tier 4 → Tier 1.** Was
+reclassified here alongside 0012/0004 (same `dev.ucp.shopping.fulfillment` adapter-not-rival-spec
+concern); superseded by `work-packages/RAOS-0003-fulfillment-brief.md`, which scoped v1 to
+deterministic, merchant-owned feasibility only — no `dev.ucp.shopping.fulfillment` handoff
+built, no live-capacity/checkout-time surface claimed. See `specs/0003-fulfillment.md` §3 Scope
+and §9.1 (the provider-delegation extension point, designed but unbuilt) for where that
+UCP-adapter question actually lives now.
 
 ---
 

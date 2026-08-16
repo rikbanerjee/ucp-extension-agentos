@@ -48,7 +48,7 @@ stages. An agent's request runs through all five in order; each stage can only m
 *more* restrictive, never reorder itself:
 
 ```
-VISIBILITY  →  ELIGIBILITY  →  PRICE  →  FULFILLMENT  →  QUOTE
+VISIBILITY  →  ELIGIBILITY  →  FEASIBILITY  →  PRICE  →  FULFILLMENT  →  QUOTE
 (can they    (can they buy    (what do   (can it get      (is the price
  see it?)     it, and why     they pay,   to them?)         locked?)
               not?)           and why?)
@@ -89,11 +89,12 @@ work lands); the verified-vs-asserted line is [`../VERIFICATION-NEEDED.md`](../V
 Summary as of 2026-07-04:
 
 - **Built, tested, wired into the Playground:** 0000 (foundations), 0001 (eligibility),
-  0002 (contextual pricing), 0005 (inventory), 0007 (quote integrity), 0008 (trust/
+  0002 (contextual pricing), 0003 (fulfillment feasibility — added 2026-08-12, promoted
+  Tier 4 → Tier 1), 0005 (inventory), 0007 (quote integrity), 0008 (trust/
   provenance), 0013 pt 1 (three-audience decision trace). Each has a plain-language page
   under [`wiki/`](./wiki/).
 - **Planned, each with a problem statement + task list** under
-  [`wiki/pending/`](./wiki/pending/): 0003, 0004, 0006, 0009, 0010, 0011, 0012, 0013 pt 2,
+  [`wiki/pending/`](./wiki/pending/): 0004, 0006, 0009, 0010, 0011, 0012, 0013 pt 2,
   0014, 0015. Build order: [`BUILD-PLAN.md`](./BUILD-PLAN.md).
 - **Explicitly V2:** multi-currency/i18n, cross-merchant cart (`TODO.md`).
 

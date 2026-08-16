@@ -44,6 +44,8 @@ const SAMPLE_PROFILE: MerchantProfile = {
   // Per TRACK-B-FOR-THECUSTOMHUB.md §B2: the merchant declares its region
   // allowlist on the profile. OQ-1 fix: this now surfaces on the manifest.
   servesRegions: ['US', 'CA'],
+  // RAOS-0003 (2026-08-12): required field.
+  timezone: 'America/New_York',
   capabilities: [],
   manifest: {
     protocol: '1.0',

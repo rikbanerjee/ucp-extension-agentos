@@ -17,21 +17,22 @@ export function calculateVisibility(variant: Variant, context: BuyerContext): Co
     };
   }
 
-  // Fulfillment Constraints mapping to Visibility
-  const fulfillment = variant.fulfillmentConstraints;
-  if (fulfillment?.restrictedRegions && fulfillment.restrictedRegions.includes(context.marketRegion)) {
-    return {
-      status: 'HIDDEN',
-      reason: `This product is not available in ${context.marketRegion}.`
-    };
-  }
+  // NOTE (2026-08-12, RAOS-0003 migration, engine 0.3.0 — BREAKING): the
+  // fulfillmentConstraints.restrictedRegions → HIDDEN mapping that used to
+  // live here has been REMOVED, not relocated 1:1. RAOS-0003 owns
+  // restrictedRegions now and evaluates it in the new FEASIBILITY stage as
+  // a BLOCKED (not HIDDEN) reason — the agent sees the item and can explain
+  // why it can't be fulfilled there, rather than the item silently
+  // disappearing. See specs/0001-eligibility.md §11 changelog and
+  // specs/0003-fulfillment.md §3/§8 for the full write-up, and RAOS-0001
+  // OQ#3 (§9) for the underlying HIDDEN-vs-BLOCKED debate this migration
+  // takes a side on for the variant-level case specifically.
 
   return { status: 'VISIBLE' };
 }
 
 export function calculateEligibility(variant: Variant, context: BuyerContext): ComputedEligibility {
   const rules = variant.eligibilityRules;
-  const fulfillment = variant.fulfillmentConstraints;
 
   // Guest visibility gate → item is hidden entirely
   if (rules?.hideFromGuests && context.customerType === 'guest') {
@@ -48,20 +49,19 @@ export function calculateEligibility(variant: Variant, context: BuyerContext): C
     };
   }
 
-  // Region restriction → distinct code so agents can explain it
-  if (fulfillment?.restrictedRegions?.includes(context.marketRegion)) {
-    const reason: EligibilityReason = {
-      code: 'REGION_RESTRICTED',
-      message: `This product is not available in ${context.marketRegion}.`,
-      severity: 'BLOCK',
-      blocking: true,
-      source: ELIGIBILITY_NAMESPACE,
-    };
-    return {
-      status: deriveEligibilityStatus([reason]),
-      reasons: [reason],
-    };
-  }
+  // NOTE (2026-08-12, RAOS-0003 migration): the fulfillmentConstraints.
+  // restrictedRegions → REGION_RESTRICTED check that used to run here
+  // (unconditionally, before the `!rules` early return below) has been
+  // REMOVED — this is also the fix for the pinned WP-00 asymmetry
+  // (specs/0001-eligibility.md §7 "Known reference-implementation
+  // asymmetry"): FULFILLMENT_UNAVAILABLE was unreachable for a variant with
+  // no eligibilityRules because this function early-returned before the
+  // availableModes check. Both restrictedRegions and availableModes now
+  // live exclusively in RAOS-0003's evaluateFulfillmentFeasibility
+  // (src/lib/rules/fulfillment.ts), which has NO such early-return — every
+  // variant with fulfillmentConstraints is checked regardless of whether it
+  // also carries eligibilityRules. The bug is resolved by the checks no
+  // longer sharing a function with the early-return that caused it.
 
   const reasons: EligibilityReason[] = [];
 
@@ -111,15 +111,11 @@ export function calculateEligibility(variant: Variant, context: BuyerContext): C
     }
   }
 
-  if (fulfillment?.availableModes && !fulfillment.availableModes.includes(context.fulfillmentMode)) {
-    reasons.push({
-      code: 'FULFILLMENT_UNAVAILABLE',
-      message: `This product is not available for ${context.fulfillmentMode.replace('_', ' ')}.`,
-      severity: 'BLOCK',
-      blocking: true,
-      source: ELIGIBILITY_NAMESPACE,
-    });
-  }
+  // NOTE (2026-08-12, RAOS-0003 migration): the availableModes check that
+  // used to run here has MOVED to evaluateFulfillmentFeasibility
+  // (src/lib/rules/fulfillment.ts), emitting FULFILLMENT_MODE_UNAVAILABLE
+  // (renamed from FULFILLMENT_UNAVAILABLE) under the fulfillment_constraints
+  // namespace. See specs/0001-eligibility.md §11 changelog.
 
   return {
     status: deriveEligibilityStatus(reasons),

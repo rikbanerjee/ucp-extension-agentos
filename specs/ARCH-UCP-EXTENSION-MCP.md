@@ -38,7 +38,7 @@ RetailAgentOS today is a **set of pure, deterministic rule functions** (`src/lib
 - **`extensions.ts`** — defines both the **input configs** (`EligibilityRules`, `MemberPricing`, `BulkPricing`, `FulfillmentConstraints`, `PromoPricing`) and the **computed output contracts** (`ComputedVisibility`, `ComputedEligibility`, `ComputedPriceState`, `CartValidationResult`). Also defines the **single context object `PricingContext`** (customer type, tier, region, fulfillment mode, flags, and an unused `activeExtensions: string[]`).
 
 ### 1.2 The rule engine (`src/lib/rules/`)
-- **`eligibility.ts`** — `calculateVisibility()` then `calculateEligibility()`. Pure functions. Hard-codes the order: guest gate → region → wholesale → resale cert → tier → fulfillment mode. Emits structured `EligibilityReason[]` with codes (`HIDDEN_PRODUCT`, `REGION_RESTRICTED`, `WHOLESALE_ONLY`, `RESALE_CERTIFICATE_REQUIRED`, `TIER_RESTRICTION`, `FULFILLMENT_UNAVAILABLE`).
+- **`eligibility.ts`** — `calculateVisibility()` then `calculateEligibility()`. Pure functions. Hard-codes the order: guest gate → wholesale → resale cert → tier. Emits structured `EligibilityReason[]` with codes (`HIDDEN_PRODUCT`, `REGION_RESTRICTED` [merchant-level `servesRegions` only, RAOS-0001 §9.6], `WHOLESALE_ONLY`, `RESALE_CERTIFICATE_REQUIRED`, `TIER_RESTRICTION`). Region (variant-level) and fulfillment-mode checks MOVED to RAOS-0003's `fulfillment.ts` (2026-08-12, engine 0.3.0) — see `specs/0001-eligibility.md` §11 changelog.
 - **`pricing.ts`** — `getApplicablePrice()`. Hard-codes precedence **member → bulk → promo (last wins)**. This is exactly the precedence questions.md B4 wants to make *declarable* (default: priority ladder + `stackable`/`exclusive` flags).
 - **`cartValidation.ts`** — composes the above per line into a `CartValidationResult`.
 
@@ -117,7 +117,10 @@ An extension is a value implementing this contract. (Types shown for precision; 
 interface UcpExtension<TConfig, TResult extends ExtensionResult> {
   namespace: string;          // "com.os.retailagent.shopping.eligibility"
   version: string;            // semver, e.g. "1.1.0"
-  stage: PipelineStage;       // VISIBILITY | ELIGIBILITY | PRICE | FULFILLMENT | QUOTE
+  stage: PipelineStage;       // VISIBILITY | ELIGIBILITY | FEASIBILITY | PRICE | FULFILLMENT | QUOTE
+                               // (FEASIBILITY added 2026-08-12 by RAOS-0003 — see
+                               // src/lib/extensions/contract.ts STAGE_ORDER doc comment
+                               // for the reordering decision and its justification)
   priority: number;           // ordering WITHIN a stage (lower = earlier)
   reasonCodes: readonly string[]; // the registry this extension owns
 

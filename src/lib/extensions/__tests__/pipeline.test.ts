@@ -53,6 +53,8 @@ const BASE_MERCHANT: MerchantProfile = {
   endpoints: { catalog: '', cart: '', checkout: '' },
   // RAOS-0001 OQ-2 (2026-08-01): required field. Matches BASE_CONTEXT.marketRegion.
   servesRegions: ['CA'],
+  // RAOS-0003 (2026-08-12): required field.
+  timezone: 'UTC',
   capabilities: [],
   manifest: {
     protocol: '1.0',

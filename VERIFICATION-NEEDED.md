@@ -8,6 +8,19 @@ of** re-deriving these facts from the source tree by hand.
 
 **Verified as of:** 2026-07-04, this session, `aarch64` sandbox, Node v22.22.3.
 
+**2026-08-12 refresh (RAOS-0003 · Fulfillment Feasibility, promoted Tier 4 → Tier 1):** new spec
+built end-to-end — types, pure reference impl (`src/lib/rules/fulfillment.ts`), a new
+`FEASIBILITY` pipeline stage, Playground wiring, spec page, and mock catalog/merchant data. Six
+new reason codes; `MerchantProfile.timezone` is now required (same shape of breaking change as
+`servesRegions` in 0.2.0) and `BuyerContext.needByDate?` is new. RAOS-0001's
+`FULFILLMENT_UNAVAILABLE` is deprecated (no dual-emit, superseded by
+`FULFILLMENT_MODE_UNAVAILABLE`) and `REGION_RESTRICTED` is narrowed (variant-level region blocks
+now emit the distinct `REGION_NOT_SERVED`) — full write-up in `specs/0001-eligibility.md` §11
+v2.0.0 and `specs/0003-fulfillment.md` §11. Engine bumped 0.2.0 → 0.3.0
+(`packages/engine/CHANGELOG.md`). §1.1 and §1.2 below are updated in place; the marketing/
+build failure in §2 is unchanged (confirmed still pre-existing, not introduced by this pass —
+see §1.2's note).
+
 **2026-08-01 refresh (Q2b — OQ-1/OQ-2 kit defects, `specs/BUILD-PLAN.md` §1):** the two kit
 defects the Track B pilot audit surfaced (lossy manifest projection; region allowlist
 unenforced by `evaluateOffer`) are fixed. `MerchantProfile.servesRegions` is now required — a
@@ -27,9 +40,44 @@ context where useful.
 
 ## 1. Confirmed by actually running things (not just reading code)
 
-### 1.1 Test suite — ✅ VERIFIED
+### 1.1 Test suite — ✅ VERIFIED for `src/` · 1 known, documented failure in out-of-scope `marketing/`
 
-**2026-08-01 (Q2b, engine 0.2.0):**
+**2026-08-12 (RAOS-0003, engine 0.3.0):**
+```
+npm test   # vitest run --coverage (repo default — includes gitignored marketing/)
+Test Files  1 failed | 14 passed (15)
+     Tests  1 failed | 361 passed (362)
+  Duration  1.70s
+
+npx vitest run --exclude "marketing/**"   # scoped to src/ — this WP's actual scope
+Test Files  14 passed (14)
+     Tests  352 passed (352)
+```
+352/352 in `src/` (up from 348 on 2026-08-01, which was itself scoped to `src/` — same
+comparison basis). New: `src/lib/rules/__tests__/fulfillment.test.ts` (20 tests — one per
+RAOS-0003 reason code, an absent-`needByDate`-never-blocks case, two graceful-degradation
+cases, a multi-reason accumulation case, and the ELIGIBILITY-precedence-over-FEASIBILITY case
+via `evaluateOffer`). `behaviors.test.ts` net -6 tests: its old
+`FULFILLMENT_UNAVAILABLE`/`REGION_RESTRICTED`-for-fulfillmentConstraints describe blocks (10
+tests documenting the now-removed pinned dead-path bug) replaced with 3 tests documenting the
+migration to RAOS-0003 (a net reduction — those tests moved their real assertions to
+`fulfillment.test.ts` rather than duplicating them). `golden.test.ts` gains 2 tests (RAOS-0003
+coverage, RAOS-0003 dead-path resolution) and loses none. Golden fixtures regenerated
+(`UPDATE_GOLDEN=1`): 1,122 entries (up from 1,034), covering four new mock catalog products
+(hazmat/oversize on Wholesale B, lead-time/cutoff on Grocery C) plus the RAOS-0003
+`feasibility`/`feasibilityReasons` fields added to every entry.
+
+**The 1 marketing/ failure is a real, DOCUMENTED consequence of this pass's breaking change**,
+not a flake: `marketing/partners/parallel/demo/scenario.test.ts` asserts a variant-level
+region-restricted item emits `REGION_RESTRICTED` via `evaluateOffer`. Per this WP's migration,
+that emission now correctly comes from RAOS-0003's `REGION_NOT_SERVED` instead (see
+`specs/0001-eligibility.md` §11 v2.0.0 — `REGION_RESTRICTED` is narrowed to the merchant-level
+`servesRegions` gate only). `marketing/` is gitignored (`.gitignore:41`) and explicitly
+out-of-scope per this WP's brief ("do not fix it, do not let it block you") — flagged here as a
+downstream-consumer heads-up, not fixed in this pass.
+
+<details><summary>2026-08-01 result (superseded)</summary>
+
 ```
 npm test   # vitest run --coverage
 Test Files  14 passed (14)
@@ -65,7 +113,23 @@ relative to this real count; not re-touched in this pass beyond confirming 328 s
 
 ### 1.2 TypeScript — ✅ clean for `src/` (repo-wide `tsc` has a pre-existing, unrelated `marketing/` failure — see §2)
 
-**2026-08-01 (Q2b, engine 0.2.0):**
+**2026-08-12 (RAOS-0003, engine 0.3.0):**
+```
+npx tsc --noEmit -p .
+(zero output for everything under src/ and packages/engine/)
+marketing/partners/parallel/demo/ingest.ts(245,22): error TS2741 — pre-existing, see §2
+```
+Same pre-existing `ingest.ts:245` error as 2026-08-01 (identical file/line/message — the
+`ReasonEntry.blocking` fixture-literal gap, untouched by this pass). `npm run build`'s
+repo-wide type-check step (not scoped to `src/`) surfaces the same error and fails there too —
+expected and unchanged from 2026-08-01's documented state (§1.5). `marketing/`'s SECOND
+pre-existing error (`scenario.test.ts:43`, an unrelated `MembershipTier` literal typo) is masked
+this pass by a NEW, real, DOCUMENTED `scenario.test.ts` test failure at runtime (not a type
+error — see §1.1) caused by this WP's `REGION_RESTRICTED` narrowing; both are the same
+out-of-scope file.
+
+<details><summary>2026-08-01 result (superseded)</summary>
+
 ```
 npx tsc --noEmit -p .
 (zero output for everything under src/ and packages/engine/)
@@ -75,6 +139,8 @@ marketing/partners/parallel/demo/scenario.test.ts(43,3): error TS2322 — pre-ex
 Confirmed pre-existing (not introduced this pass) via `git stash -u && npx tsc --noEmit -p .` —
 identical errors on the unmodified branch. `marketing/` is gitignored
 (`.gitignore:41`) and out of scope for this task. Full detail in §2.
+
+</details>
 
 <details><summary>2026-07-04 result (superseded — repo had no marketing/ tsc errors at that time)</summary>
 

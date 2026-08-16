@@ -2,7 +2,7 @@
 
 **Extension namespace:** `com.os.retailagent.shopping.eligibility`
 **Status:** Draft · Request for Comment
-**Version:** 1.1.0
+**Version:** 2.0.0
 **Layer:** RetailAgentOS extension on top of UCP (Universal Commerce Protocol)
 **Reference implementation:** [`src/lib/rules/eligibility.ts`](../src/lib/rules/eligibility.ts) — runnable in the [Playground](../src/app/demo/page.tsx)
 **Author:** Rik Banerjee · rikbanerjee007@gmail.com
@@ -50,9 +50,17 @@ first and most reusable instance of that idea.
 evaluating them against buyer context; emitting computed, reasoned results.
 
 **Out of scope (other specs):** price computation (`ext.bulk_pricing`, `ext.member_pricing`,
-`ext.promo_pricing`), and deep fulfillment logic (`ext.fulfillment_constraints`). This spec
-*consumes* a fulfillment signal for visibility/eligibility but does not define fulfillment
-semantics.
+`ext.promo_pricing`), and fulfillment feasibility (`ext.fulfillment_constraints` — RAOS-0003,
+promoted Tier 4 → Tier 1 on 2026-08-12).
+
+**Migration note (v2.0.0, 2026-08-12, engine 0.3.0 — BREAKING):** prior to this version, this
+spec's reference implementation *also* evaluated a variant's `fulfillmentConstraints`
+(`availableModes`, `restrictedRegions`) inline, despite this section always having scoped that
+logic to a future fulfillment spec ("consumes a fulfillment signal... does not define fulfillment
+semantics"). RAOS-0003 now exists and owns both checks exclusively — they have been REMOVED from
+`calculateVisibility`/`calculateEligibility`, not merely relocated behind a re-export. See §6, §7,
+and §11 below for the full write-up. This section's original scope line was correct the whole
+time; the implementation is now consistent with it.
 
 ---
 
@@ -168,12 +176,32 @@ Messages are localizable; codes are stable. Each entry uses the unified `ReasonE
 | Code | Meaning | Severity | Source namespace | Resolvable? |
 |------|---------|----------|-----------------|-------------|
 | `HIDDEN_PRODUCT` | Item is not visible in this context (guest visibility gate) | `BLOCK` | `…eligibility` | No |
-| `REGION_RESTRICTED` | Not available in the buyer's market region | `BLOCK` | `…eligibility` | No |
+| `REGION_RESTRICTED` | Merchant-level: this merchant does not serve the buyer's market region **at all** (`MerchantProfile.servesRegions`, §9.6) | `BLOCK` | `…eligibility` | No |
 | `WHOLESALE_ONLY` | Requires a wholesale or B2B account | `BLOCK` | `…eligibility` | Yes — become a wholesale account |
 | `RESALE_CERTIFICATE_REQUIRED` | Resale certificate must be on file | `BLOCK` | `…eligibility` | Yes — upload certificate |
 | `TIER_RESTRICTION` | Requires a higher membership tier | `BLOCK` + `requirements[]` → derives `CONDITIONAL` | `…eligibility` | Yes — upgrade tier |
-| `FULFILLMENT_UNAVAILABLE` | Not available for the requested fulfillment mode | `BLOCK` | `…eligibility` | No (in this mode) |
+| ~~`FULFILLMENT_UNAVAILABLE`~~ | **DEPRECATED 2026-08-12 (v2.0.0).** Was: not available for the requested fulfillment mode. | n/a | n/a | n/a |
 | `REGION_POLICY_UNDECLARED` | Merchant has not declared `servesRegions` (added 2026-08-01, OQ-2 — §9.6) | `INFO` | `…eligibility` | No — merchant-side conformance gap, not buyer-resolvable |
+
+**`REGION_RESTRICTED` narrowed (2026-08-12, v2.0.0):** before this version, the SAME code was also
+emitted for a per-variant `fulfillmentConstraints.restrictedRegions` block (a different, narrower
+fact: "the merchant generally serves you, but not for this specific item"). That emission has
+moved to RAOS-0003's `REGION_NOT_SERVED` — a deliberately distinct code, not a synonym, precisely
+because these are different facts a buyer needs told apart (see `specs/0003-fulfillment.md` §3/§8).
+`REGION_RESTRICTED` now means, exclusively, the merchant-level `servesRegions` gate (§9.6).
+
+**`FULFILLMENT_UNAVAILABLE` deprecated, not dual-emitted (2026-08-12, v2.0.0):** superseded by
+RAOS-0003's `FULFILLMENT_MODE_UNAVAILABLE` (`com.os.retailagent.shopping.fulfillment_constraints`).
+Per RAOS-0000 §7.4, a deprecated code normally stays emitted for ≥1 major with a `supersededBy`
+pointer. This migration is a documented, deliberate EXCEPTION, per the explicit "no dual-emit"
+direction in this WP's brief: `FULFILLMENT_UNAVAILABLE` is a straight ownership/namespace move
+(same meaning, same semantics, new owning spec and new name), not a semantic redefinition — the
+class of defect §7.4's dual-emit window guards against (a consumer silently misreading a
+redefined code) does not apply here, because the code disappears rather than changing meaning
+under the same name. A consumer reading the old code name simply stops seeing it and should read
+`FULFILLMENT_MODE_UNAVAILABLE` instead; nothing reads `FULFILLMENT_UNAVAILABLE` with a *different*
+meaning post-migration. `supersededBy: 'FULFILLMENT_MODE_UNAVAILABLE'` is recorded here as the
+paper trail even though the field itself is no longer emitted anywhere.
 
 **Deprecated field:** The `blocking` boolean field on each reason entry is **deprecated as
 of v1.1.0**. It is still emitted, derived as `severity !== 'INFO'`, with
@@ -190,46 +218,40 @@ additive; never repurpose an existing code's meaning.*
 Deterministic. Same context + same rules → same result, every time. No model in the loop.
 
 1. **Visibility first.** If `hideFromGuests` and `customerType == guest` → `HIDDEN` (guest
-   gate). If the variant's `fulfillmentConstraints.restrictedRegions` includes the buyer's
-   `marketRegion` → `HIDDEN` (region gate). Otherwise `VISIBLE`.
-2. **If `HIDDEN` (guest gate)** → eligibility is `BLOCKED` with `HIDDEN_PRODUCT` reason.
-   Stop.
-3. **If `HIDDEN` (region gate)** → eligibility is `BLOCKED` with `REGION_RESTRICTED` reason.
-   Stop.
-4. **If the variant has no `eligibilityRules`** → return `ELIGIBLE` immediately. The region
-   and fulfillment checks in steps 1–3 have already passed; no further rules apply.
-5. **Otherwise evaluate each rule, accumulating reasons:**
+   gate). Otherwise `VISIBLE`.
+2. **If `HIDDEN`** → eligibility is `BLOCKED` with `HIDDEN_PRODUCT` reason. Stop.
+3. **If the variant has no `eligibilityRules`** → return `ELIGIBLE` immediately.
+4. **Otherwise evaluate each rule, accumulating reasons:**
    - `requireWholesale` and buyer is not `wholesale`/`b2b` → add `WHOLESALE_ONLY` (`BLOCK`).
    - `requireResaleCertificate` and `resaleCertificateOnFile === false` → add
      `RESALE_CERTIFICATE_REQUIRED` (`BLOCK` + `requirements[]`).
    - `requiredTier` not met (using ordered ladder `none < gold < reseller_plus < distributor`)
      → add `TIER_RESTRICTION` (`BLOCK` + `requirements[]` → status derives to `CONDITIONAL`).
-   - `fulfillmentConstraints.availableModes` is set and `fulfillmentMode` not in it → add
-     `FULFILLMENT_UNAVAILABLE` (`BLOCK`).
-6. **Derive final status** per RAOS-0000 §8.1 (see §5.2 above).
+5. **Derive final status** per RAOS-0000 §8.1 (see §5.2 above).
 
-### Known reference-implementation asymmetry (pinned, WP-00)
+**Merchant-level `servesRegions` is not in this algorithm** — it is evaluated once per merchant,
+before this per-variant algorithm ever runs, as a short-circuit in `evaluateOffer` (§9.6). A
+region-restricted merchant never reaches step 1.
 
-Step 4 above introduces a **deliberate asymmetry** between `calculateVisibility` and
-`calculateEligibility` in the reference implementation:
+### Known reference-implementation asymmetry — RESOLVED (2026-08-12, v2.0.0, engine 0.3.0)
 
-- **`calculateVisibility`** returns `VISIBLE` immediately for variants with no
-  `eligibilityRules`, skipping the region check entirely. A variant without
-  `eligibilityRules` is therefore *always* visible — region-hiding does not apply.
-- **`calculateEligibility`** catches `REGION_RESTRICTED` regardless of `eligibilityRules`,
-  because the region check runs before the early-return (steps 1–3 precede step 4).
+Prior to this version, this section documented a **pinned WP-00 asymmetry**: `calculateVisibility`
+returned `VISIBLE` immediately for variants with no `eligibilityRules` (skipping a region check
+that used to live here), while `calculateEligibility` caught `REGION_RESTRICTED` regardless of
+`eligibilityRules` — and, as a further consequence, `FULFILLMENT_UNAVAILABLE` was **unreachable**
+for a variant with no `eligibilityRules`, because the function returned `ELIGIBLE` before ever
+reaching the `availableModes` check.
 
-The practical consequence is that `FULFILLMENT_UNAVAILABLE` is currently **unreachable** for a
-variant with no `eligibilityRules`: the function returns `ELIGIBLE` at step 4 before
-evaluating fulfillment mode. `REGION_RESTRICTED` is always reachable (handled in step 3).
-
-This is a **known quirk of the reference implementation**, not a design intention. It will be
-corrected when the evaluation logic is refactored into the formal VISIBILITY and ELIGIBILITY
-pipeline stages (ARCH §3–§5). It is documented here so that consumers of the reference
-implementation are not surprised, and so the pipeline-stage refactor has a clear acceptance
-criterion: after the refactor, a variant without `eligibilityRules` that is region-restricted
-must return `HIDDEN` / `BLOCKED [REGION_RESTRICTED]`, matching the behavior for variants that
-carry `eligibilityRules`.
+**Resolution:** RAOS-0003 (this same work package) removed BOTH the region check and the
+fulfillment-mode check from this module entirely, rather than reordering them to fix the
+early-return. They now live exclusively in `evaluateFulfillmentFeasibility`
+(`src/lib/rules/fulfillment.ts`), which has no `eligibilityRules`-gated early return — every
+variant with `fulfillmentConstraints` is checked regardless of whether it also carries
+`eligibilityRules`. The asymmetry is resolved by the two checks no longer sharing a function with
+the early return that caused it, not by reordering steps inside this function. See
+`specs/0003-fulfillment.md` §3/§8 for the acceptance criteria this satisfies, and the "Eligibility:
+variant-level restrictedRegions/availableModes moved to RAOS-0003" tests in
+`src/lib/rules/__tests__/behaviors.test.ts`.
 
 ---
 
@@ -246,23 +268,23 @@ Rules: `{ hideFromGuests: true, requireWholesale: true, requireResaleCertificate
 - **Wholesale buyer, resale cert on file** → `VISIBLE` → `Eligibility: ELIGIBLE`.
   *Agent proceeds.*
 
-### Fresh Corner Market — region & fulfillment sensitive
-Variant has `fulfillmentConstraints.restrictedRegions: ['HI']` and
-`fulfillmentConstraints.availableModes: ['pickup', 'local_delivery']`, with `eligibilityRules`
-set (so the fulfillment-mode check is reachable).
+### Fresh Corner Market — region & fulfillment sensitive (MOVED to RAOS-0003, 2026-08-12)
 
-- **Buyer in HI** → `HIDDEN` → `Eligibility: BLOCKED [REGION_RESTRICTED]`.
-  *Agent explains — "This product is not available in HI." — doesn't silently drop.*
-- **Buyer requesting `shipping`** → `VISIBLE` → `Eligibility: BLOCKED [FULFILLMENT_UNAVAILABLE]`.
-  *Agent doesn't promise shipping it can't deliver.*
+Prior to v2.0.0 this archetype lived here: a variant with `fulfillmentConstraints.
+restrictedRegions: ['HI']` and `availableModes: ['pickup', 'local_delivery']` produced `HIDDEN` /
+`BLOCKED [REGION_RESTRICTED]` for a buyer in HI, and `BLOCKED [FULFILLMENT_UNAVAILABLE]` for a
+`shipping` request. Both checks — and this worked example — now belong to RAOS-0003 (`specs/
+0003-fulfillment.md` §8), which uses the SAME Fresh Corner Market bananas variant to demonstrate
+the equivalent (now `VISIBLE` + `BLOCKED [REGION_NOT_SERVED]` / `BLOCKED
+[FULFILLMENT_MODE_UNAVAILABLE]`) behavior. See RAOS-0001 OQ#3 (§9) for the underlying
+HIDDEN-vs-BLOCKED design question this migration takes a side on for the variant-level case.
 
 ### Sara's Boutique — discovery-led, open DTC
 No `eligibilityRules`.
 
 - **Any buyer** → `VISIBLE`, `ELIGIBLE`. *Clean payload, no gates — an agent recommends
   freely.* (This archetype's gap is *discoverability*, addressed by a future spec, not
-  eligibility.) Note: per the asymmetry in §7, region checking does not apply to variants
-  without `eligibilityRules` in the current reference implementation.
+  eligibility.)
 
 ---
 
@@ -397,6 +419,39 @@ agent-readiness for free. The spec is the leverage.
 ---
 
 ## 11. Changelog
+
+### v2.0.0 — 2026-08-12 (RAOS-0003 fulfillment-feasibility migration — BREAKING, engine 0.3.0)
+
+**Breaking changes:**
+
+- **Variant-level `fulfillmentConstraints.availableModes` and `restrictedRegions` REMOVED from
+  `calculateVisibility`/`calculateEligibility`.** Both checks — and the `fulfillmentConstraints`
+  variant field itself — now belong exclusively to RAOS-0003 (`specs/0003-fulfillment.md`),
+  evaluated in the new `FEASIBILITY` pipeline stage. Not a re-export; the checks and their
+  reason-code emission are gone from this module's runtime behavior. See §3, §6, §7, §8 above.
+- **`FULFILLMENT_UNAVAILABLE` deprecated, NOT re-emitted (no dual-emit).** Superseded by RAOS-0003's
+  `FULFILLMENT_MODE_UNAVAILABLE`. This is a documented exception to the normal ≥1-major
+  co-emission window (RAOS-0000 §7.4) — see §6's "`FULFILLMENT_UNAVAILABLE` deprecated" note for
+  why a straight namespace/ownership move doesn't need the usual dual-emit guard.
+- **`REGION_RESTRICTED` narrowed in meaning.** Before this version it fired for BOTH the
+  merchant-level `servesRegions` gate (§9.6, UNCHANGED) and the per-variant
+  `fulfillmentConstraints.restrictedRegions` blocklist. The latter now emits RAOS-0003's
+  `REGION_NOT_SERVED` — a distinct code, not a synonym. Existing consumers filtering on
+  `REGION_RESTRICTED` alone will now see FEWER blocks for variant-level region restrictions (they
+  must also read `REGION_NOT_SERVED` from the fulfillment_constraints namespace to catch the same
+  class of case they previously caught here). No consumer relying on the merchant-level meaning is
+  affected.
+- **Known WP-00 asymmetry RESOLVED** (`FULFILLMENT_UNAVAILABLE` unreachable for a variant with no
+  `eligibilityRules`) — resolved by removing the offending checks from this module entirely rather
+  than reordering them. See §7.
+
+**Not changed:** `HIDDEN_PRODUCT`, `WHOLESALE_ONLY`, `RESALE_CERTIFICATE_REQUIRED`,
+`TIER_RESTRICTION`, `REGION_POLICY_UNDECLARED`, the merchant-level `servesRegions` short-circuit
+(§9.6), `ComputedVisibility`/`ComputedEligibility` shapes, and the `severity`/`blocking` model.
+
+**Why a major version, not a minor:** two reason codes stopped being emitted in contexts where
+they previously fired (`FULFILLMENT_UNAVAILABLE` entirely; `REGION_RESTRICTED` for the
+variant-level case) — a behavior change a minor/patch (additive-only, RAOS-0000 §7.4) cannot cover.
 
 ### v1.2.0 — 2026-08-01 (OQ-2: region-policy fork resolved)
 

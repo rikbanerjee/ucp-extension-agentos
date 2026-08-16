@@ -75,9 +75,19 @@ function merchantActionHint(code: string): string {
     case 'HIDDEN_PRODUCT':
       return 'Review hideFromGuests flag in eligibilityRules';
     case 'REGION_RESTRICTED':
-      return 'Check restrictedRegions in fulfillmentConstraints';
-    case 'FULFILLMENT_UNAVAILABLE':
+      return 'Check servesRegions on the merchant profile';
+    case 'FULFILLMENT_MODE_UNAVAILABLE':
       return 'Verify availableModes in fulfillmentConstraints';
+    case 'REGION_NOT_SERVED':
+      return 'Check restrictedRegions in fulfillmentConstraints';
+    case 'HAZMAT_RESTRICTION':
+      return 'Hazmat item — verify pickup/local_delivery is offered as an alternative to shipping';
+    case 'OVERSIZE_RESTRICTION':
+      return 'Oversize item — verify pickup/local_delivery is offered as an alternative to shipping';
+    case 'LEAD_TIME_EXCEEDS_NEED_BY':
+      return 'Review leadTimeDays in fulfillmentConstraints against typical buyer need-by dates';
+    case 'CUTOFF_PASSED':
+      return 'Review cutoffHourLocal in fulfillmentConstraints and the merchant timezone';
     case 'MEMBER_PRICE_APPLIED':
       return 'Member pricing is active — check memberPrice config';
     case 'TEASER_LOCKED':
@@ -142,9 +152,19 @@ function buyerNextStep(code: string): string | undefined {
     case 'RESALE_CERTIFICATE_REQUIRED':
       return 'Provide a resale certificate to complete your purchase';
     case 'REGION_RESTRICTED':
-      return 'This item cannot be shipped to your location';
-    case 'FULFILLMENT_UNAVAILABLE':
+      return 'This merchant does not ship to your location';
+    case 'FULFILLMENT_MODE_UNAVAILABLE':
       return 'Choose a different delivery method to proceed';
+    case 'REGION_NOT_SERVED':
+      return 'This item cannot be fulfilled at your location';
+    case 'HAZMAT_RESTRICTION':
+      return 'This item ships hazmat — choose pickup or local delivery instead';
+    case 'OVERSIZE_RESTRICTION':
+      return 'This item is oversize — choose pickup or local delivery instead';
+    case 'LEAD_TIME_EXCEEDS_NEED_BY':
+      return 'This item cannot be ready by your requested date';
+    case 'CUTOFF_PASSED':
+      return "Today's cutoff has passed — choose a later date";
     case 'OUT_OF_STOCK':
       return 'Check back later or sign up for back-in-stock alerts';
     case 'BACKORDER_AVAILABLE':

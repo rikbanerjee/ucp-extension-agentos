@@ -38,7 +38,7 @@ Every spec slots into one of six planes. Lower planes are dependencies for highe
 │  Cart Bridge (0012) · Intent Capture (0013) · Returns/Policy (0014)   │
 ├──────────────────────────────────────────────────────────────────────┤
 │  PLANE 4 · FULFILLMENT                                                 │
-│  Fulfillment Feasibility (0003)                                        │
+│  Fulfillment Feasibility (0003 ✓)                                      │
 ├──────────────────────────────────────────────────────────────────────┤
 │  PLANE 3 · PRICE & VALUE                                               │
 │  Contextual Pricing (0002) · Promo & Stacking (0006)                  │
@@ -65,7 +65,7 @@ Every spec slots into one of six planes. Lower planes are dependencies for highe
 | **0000** | Protocol Foundations, Context & Conformance | 0 | `core` | 🔴 new — write first | — |
 | **0001** | Eligibility & Visibility Semantics | 2 | `eligibility` | 🟢 draft published | Phase 1 |
 | **0002** | Contextual Pricing (member + bulk) | 3 | `member_pricing`, `bulk_pricing` | 🟡 planned | README 0002 |
-| **0003** | Fulfillment Feasibility | 4 | `fulfillment_constraints` | 🟡 planned | README 0003 |
+| **0003** | Fulfillment Feasibility | 4 | `fulfillment_constraints` | 🟢 built (2026-08-12) | README 0003 |
 | **0004** | Discovery, Catalog Semantics & Match | 1 | `discovery`, `catalog` | 🟡 planned | README 0004 |
 | **0005** | Inventory & Availability | 1 | `inventory` | 🔴 new — **gap** | — |
 | **0006** | Promotional Pricing & Stacking | 3 | `promo_pricing` | 🟡 split from 0002 | — |
@@ -101,10 +101,16 @@ claiming the full nested tier.
 | Tier | Name | Adds | What the *merchant can do* | Example retailer |
 |------|------|------|----------------------------|------------------|
 | **0** | Discoverable | 0000, 0004, 0008 | "An agent can find and correctly read my catalog." | Any store |
-| **1** | Qualified | 0001, 0005, 0011 | "No dead-end carts — only eligible, in-stock items surface." | Boutique |
+| **1** | Qualified | 0001, 0003, 0005, 0011 | "No dead-end carts — only eligible, in-stock, fulfillment-feasible items surface." | Boutique |
 | **2** | Priced | 0002, 0006, 0007 | "The right price per buyer, and it's *honored* at checkout." | Wholesale |
 | **3** | Member-aware | 0009, 0010 | "Supports member/loyalty-aware pricing, earn preview, and subscriptions." | Grocery |
-| **4** | Assisted | 0003, 0012, 0013, 0014 | "Full commerce — fulfillment, handoff, intent, returns." | Grocery chain |
+| **4** | Assisted | 0012, 0013, 0014 | "Full commerce — handoff, intent, returns." | Grocery chain |
+
+**0003 promoted Tier 4 → Tier 1 (2026-08-12):** "can this reach this buyer at all" is a
+dead-end-cart question, not an Assisted-tier nicety — see
+[`work-packages/RAOS-0003-fulfillment-brief.md`](./work-packages/RAOS-0003-fulfillment-brief.md) §1
+and `specs/README.md` for the current tier catalog (authoritative; this table is historical per the
+§0 role-change note above).
 
 **Maps to `/for-merchants` service tiers** (Audit → … → Managed Pilot): Audit assesses current
 conformance tier; each engagement tier moves a merchant up one conformance tier. This commercial
@@ -179,10 +185,33 @@ won't operate without*. Each is either its own spec or a mandatory section in ev
   tier boundary exactly met (`>=` vs `>`); negative/zero quantity; USD rounding (banker's vs
   half-up — pick one, spec it; multi-currency rounding deferred to V2); price of 0 (free sample) vs "call for price".
 
-### RAOS-0003 · Fulfillment Feasibility  `[Plane 4 — STALE, promoted to Tier 1 on 2026-08-12]`
+### RAOS-0003 · Fulfillment Feasibility  `[Plane 4 · ✓ built — promoted to Tier 1 on 2026-08-12]`
+- **Status:** BUILT (2026-08-12). Spec: [`specs/0003-fulfillment.md`](./0003-fulfillment.md).
+  Reference implementation: `src/lib/rules/fulfillment.ts`, registered as the new `FEASIBILITY`
+  pipeline stage (`STAGE_ORDER` is now `VISIBILITY → ELIGIBILITY → FEASIBILITY → PRICE →
+  FULFILLMENT → QUOTE`; the old `FULFILLMENT` stage is kept, empty, reserved for a future
+  shipping-*cost* concern that depends on `PRICE`/weight). Engine bumped to **0.3.0** (breaking —
+  see `specs/0003-fulfillment.md` changelog and `packages/engine/CHANGELOG.md`).
+- **Shipped scope (deterministic only):** mode feasibility, region (`REGION_NOT_SERVED`, distinct
+  from 0001's merchant-level `REGION_RESTRICTED`), carrier restrictions (`HAZMAT_RESTRICTION`,
+  `OVERSIZE_RESTRICTION`), lead-time vs need-by (`LEAD_TIME_EXCEEDS_NEED_BY`), same-day cutoff
+  (`CUTOFF_PASSED`). **Deferred, not v1:** live delivery-window capacity (`DELIVERY_WINDOW_FULL` —
+  fails determinism by construction) and split-shipment planning (cart-level, → RAOS-0012).
+  Provider-delegation (a fulfillment network, not the merchant, asserts feasibility) is designed as
+  an RFC in `specs/0003-fulfillment.md` §9 — not built.
+- **Precedence (was an open question below, now decided):** first-blocking-stage governs. Since
+  `ELIGIBILITY` still runs before `FEASIBILITY`, an eligibility BLOCK governs the buyer-facing
+  explanation over a feasibility BLOCK when both fire; both reasons still appear in the full trace.
+- **Breaking contract changes (affects RAOS-0000 and every spec that binds `BuyerContext`/
+  `MerchantProfile`):** `BuyerContext.needByDate?: string` — optional, additive, with a deliberate
+  documented exception to the §7.2 most-restrictive default (absent never blocks on lead time).
+  `MerchantProfile.timezone: string` — required, breaking (same precedent as `servesRegions`).
+  Both recorded in `specs/0000-foundations.md` §13. `FULFILLMENT_UNAVAILABLE` (0001) is deprecated
+  with `supersededBy`, re-sourced to 0003's namespace as `FULFILLMENT_MODE_UNAVAILABLE` — not
+  re-emitted (a documented, deliberate exception to the normal ≥1-major dual-emit window).
 > **Superseded:** see [`work-packages/RAOS-0003-fulfillment-brief.md`](./work-packages/RAOS-0003-fulfillment-brief.md)
-> for the current, run-ready agent brief. The entry below is retained only as historical scope
-> reference (its edge-case list is still accurate; its tier/plane is not).
+> for the full agent brief this was built from. The section below is retained as historical scope
+> reference only — its edge-case list is still accurate and was fully covered by the build.
 - **Goal:** deepen today's `fulfillment_constraints` from mode/region flags into real feasibility.
 - **Depends on:** 0000, 0005 (availability per location), 0001 (region → visibility/eligibility).
 - **In scope:** modes (ship/pickup/local-delivery/BOPIS), delivery windows, lead times, per-region
@@ -373,7 +402,7 @@ Consistency is the product. Each spec ships:
 - `0002` Contextual Pricing → then `0006` Promo/Stacking, `0007` Quote Lock (parallel) → `0009` Loyalty, `0010` Subscriptions.
 
 **Wave 3 — Fulfillment.**
-- `0003` Fulfillment Feasibility (needs 0005).
+- `0003` Fulfillment Feasibility (needs 0005). ✓ built 2026-08-12 — see §6.
 
 **Wave 4 — Outcomes & Handoff.**
 - `0012` Cart Bridge · `0013` Intent Capture · `0014` Returns.

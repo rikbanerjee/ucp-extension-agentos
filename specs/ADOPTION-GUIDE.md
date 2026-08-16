@@ -21,7 +21,7 @@ a reason code on every decision.
 Every decision runs through one fixed five-stage pipeline:
 
 ```
-VISIBILITY → ELIGIBILITY → PRICE → FULFILLMENT → QUOTE
+VISIBILITY → ELIGIBILITY → FEASIBILITY → PRICE → FULFILLMENT → QUOTE
 ```
 
 Same inputs → byte-identical output, always. No model in the loop, no clock reads inside
@@ -97,16 +97,18 @@ Tier 1 and already be agent-safe.
 `curl` on a product URL returns valid JSON-LD without JavaScript.
 
 ### Tier 1 · Qualified — "no dead-end carts"
-*Only eligible, in-stock items surface, with a reason for everything hidden or blocked.*
+*Only eligible, in-stock, reachable items surface, with a reason for everything hidden or blocked.*
 
 | Do | Backed by |
 |---|---|
 | Populate `eligibilityRules` on variants (visibility, region, qualification) | [RAOS-0001](./0001-eligibility.md) |
+| Populate `fulfillmentConstraints` (mode, region, hazmat/oversize, lead time, cutoff) + `MerchantProfile.timezone` | [RAOS-0003](./0003-fulfillment.md) |
 | Populate `inventory` state (+ freshness TTL, optional soft-hold reservation) | [RAOS-0005](./0005-inventory.md) |
 | Implement `BuyerContextResolver`; call `evaluateOffer` per product view / cart line | RAOS-0000 §4 |
 
-**Acceptance:** an out-of-region or out-of-stock request returns a `ReasonEntry` (e.g.
-`REGION_RESTRICTED`, `OUT_OF_STOCK`) with severity and resolution path — not a silent miss
+**Acceptance:** an out-of-region, unreachable, or out-of-stock request returns a `ReasonEntry`
+(e.g. `REGION_RESTRICTED` [merchant-level], `REGION_NOT_SERVED`/`FULFILLMENT_MODE_UNAVAILABLE`
+[item-level, RAOS-0003], `OUT_OF_STOCK`) with severity and resolution path — not a silent miss
 or a checkout failure.
 
 ### Tier 2 · Priced — "the right price per buyer, honored at checkout"
@@ -121,9 +123,10 @@ or a checkout failure.
 context-changed quote is re-quoted per your declared policy, never silently repriced.
 
 ### Tier 3 · Member-aware and Tier 4 · Assisted
-Loyalty earn/burn preview (0009), subscriptions (0010), promo stacking (0006), fulfillment
-feasibility (0003), cart handoff (0012), intent capture (0013 pt 2), returns (0014) — these
-specs are catalogued and designed but **not yet published/built**. Track their status in
+Loyalty earn/burn preview (0009), subscriptions (0010), promo stacking (0006),
+cart handoff (0012), intent capture (0013 pt 2), returns (0014) — these
+specs are catalogued and designed but **not yet published/built**. (Fulfillment feasibility,
+formerly listed here, was promoted to Tier 1 on 2026-08-12 — see above.) Track their status in
 [`README.md`](./README.md) (the catalog) and their intent pages under
 [`wiki/pending/`](./wiki/pending/). Don't build ahead of a published spec; the contracts
 may still move.

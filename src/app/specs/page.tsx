@@ -111,6 +111,18 @@ const specs: Spec[] = [
     tierBadge: 'Tier 1 · Qualified',
   },
   {
+    number: '0003',
+    title: 'Fulfillment Feasibility',
+    namespace: 'com.os.retailagent.shopping.fulfillment_constraints',
+    status: 'Draft · RFC',
+    version: '1.0.0',
+    date: 'August 2026',
+    href: '/specs/0003-fulfillment',
+    summary: 'Deterministic reach: mode, region, hazmat/oversize carrier restrictions, lead-time-vs-need-by, and same-day cutoff — surfaced before cart, not at checkout. Promoted from Tier 4 (2026-08-12): "can this reach this buyer at all" is a dead-end-cart question.',
+    group: 'tier-1',
+    tierBadge: 'Tier 1 · Qualified',
+  },
+  {
     number: '0011',
     title: 'Tax & Restricted / Regulated Goods',
     namespace: 'com.os.retailagent.shopping.tax / …restricted',
@@ -186,18 +198,6 @@ const specs: Spec[] = [
   },
   // Tier 4 · Assisted
   {
-    number: '0003',
-    title: 'Fulfillment Feasibility',
-    namespace: 'com.os.retailagent.shopping.fulfillment_constraints',
-    status: 'Planned',
-    version: null,
-    date: null,
-    href: null,
-    summary: 'Ship / pickup / local-delivery / BOPIS modes, delivery windows, lead times, hazmat/oversize restrictions, and split-shipment signaling — surfaced before cart, not at checkout.',
-    group: 'tier-4',
-    tierBadge: 'Tier 4 · Assisted',
-  },
-  {
     number: '0012',
     title: 'Cart Bridge & Checkout Handoff',
     namespace: 'com.os.retailagent.shopping.cart_bridge',
@@ -241,7 +241,7 @@ const groups: { id: TierGroupId; label: string; description: string }[] = [
   { id: 'tier-1', label: 'Tier 1 · Qualified', description: 'No dead-end carts.' },
   { id: 'tier-2', label: 'Tier 2 · Priced', description: 'The right price per buyer, honored at checkout.' },
   { id: 'tier-3', label: 'Tier 3 · Member-aware', description: 'Supports member/loyalty-aware pricing and earn preview.' },
-  { id: 'tier-4', label: 'Tier 4 · Assisted', description: 'Full commerce: fulfillment, handoff, intent, returns.' },
+  { id: 'tier-4', label: 'Tier 4 · Assisted', description: 'Full commerce: handoff, intent, returns.' },
 ];
 
 const statusStyles: Record<string, string> = {

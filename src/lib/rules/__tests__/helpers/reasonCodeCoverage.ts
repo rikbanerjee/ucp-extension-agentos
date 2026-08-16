@@ -40,6 +40,12 @@ export function collectCodesFromFixtures(fixtures: GoldenFixtures): Set<string> 
         codes.add(reason.code);
       }
     }
+    // RAOS-0003: from fulfillment feasibility reasons
+    if (entry.feasibilityReasons) {
+      for (const reason of entry.feasibilityReasons) {
+        codes.add(reason.code);
+      }
+    }
     // From validateCart → embedded eligibility
     for (const line of entry.cartValidation.lines) {
       for (const reason of line.eligibility.reasons) {
@@ -96,13 +102,19 @@ export function collectCodesFromDecisionReasons(
  * RAOS_0001_MANIFEST_ONLY_CODES below), so it can never appear in golden
  * fixtures, which only ever call calculateEligibility/evaluateOffer directly.
  */
+/**
+ * RAOS-0003 migration (2026-08-12, engine 0.3.0, BREAKING): FULFILLMENT_
+ * UNAVAILABLE removed from this list — renamed FULFILLMENT_MODE_UNAVAILABLE
+ * and re-sourced under RAOS_0003_REASON_CODES below (see
+ * specs/0001-eligibility.md §11 changelog). No dual-emit: 0001's evaluator
+ * no longer produces this code at all.
+ */
 export const RAOS_0001_REASON_CODES = [
   'HIDDEN_PRODUCT',
   'REGION_RESTRICTED',
   'WHOLESALE_ONLY',
   'RESALE_CERTIFICATE_REQUIRED',
   'TIER_RESTRICTION',
-  'FULFILLMENT_UNAVAILABLE',
   'REGION_POLICY_UNDECLARED',
 ] as const;
 
@@ -117,6 +129,26 @@ export const RAOS_0001_REASON_CODES = [
  * src/lib/projections/__tests__/projections.test.ts.
  */
 export const RAOS_0001_MANIFEST_ONLY_CODES = ['REGION_POLICY_UNDECLARED'] as const;
+
+/**
+ * RAOS-0001 codes only reachable via `evaluateOffer`'s merchant-level
+ * short-circuit (`checkServesRegion` / `servesRegions`, RAOS-0001 §9.6), not
+ * via `calculateEligibility` called directly.
+ *
+ * REGION_RESTRICTED (2026-08-12, RAOS-0003 migration): before this
+ * migration it was ALSO reachable through the (now removed)
+ * variant-level `fulfillmentConstraints.restrictedRegions` check inside
+ * `calculateEligibility`, which is how it appeared in the golden fixture
+ * grid. That check has moved to RAOS-0003 (REGION_NOT_SERVED — a
+ * deliberately distinct code, see specs/0001-eligibility.md §11). The
+ * merchant-level servesRegions path was, and remains, untouched — but
+ * golden.test.ts calls calculateEligibility directly and never
+ * evaluateOffer, so it is the ONLY path left and this test file can't
+ * observe it. Covered instead by
+ * src/lib/extensions/__tests__/pipeline.test.ts
+ * ("pipeline: region allowlist (RAOS-0001 OQ-2)").
+ */
+export const RAOS_0001_PIPELINE_ONLY_CODES = ['REGION_RESTRICTED'] as const;
 
 /**
  * The canonical RAOS-0002 reason code registry.
@@ -177,20 +209,52 @@ export const RAOS_0005_SYNTHETIC_ONLY_CODES = ['RESERVATION_EXPIRED'] as const;
 export type Raos0005ReasonCode = typeof RAOS_0005_REASON_CODES[number];
 
 /**
- * PINNED SURPRISE (WP-00): codes that are UNREACHABLE from the current mock
- * catalog. `calculateEligibility` returns early (`if (!rules) return …`)
- * before the `fulfillmentConstraints.availableModes` check, and the only
- * catalog variant with `availableModes` (v_g_003_1, bananas) has no
- * `eligibilityRules` — so FULFILLMENT_UNAVAILABLE can never be emitted for
- * any catalog variant. The code path itself is exercised via synthetic
- * variants in behaviors.test.ts. When WP-01/WP-02 make this path reachable
- * (or mock data changes), the pinning test in golden.test.ts will fail
- * loudly — move the code out of this list and into fixture coverage then.
+ * RESOLVED (2026-08-12, RAOS-0003 migration, engine 0.3.0): this list used
+ * to pin FULFILLMENT_UNAVAILABLE as permanently unreachable from the mock
+ * catalog (a WP-00 dead-path bug in the old `calculateEligibility`'s
+ * `eligibilityRules`-gated early return). The fix was to MOVE the check
+ * (renamed FULFILLMENT_MODE_UNAVAILABLE) into evaluateFulfillmentFeasibility,
+ * which has no such early return — see specs/0001-eligibility.md §11 and
+ * specs/0003-fulfillment.md §3. There is no longer a dead-code path to pin;
+ * kept as an empty tuple (not deleted) so any future reintroduction of a
+ * catalog-unreachable code has an obvious place to land, and so the export
+ * name stays stable for existing importers.
  */
-export const CATALOG_UNREACHABLE_REASON_CODES = ['FULFILLMENT_UNAVAILABLE'] as const;
+export const CATALOG_UNREACHABLE_REASON_CODES = [] as const;
 
 export type Raos0001ReasonCode = typeof RAOS_0001_REASON_CODES[number];
 export type Raos0002ReasonCode = typeof RAOS_0002_REASON_CODES[number];
+
+/**
+ * The canonical RAOS-0003 reason code registry.
+ * Source of truth: specs/0003-fulfillment.md
+ *
+ * Fixture-reachable (from the static catalog grid, via the mode/region
+ * banana variant and the hazmat/oversize wholesale variants):
+ *   FULFILLMENT_MODE_UNAVAILABLE, REGION_NOT_SERVED, HAZMAT_RESTRICTION,
+ *   OVERSIZE_RESTRICTION
+ *
+ * Synthetic-only (require BuyerContext.needByDate or a specific injected
+ * `now` relative to the merchant's local cutoff hour — not naturally
+ * produced by the static CONTEXT_GRID, which has neither):
+ *   LEAD_TIME_EXCEEDS_NEED_BY, CUTOFF_PASSED
+ * Both are exercised in src/lib/rules/__tests__/fulfillment.test.ts.
+ */
+export const RAOS_0003_REASON_CODES = [
+  'FULFILLMENT_MODE_UNAVAILABLE',
+  'REGION_NOT_SERVED',
+  'HAZMAT_RESTRICTION',
+  'OVERSIZE_RESTRICTION',
+  'LEAD_TIME_EXCEEDS_NEED_BY',
+  'CUTOFF_PASSED',
+] as const;
+
+export const RAOS_0003_SYNTHETIC_ONLY_CODES = [
+  'LEAD_TIME_EXCEEDS_NEED_BY',
+  'CUTOFF_PASSED',
+] as const;
+
+export type Raos0003ReasonCode = typeof RAOS_0003_REASON_CODES[number];
 
 /**
  * The canonical RAOS-0008 reason code registry.
