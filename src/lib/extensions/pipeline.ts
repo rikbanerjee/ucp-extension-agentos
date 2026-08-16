@@ -53,7 +53,7 @@ import { signEnvelope, buildTrustReasonEntries, TRUST_REASON_CODES, TRUST_NAMESP
 import { STAGE_TTL_DEFAULTS } from '@/lib/types/envelope';
 import type { ReasonEntry as TrustReasonEntry } from '@/lib/types/reasons';
 import { checkServesRegion } from '@/lib/rules/regionAllowlist';
-import { setFulfillmentMerchantTimezone } from './evaluators/fulfillment';
+import { setFulfillmentMerchantTimezone, setFulfillmentMerchantSchedule } from './evaluators/fulfillment';
 
 // ---------------------------------------------------------------------------
 // DecisionRecord — the trace substrate (WP-08 will render it)
@@ -287,6 +287,11 @@ export function evaluateOffer(input: EvaluateOfferInput): DecisionRecord {
   // setInventoryHolds). Set unconditionally, every call, so no timezone
   // value from a prior evaluation can leak into this one.
   setFulfillmentMerchantTimezone(merchant.timezone);
+  // RAOS-0003 v1.1: thread the optional merchant operating schedule the same
+  // way. `undefined` for merchants that haven't declared one — the
+  // FEASIBILITY evaluator OMITS the schedule/acceptance/preparation checks
+  // in that case, never fabricates them.
+  setFulfillmentMerchantSchedule(merchant.serviceSchedule);
 
   // Normalize context at the pipeline boundary (RAOS-0000 §4.3 + §7.2).
   const normalizedContext = normalizeBuyerContext(

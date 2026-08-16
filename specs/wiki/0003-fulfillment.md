@@ -3,10 +3,21 @@
 **Full spec:** [`../0003-fulfillment.md`](../0003-fulfillment.md)
 **Code:** [`src/lib/rules/fulfillment.ts`](../../src/lib/rules/fulfillment.ts) ·
 [`src/lib/extensions/evaluators/fulfillment.ts`](../../src/lib/extensions/evaluators/fulfillment.ts)
-**Status:** Built · v1.0.0 · Tier 1 (promoted from Tier 4 on 2026-08-12)
-**Verification:** see [`../../VERIFICATION-NEEDED.md`](../../VERIFICATION-NEEDED.md) — 352/352
-`vitest` (excl. `marketing/`), `npx tsc --noEmit -p .` clean, as of 2026-08-12. Engine bumped to
-**0.3.0** — see `packages/engine/CHANGELOG.md` for the breaking-change list.
+**Status:** Built · v1.1.0 · Tier 1 (promoted from Tier 4 on 2026-08-12)
+**Verification:** see [`../../VERIFICATION-NEEDED.md`](../../VERIFICATION-NEEDED.md). Engine
+bumped to **0.4.0** — see `packages/engine/CHANGELOG.md` for the v1.1 quick-commerce diff.
+
+## v1.1 — quick-commerce additions (2026-08-16)
+
+Added for the `/guided/platform` NYC late-night pizza demo: an optional weekly
+`MerchantProfile.serviceSchedule` (multi-interval days, overnight intervals, date exceptions, an
+order-acceptance buffer), an optional per-variant `preparationTimeMinutes`, and an optional exact
+`BuyerContext.needByAt` timestamp. Four new same-day-gated reason codes: `STORE_CLOSED`,
+`ORDER_ACCEPTANCE_ENDED`, `PREPARATION_EXCEEDS_NEED_BY`, `INSUFFICIENT_TIME_BEFORE_CLOSE`. All
+additive/optional — v1.0 behavior is unchanged for every merchant/variant that declares none of
+this. Full design write-up: `specs/0003-fulfillment.md` §4.4. Live courier/routing/ETA remain
+explicit platform inputs, designed-not-built in
+[`../work-packages/RAOS-0003-quick-commerce-provider-signals.md`](../work-packages/RAOS-0003-quick-commerce-provider-signals.md).
 
 ## The one-sentence problem
 

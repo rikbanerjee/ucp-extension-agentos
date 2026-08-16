@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ArrowRight, Network, ShieldCheck, Layers, MessageCircle, ListChecks, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Network, ShieldCheck, Layers, MessageCircle, ListChecks, CheckCircle2, Zap } from 'lucide-react';
 import { SUMMARY_STATS } from '@/app/evidence/scorecard-data';
 import { NextBestAction } from '@/components/guided/NextBestAction';
 import { PLATFORM_MAILTO, ENTRY_CTA_LABEL } from '@/lib/content/demoTracks';
@@ -69,6 +69,27 @@ export default function CommercePlatformsPage() {
               Read the adoption guide <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+        </div>
+
+        {/* Quick commerce and instant retail */}
+        <div className="mb-20 rounded-2xl border border-slate-200 bg-white p-8 sm:p-10 shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-800 mb-5">
+            <Zap className="w-3.5 h-3.5" />
+            Quick commerce and instant retail
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-3 max-w-xl">
+            When the customer needs it now, &ldquo;probably available&rdquo; is not enough.
+          </h2>
+          <p className="text-slate-600 leading-relaxed max-w-2xl mb-6">
+            RetailAgentOS helps platforms verify merchant-side availability, pricing, acceptance windows and
+            fulfilment constraints before combining them with live delivery signals.
+          </p>
+          <Link
+            href="/guided/platform"
+            className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
+          >
+            See the late-night pizza scenario <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
         {/* Two-minute, no-jargon explanation */}

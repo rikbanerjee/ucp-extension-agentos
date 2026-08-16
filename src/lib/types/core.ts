@@ -1,3 +1,57 @@
+// ---------------------------------------------------------------------------
+// RAOS-0003 v1.1 — Merchant operating schedule (quick-commerce additions)
+//
+// Deliberately merchant-level (like `timezone`, `servesRegions`), not
+// per-variant — a store's hours are one fact, not one fact per item. See
+// `specs/0003-fulfillment.md` §4.4 for the full design write-up and the
+// deviation notes vs. the originally sketched shape.
+// ---------------------------------------------------------------------------
+
+export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+/** A same-day local time-of-day window. `closesAt <= opensAt` means the interval crosses midnight. */
+export interface LocalTimeRange {
+  /** 'HH:mm', merchant-local, 24-hour. */
+  opensAt: string;
+  /** 'HH:mm', merchant-local, 24-hour. May be numerically <= opensAt — that means the interval crosses midnight into the next calendar day. */
+  closesAt: string;
+}
+
+/** One weekday's service intervals. Multiple intervals per day are supported (e.g. lunch + dinner). */
+export interface DailyServiceHours {
+  day: DayOfWeek;
+  intervals: LocalTimeRange[];
+}
+
+/** A date-specific override — holiday closure or special hours. `date` is merchant-local 'YYYY-MM-DD'. */
+export interface ServiceScheduleException {
+  date: string;
+  /** True = closed all day, overriding `weekly` for this date. Mutually exclusive with `intervals`. */
+  closed?: boolean;
+  /** Replaces (not merges with) `weekly`'s intervals for this date. */
+  intervals?: LocalTimeRange[];
+}
+
+/**
+ * Merchant operating schedule (RAOS-0003 v1.1). Optional on `MerchantProfile`
+ * — unlike `timezone`/`servesRegions`, this is NOT required, to avoid
+ * forcing every non-quick-commerce fixture in the codebase to grow a
+ * schedule it has no use for (blast-radius discipline, RAOS-0000 §7.4).
+ * A merchant with no `serviceSchedule` is simply never evaluated against
+ * `STORE_CLOSED`/`ORDER_ACCEPTANCE_ENDED` — the check is OMITTED, not
+ * defaulted to "open" (see `src/lib/rules/fulfillment.ts`).
+ */
+export interface ServiceSchedule {
+  weekly: DailyServiceHours[];
+  exceptions?: ServiceScheduleException[];
+  /**
+   * Minutes before an interval's `closesAt` that order ACCEPTANCE ends,
+   * even though the store is still technically open (kitchen needs to wind
+   * down before physical close). Absent = acceptance ends exactly at close.
+   */
+  orderAcceptanceBufferMinutes?: number;
+}
+
 export interface UcpCapability {
   id: string;
   name: string;
@@ -149,6 +203,13 @@ export interface MerchantProfile {
    * timezone-independent.
    */
   timezone: string;
+  /**
+   * RAOS-0003 v1.1 — merchant operating schedule (weekly hours + exceptions
+   * + order-acceptance buffer). OPTIONAL — see `ServiceSchedule` doc comment
+   * for why this is not required the way `timezone`/`servesRegions` are.
+   * Consumed by the new `STORE_CLOSED`/`ORDER_ACCEPTANCE_ENDED` checks.
+   */
+  serviceSchedule?: ServiceSchedule;
   /** The locked `{ tier, capabilities[] }` manifest published at `/.well-known/ucp`. */
   manifest: UcpManifest;
 }

@@ -105,6 +105,30 @@ export interface BuyerContext {
   needByDate?: string;
 
   /**
+   * RAOS-0003 v1.1 §4.3.2 — an EXACT fulfillment deadline, for quick-commerce
+   * / same-day scenarios where a calendar date (`needByDate`) is not granular
+   * enough ("before midnight" is not "today"). ISO 8601 timestamp, MUST carry
+   * an explicit UTC offset or `Z` (no bare local-time strings — this codebase
+   * never infers a timezone from context).
+   *
+   * OPTIONAL, same deliberate-exception shape as `needByDate` (RAOS-0000 §13
+   * changelog / §4.3.1 above): absent means "no exact deadline asserted ⇒
+   * never blocks" on the new v1.1 minute-granular checks
+   * (`PREPARATION_EXCEEDS_NEED_BY`, `INSUFFICIENT_TIME_BEFORE_CLOSE`), never
+   * the most-urgent-possible default.
+   *
+   * SCOPE NOTE: `needByAt`, when present, takes precedence over `needByDate`
+   * for the NEW v1.1 checks it feeds. It does NOT retroactively change
+   * `LEAD_TIME_EXCEEDS_NEED_BY` (RAOS-0003 v1.0), which remains keyed to
+   * `needByDate` exclusively — that check is day-granularity by design (§9.3
+   * open question) and deriving a calendar date from `needByAt` would just
+   * reproduce what `needByDate` already expresses, for no behavior change.
+   * Callers with an exact deadline should assert BOTH fields when they want
+   * both check families to see it.
+   */
+  needByAt?: string;
+
+  /**
    * Trust envelope (RAOS-0000 §4.2). Describes how much to believe the above
    * claims. Missing → treated as asserted (most-restrictive) by
    * `normalizeBuyerContext`. Optional for backward compat with legacy callers.
@@ -128,6 +152,8 @@ export interface NormalizedBuyerContext extends Required<Pick<BuyerContext, 'loy
   resaleCertificateOnFile: boolean;
   /** RAOS-0003 §4 — passed through as-is; absence is meaningful (see BuyerContext.needByDate). */
   needByDate?: string;
+  /** RAOS-0003 v1.1 §4.3.2 — passed through as-is; absence is meaningful (see BuyerContext.needByAt). */
+  needByAt?: string;
   trust: BuyerContextTrust;
 }
 

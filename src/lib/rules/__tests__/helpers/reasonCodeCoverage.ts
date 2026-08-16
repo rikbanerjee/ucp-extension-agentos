@@ -239,6 +239,13 @@ export type Raos0002ReasonCode = typeof RAOS_0002_REASON_CODES[number];
  * produced by the static CONTEXT_GRID, which has neither):
  *   LEAD_TIME_EXCEEDS_NEED_BY, CUTOFF_PASSED
  * Both are exercised in src/lib/rules/__tests__/fulfillment.test.ts.
+ *
+ * v1.1 (2026-08-16, quick-commerce additions) adds four more codes, ALL
+ * synthetic-only for the same reason: no catalog-grid variant declares
+ * `MerchantProfile.serviceSchedule` or `FulfillmentConstraints.
+ * preparationTimeMinutes`/`BuyerContext.needByAt` — the static grid predates
+ * v1.1 and was never meant to grow a full schedule/prep-time matrix. All
+ * four are exercised in src/lib/rules/__tests__/fulfillment.test.ts.
  */
 export const RAOS_0003_REASON_CODES = [
   'FULFILLMENT_MODE_UNAVAILABLE',
@@ -247,11 +254,19 @@ export const RAOS_0003_REASON_CODES = [
   'OVERSIZE_RESTRICTION',
   'LEAD_TIME_EXCEEDS_NEED_BY',
   'CUTOFF_PASSED',
+  'STORE_CLOSED',
+  'ORDER_ACCEPTANCE_ENDED',
+  'PREPARATION_EXCEEDS_NEED_BY',
+  'INSUFFICIENT_TIME_BEFORE_CLOSE',
 ] as const;
 
 export const RAOS_0003_SYNTHETIC_ONLY_CODES = [
   'LEAD_TIME_EXCEEDS_NEED_BY',
   'CUTOFF_PASSED',
+  'STORE_CLOSED',
+  'ORDER_ACCEPTANCE_ENDED',
+  'PREPARATION_EXCEEDS_NEED_BY',
+  'INSUFFICIENT_TIME_BEFORE_CLOSE',
 ] as const;
 
 export type Raos0003ReasonCode = typeof RAOS_0003_REASON_CODES[number];

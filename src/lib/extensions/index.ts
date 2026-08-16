@@ -15,7 +15,7 @@ export { register, byStage, manifestSubset } from './registry';
 export type { UcpExtension, ExtensionResult, PipelineStage, StageResults } from './contract';
 export { setInventoryHolds } from './evaluators/inventory';
 export { setQuoteMeta } from './evaluators/quote';
-export { setFulfillmentMerchantTimezone } from './evaluators/fulfillment';
+export { setFulfillmentMerchantTimezone, setFulfillmentMerchantSchedule } from './evaluators/fulfillment';
 
 // ---------------------------------------------------------------------------
 // Register evaluators (WP-01 through WP-07, RAOS-0003)

@@ -130,6 +130,18 @@ export interface FulfillmentConstraints {
    * the merchant-local hour at the injected `now` is `>= cutoffHourLocal`.
    */
   cutoffHourLocal?: number;
+  /**
+   * RAOS-0003 v1.1 — minutes needed to prepare THIS variant/item before it
+   * can be handed off for fulfillment (e.g. a made-to-order pizza). Placed
+   * here, per-variant, rather than on `MerchantProfile` — prep time is an
+   * item fact, not a merchant fact (a salad and a slow-braised entree at the
+   * same kitchen have different prep times). Absent = no prep-time
+   * constraint; the v1.1 preparation checks are OMITTED, never fabricated.
+   * Consumed by `PREPARATION_EXCEEDS_NEED_BY` and
+   * `INSUFFICIENT_TIME_BEFORE_CLOSE`, both gated to same-day modes
+   * (`pickup`/`local_delivery`) — see `src/lib/rules/fulfillment.ts`.
+   */
+  preparationTimeMinutes?: number;
 }
 
 /**

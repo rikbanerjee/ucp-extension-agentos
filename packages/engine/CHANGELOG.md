@@ -1,5 +1,44 @@
 # @retailagentos/engine — Changelog
 
+## 0.4.0 — 2026-08-16 (RAOS-0003 v1.1 · quick-commerce fulfillment additions)
+
+**Source of truth:** `src/lib/` in the RetailAgentOS repo. Full write-up: `specs/0003-fulfillment.md`
+§4.4/§6.1/§7.1 (v1.1.0 changelog entry). Additive only — no breaking changes.
+
+### Additive changes
+
+- `MerchantProfile.serviceSchedule?: ServiceSchedule` — optional merchant operating schedule
+  (weekly hours, multiple intervals/day, overnight intervals, date exceptions, an order-acceptance
+  buffer). New types: `ServiceSchedule`, `DailyServiceHours`, `LocalTimeRange`,
+  `ServiceScheduleException`, `DayOfWeek`.
+- `FulfillmentConstraints.preparationTimeMinutes?: number` — per-variant prep time.
+- `BuyerContext.needByAt?: string` — an exact ISO 8601 deadline, for quick-commerce promises a
+  calendar-date `needByDate` can't express ("before midnight" is not "today"). Same
+  deliberate-exception-to-most-restrictive-defaulting shape as `needByDate`: absent never blocks.
+  Scoped to the NEW checks only — does not change `LEAD_TIME_EXCEEDS_NEED_BY`'s existing
+  `needByDate`-only behavior (see `BuyerContext.needByAt` doc comment for why).
+- New reason codes (`com.os.retailagent.shopping.fulfillment_constraints`): `STORE_CLOSED`,
+  `ORDER_ACCEPTANCE_ENDED`, `PREPARATION_EXCEEDS_NEED_BY`, `INSUFFICIENT_TIME_BEFORE_CLOSE`. All
+  gated to same-day modes (`pickup`/`local_delivery`), same rationale as `cutoffHourLocal`.
+- New public export: `setFulfillmentMerchantSchedule` (module-level schedule-threading hook,
+  mirrors `setFulfillmentMerchantTimezone`). `evaluateOffer` calls it internally from
+  `merchant.serviceSchedule` — no caller action required for the pipeline path.
+
+### Not changed
+
+- `STAGE_ORDER`, every v1.0 reason code and its tested behavior, `evaluateOffer`'s public
+  signature. A merchant/variant that declares no schedule/prep-time/needByAt sees byte-identical
+  v1.0 behavior — every new check is OMITTED, never defaulted to a block, absent its inputs.
+
+### Deliberately out of scope (documented, not built)
+
+- Live courier/provider capacity, routing, ETA — see
+  `specs/work-packages/RAOS-0003-quick-commerce-provider-signals.md` (proposed extension point,
+  not implemented).
+- The customer's "keep accepting for N more minutes" constraint is modeled as a PLATFORM/discovery
+  comparison against the merchant's declared acceptance signal, not a new BuyerContext field — see
+  that spec section and `specs/wiki/pending/0004-discovery-match.md` roadmap notes.
+
 ## 0.3.0 — 2026-08-12 (RAOS-0003 · Fulfillment Feasibility, promoted Tier 4 → Tier 1)
 
 **Source of truth:** `src/lib/` in the RetailAgentOS repo (this package is a pure re-export layer

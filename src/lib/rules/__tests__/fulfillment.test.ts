@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest';
 import { evaluateFulfillmentFeasibility } from '@/lib/rules/fulfillment';
 import { evaluateOffer } from '@/lib/extensions/pipeline';
 import '@/lib/extensions/index'; // self-register evaluators
-import type { Variant, MerchantProfile } from '@/lib/types/core';
+import type { Variant, MerchantProfile, ServiceSchedule } from '@/lib/types/core';
 import type { BuyerContext } from '@/lib/types/context';
 import type { FulfillmentConstraints } from '@/lib/types/extensions';
 
@@ -364,5 +364,299 @@ describe('evaluateOffer — ELIGIBILITY precedence over FEASIBILITY (RAOS-0003 �
     const firstBlock = record.reasons.find(r => r.severity === 'BLOCK');
     expect(firstBlock?.code).toBe('WHOLESALE_ONLY');
     expect(firstBlock?.source).toBe('com.os.retailagent.shopping.eligibility');
+  });
+});
+
+// ===========================================================================
+// RAOS-0003 v1.1 — quick-commerce additions (operating schedule, preparation
+// time, exact need-by). Scenario timestamps mirror the /guided/platform NYC
+// late-night pizza demo: Thursday 2026-01-15, America/New_York.
+//
+//   NOW_1120PM       = 1768537200000  → 2026-01-15 23:20 America/New_York (Thu)
+//   NOW_1230AM_NEXT  = 1768541400000  → 2026-01-16 00:30 America/New_York (Fri)
+//   NOW_1240AM_NEXT  = 1768542000000  → 2026-01-16 00:40 America/New_York (Fri)
+//   NOW_1250AM_NEXT  = 1768542600000  → 2026-01-16 00:50 America/New_York (Fri)
+//   MIDNIGHT_ISO     = '2026-01-16T00:00:00-05:00' → epoch 1768539600000
+//     (matches NOW_1120PM + 40 minutes to midnight)
+// ===========================================================================
+
+const NOW_1120PM = 1768537200000;
+const NOW_1240AM_NEXT = 1768542000000;
+const NOW_1250AM_NEXT = 1768542600000;
+const MIDNIGHT_ISO = '2026-01-16T00:00:00-05:00';
+
+/** Thu 18:00 – Fri 01:00 (crosses midnight), 30-minute order-acceptance buffer. */
+const OVERNIGHT_SCHEDULE: ServiceSchedule = {
+  weekly: [
+    { day: 'thu', intervals: [{ opensAt: '18:00', closesAt: '01:00' }] },
+    { day: 'fri', intervals: [{ opensAt: '18:00', closesAt: '01:00' }] },
+  ],
+  orderAcceptanceBufferMinutes: 30,
+};
+
+function localDeliveryContext(overrides: Partial<BuyerContext> = {}): BuyerContext {
+  return { ...baseContext, fulfillmentMode: 'local_delivery', ...overrides };
+}
+
+describe('evaluateFulfillmentFeasibility — merchant operating schedule (RAOS-0003 v1.1)', () => {
+  it('is FEASIBLE when open, inside an overnight interval, before the acceptance buffer', () => {
+    const v = makeVariant({});
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_1120PM, // 23:20 — inside Thu 18:00–next 01:00
+      merchantTimezone: NY_TZ,
+      merchantSchedule: OVERNIGHT_SCHEDULE,
+    });
+    expect(result.feasibility.status).toBe('FEASIBLE');
+  });
+
+  it('blocks with ORDER_ACCEPTANCE_ENDED once the acceptance buffer is reached, even though still open', () => {
+    const v = makeVariant({});
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_1240AM_NEXT, // 00:40 — past 00:30 acceptance cutoff, before 01:00 close
+      merchantTimezone: NY_TZ,
+      merchantSchedule: OVERNIGHT_SCHEDULE,
+    });
+    expect(result.feasibility.status).toBe('BLOCKED');
+    expect(result.reasons.map(r => r.code)).toEqual(['ORDER_ACCEPTANCE_ENDED']);
+  });
+
+  it('blocks with STORE_CLOSED outside every declared interval', () => {
+    const v = makeVariant({});
+    const mondayOnly: ServiceSchedule = { weekly: [{ day: 'mon', intervals: [{ opensAt: '09:00', closesAt: '17:00' }] }] };
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_1120PM, // Thursday — no Thursday hours declared
+      merchantTimezone: NY_TZ,
+      merchantSchedule: mondayOnly,
+    });
+    expect(result.feasibility.status).toBe('BLOCKED');
+    expect(result.reasons.map(r => r.code)).toEqual(['STORE_CLOSED']);
+  });
+
+  it('is FEASIBLE during a same-day interval when multiple intervals exist (lunch + dinner)', () => {
+    const v = makeVariant({});
+    const lunchAndDinner: ServiceSchedule = {
+      weekly: [{ day: 'thu', intervals: [{ opensAt: '11:00', closesAt: '14:00' }, { opensAt: '17:00', closesAt: '22:00' }] }],
+    };
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_BEFORE_CUTOFF, // Thu 12:00 — inside the lunch interval
+      merchantTimezone: NY_TZ,
+      merchantSchedule: lunchAndDinner,
+    });
+    expect(result.feasibility.status).toBe('FEASIBLE');
+  });
+
+  it('blocks with STORE_CLOSED between two same-day intervals', () => {
+    const v = makeVariant({});
+    const lunchAndDinner: ServiceSchedule = {
+      weekly: [{ day: 'thu', intervals: [{ opensAt: '11:00', closesAt: '14:00' }, { opensAt: '17:00', closesAt: '22:00' }] }],
+    };
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_AFTER_CUTOFF, // Thu 15:00 — between lunch (ends 14:00) and dinner (starts 17:00)
+      merchantTimezone: NY_TZ,
+      merchantSchedule: lunchAndDinner,
+    });
+    expect(result.feasibility.status).toBe('BLOCKED');
+    expect(result.reasons.map(r => r.code)).toEqual(['STORE_CLOSED']);
+  });
+
+  it('a date exception with closed: true overrides the weekly schedule as a holiday closure', () => {
+    const v = makeVariant({});
+    const withHoliday: ServiceSchedule = {
+      ...OVERNIGHT_SCHEDULE,
+      exceptions: [{ date: '2026-01-15', closed: true }],
+    };
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_1120PM, // 2026-01-15, the closed date
+      merchantTimezone: NY_TZ,
+      merchantSchedule: withHoliday,
+    });
+    expect(result.feasibility.status).toBe('BLOCKED');
+    expect(result.reasons.map(r => r.code)).toEqual(['STORE_CLOSED']);
+  });
+
+  it('a date exception with custom intervals overrides the weekly schedule for that date', () => {
+    const v = makeVariant({});
+    const withSpecialHours: ServiceSchedule = {
+      weekly: [{ day: 'thu', intervals: [{ opensAt: '18:00', closesAt: '01:00' }] }],
+      exceptions: [{ date: '2026-01-15', intervals: [{ opensAt: '00:00', closesAt: '20:00' }] }],
+    };
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_1120PM, // 23:20 — outside the exception's 00:00–20:00 window
+      merchantTimezone: NY_TZ,
+      merchantSchedule: withSpecialHours,
+    });
+    expect(result.feasibility.status).toBe('BLOCKED');
+    expect(result.reasons.map(r => r.code)).toEqual(['STORE_CLOSED']);
+  });
+
+  it('does not apply to shipping — schedule checks are same-day-fulfillment concepts only', () => {
+    const v = makeVariant({});
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: { ...baseContext, fulfillmentMode: 'shipping' },
+      now: NOW_1120PM,
+      merchantTimezone: NY_TZ,
+      merchantSchedule: { weekly: [{ day: 'mon', intervals: [] }] }, // effectively "never open"
+    });
+    expect(result.feasibility.status).toBe('FEASIBLE');
+  });
+
+  it('missing merchantSchedule OMITS the check entirely — does not fabricate STORE_CLOSED', () => {
+    const v = makeVariant({});
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_1120PM,
+      merchantTimezone: NY_TZ,
+      merchantSchedule: undefined,
+    });
+    expect(result.feasibility.status).toBe('FEASIBLE');
+  });
+
+  it('degrades gracefully (no throw, no false block) on an unresolvable timezone', () => {
+    const v = makeVariant({});
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_1120PM,
+      merchantTimezone: 'Not/A_Real_Zone',
+      merchantSchedule: OVERNIGHT_SCHEDULE,
+    });
+    expect(result.feasibility.status).toBe('FEASIBLE');
+  });
+});
+
+describe('evaluateFulfillmentFeasibility — preparation time vs. need-by (RAOS-0003 v1.1)', () => {
+  it('is FEASIBLE when preparation finishes before the exact needByAt deadline', () => {
+    const v = makeVariant({ preparationTimeMinutes: 16 });
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext({ needByAt: MIDNIGHT_ISO }),
+      now: NOW_1120PM, // 23:20 + 16min = 23:36, well before midnight
+      merchantTimezone: NY_TZ,
+      merchantSchedule: OVERNIGHT_SCHEDULE,
+    });
+    expect(result.feasibility.status).toBe('FEASIBLE');
+  });
+
+  it('blocks with PREPARATION_EXCEEDS_NEED_BY when preparation would finish after needByAt', () => {
+    const v = makeVariant({ preparationTimeMinutes: 45 });
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext({ needByAt: MIDNIGHT_ISO }),
+      now: NOW_1120PM, // 23:20 + 45min = 00:05, after midnight
+      merchantTimezone: NY_TZ,
+      merchantSchedule: OVERNIGHT_SCHEDULE,
+    });
+    expect(result.feasibility.status).toBe('BLOCKED');
+    expect(result.reasons.map(r => r.code)).toContain('PREPARATION_EXCEEDS_NEED_BY');
+  });
+
+  it('ABSENT needByAt never blocks on preparation — the deliberate exception mirrors needByDate', () => {
+    const v = makeVariant({ preparationTimeMinutes: 999 }); // absurdly long, would obviously exceed any deadline
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext(),
+      now: NOW_BEFORE_CUTOFF, // far from OVERNIGHT_SCHEDULE's close, so INSUFFICIENT_TIME_BEFORE_CLOSE can't confound this
+      merchantTimezone: NY_TZ,
+      merchantSchedule: undefined,
+    });
+    expect(result.reasons.map(r => r.code)).not.toContain('PREPARATION_EXCEEDS_NEED_BY');
+  });
+
+  it('degrades gracefully (no throw, no false block) on a malformed needByAt', () => {
+    const v = makeVariant({ preparationTimeMinutes: 16 });
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext({ needByAt: 'not-a-timestamp' }),
+      now: NOW_1120PM,
+      merchantTimezone: NY_TZ,
+      merchantSchedule: undefined,
+    });
+    expect(result.reasons.map(r => r.code)).not.toContain('PREPARATION_EXCEEDS_NEED_BY');
+  });
+
+  it('blocks with INSUFFICIENT_TIME_BEFORE_CLOSE when preparation would finish after the store closes', () => {
+    const v = makeVariant({ preparationTimeMinutes: 20 });
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      // No needByAt asserted — isolates the store-close check from the need-by check.
+      context: localDeliveryContext(),
+      now: NOW_1250AM_NEXT, // 00:50 + 20min = 01:10, after the 01:00 close
+      merchantTimezone: NY_TZ,
+      merchantSchedule: OVERNIGHT_SCHEDULE,
+    });
+    expect(result.feasibility.status).toBe('BLOCKED');
+    expect(result.reasons.map(r => r.code)).toContain('INSUFFICIENT_TIME_BEFORE_CLOSE');
+  });
+
+  it('missing preparationTimeMinutes OMITS both preparation checks', () => {
+    const v = makeVariant({});
+    const result = evaluateFulfillmentFeasibility({
+      variant: v,
+      context: localDeliveryContext({ needByAt: '2026-01-15T23:21:00-05:00' }), // 1 minute from now
+      now: NOW_1120PM,
+      merchantTimezone: NY_TZ,
+      merchantSchedule: OVERNIGHT_SCHEDULE,
+    });
+    expect(result.reasons.map(r => r.code)).not.toContain('PREPARATION_EXCEEDS_NEED_BY');
+  });
+});
+
+describe('evaluateOffer — Midnight Crust (RAOS-0003 v1.1 end-to-end, mirrors /guided/platform)', () => {
+  const merchant: MerchantProfile = {
+    merchantId: 'm_midnight_crust',
+    merchantName: 'Midnight Crust',
+    protocolVersion: '1.0.0',
+    endpoints: { catalog: '', cart: '', checkout: '' },
+    servesRegions: ['US'],
+    timezone: NY_TZ,
+    serviceSchedule: OVERNIGHT_SCHEDULE,
+    capabilities: [],
+    manifest: {
+      protocol: '1.0',
+      tier: 1,
+      capabilities: [
+        { id: 'ext.fulfillment', name: 'f', namespace: 'com.os.retailagent.shopping.fulfillment_constraints', version: '1.0.0', description: '', required: true, tier: 1 },
+      ],
+    },
+  };
+
+  const variant: Variant = {
+    id: 'v_midnight_crust_large_veg',
+    sku: 'MC-LG-VEG',
+    title: 'Large Vegetarian Pizza',
+    basePrice: 24.0,
+    currency: 'USD',
+    fulfillmentConstraints: {
+      availableModes: ['local_delivery', 'pickup'],
+      preparationTimeMinutes: 16,
+    },
+  };
+
+  it('resolves FEASIBLE at 11:20 PM for a midnight need-by — the demo\'s recommended outcome', () => {
+    const record = evaluateOffer({
+      merchant,
+      variant,
+      quantity: 1,
+      context: localDeliveryContext({ needByAt: MIDNIGHT_ISO }),
+      now: NOW_1120PM,
+    });
+    const blockReasons = record.reasons.filter(r => r.severity === 'BLOCK');
+    expect(blockReasons).toHaveLength(0);
   });
 });
