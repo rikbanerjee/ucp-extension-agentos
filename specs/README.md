@@ -58,7 +58,7 @@ standing is an orthogonal `BuyerContext` claim (owned by RAOS-0009), never a tie
 | # | Spec | Namespace | Status | Wiki |
 |---|------|-----------|--------|------|
 | 0001 | [Eligibility & Visibility Semantics](./0001-eligibility.md) | `…eligibility` | **Draft · RFC** v2.0.0 | [intent](./wiki/0001-eligibility.md) |
-| 0003 | [Fulfillment Feasibility](./0003-fulfillment.md) | `…fulfillment_constraints` | **Draft · RFC** v1.0.0 | [intent](./wiki/pending/0003-fulfillment.md) |
+| 0003 | [Fulfillment Feasibility](./0003-fulfillment.md) | `…fulfillment_constraints` | **Draft · RFC** v1.1.0 | [wiki](./wiki/0003-fulfillment.md) |
 | 0005 | [Inventory & Availability](./0005-inventory.md) | `…inventory` | **Draft · RFC** v1.0.0 | [intent](./wiki/0005-inventory.md) |
 | 0011 | Tax & Restricted / Regulated Goods | `…tax`, `…restricted` | Planned · next up | [pending](./wiki/pending/0011-restricted-goods.md) |
 

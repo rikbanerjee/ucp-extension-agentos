@@ -28,7 +28,7 @@
  *   convention for variants without an `inventory` config).
  */
 
-import type { Variant } from '@/lib/types/core';
+import type { Variant, ServiceSchedule, LocalTimeRange, DayOfWeek } from '@/lib/types/core';
 import type { BuyerContext } from '@/lib/types/context';
 import type { ReasonEntry } from '@/lib/types/reasons';
 import type { ComputedFulfillmentFeasibility } from '@/lib/types/extensions';
@@ -53,6 +53,28 @@ function daysFromCivil(y: number, m: number, d: number): number {
   const doyFull = doy + d - 1; // [0, 365]
   const doe = yoe * 365 + (yoe / 4 | 0) - (yoe / 100 | 0) + doyFull; // [0, 146096]
   return era * 146097 + doe - 719468;
+}
+
+/** Inverse of `daysFromCivil` — Howard Hinnant's `civil_from_days`. */
+function civilFromDays(epochDay: number): { y: number; m: number; d: number } {
+  const z = epochDay + 719468;
+  const era = (z >= 0 ? z : z - 146096) / 146097 | 0;
+  const doe = z - era * 146097; // [0, 146096]
+  const yoe = (doe - (doe / 1460 | 0) + (doe / 36524 | 0) - (doe / 146096 | 0)) / 365 | 0; // [0, 399]
+  const y = yoe + era * 400;
+  const doy = doe - (365 * yoe + (yoe / 4 | 0) - (yoe / 100 | 0)); // [0, 365]
+  const mp = (5 * doy + 2) / 153 | 0; // [0, 11]
+  const d = doy - ((153 * mp + 2) / 5 | 0) + 1; // [1, 31]
+  const m = mp < 10 ? mp + 3 : mp - 9; // [1, 12]
+  const yy = m <= 2 ? y + 1 : y;
+  return { y: yy, m, d };
+}
+
+/** Format an epoch-day count as 'YYYY-MM-DD' for exception-date lookups. */
+function isoDateFromEpochDay(epochDay: number): string {
+  const { y, m, d } = civilFromDays(epochDay);
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  return `${String(y).padStart(4, '0')}-${pad2(m)}-${pad2(d)}`;
 }
 
 /** Add `days` whole days to a 'YYYY-MM-DD' calendar date, returning epoch-day count. */
@@ -112,6 +134,177 @@ function resolveMerchantLocalNow(now: number, timezone: string): MerchantLocalNo
 }
 
 // ---------------------------------------------------------------------------
+// RAOS-0003 v1.1 — merchant operating-schedule algorithm
+//
+// Everything below is additive to the v1.0 module above: new helpers, new
+// checks (STORE_CLOSED, ORDER_ACCEPTANCE_ENDED, PREPARATION_EXCEEDS_NEED_BY,
+// INSUFFICIENT_TIME_BEFORE_CLOSE), no changes to the v1.0 checks or their
+// tested behavior. Same determinism contract: Intl.DateTimeFormat fed a raw
+// epoch number, never `new Date(...)`.
+// ---------------------------------------------------------------------------
+
+const DOW_ORDER: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const WEEKDAY_SHORT_TO_DOW: Record<string, DayOfWeek> = {
+  Mon: 'mon', Tue: 'tue', Wed: 'wed', Thu: 'thu', Fri: 'fri', Sat: 'sat', Sun: 'sun',
+};
+
+interface MerchantLocalInstant {
+  /** Epoch-day count of the merchant-local calendar date. */
+  epochDay: number;
+  /** Minutes since local midnight, 0–1439. */
+  minutesOfDay: number;
+  dayOfWeek: DayOfWeek;
+}
+
+/**
+ * Richer sibling of `resolveMerchantLocalNow` — adds minute-of-day and
+ * day-of-week, needed for the schedule algorithm. Same fail-degraded
+ * contract: returns null (never throws) for an unresolvable timezone.
+ */
+function resolveMerchantLocalInstant(now: number, timezone: string): MerchantLocalInstant | null {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: false,
+      weekday: 'short',
+    });
+    const parts = fmt.formatToParts(now);
+    const get = (type: string) => parts.find(p => p.type === type)?.value;
+    const year = Number(get('year'));
+    const month = Number(get('month'));
+    const day = Number(get('day'));
+    const rawHour = Number(get('hour'));
+    const hour = rawHour === 24 ? 0 : rawHour;
+    const minute = Number(get('minute'));
+    const dayOfWeek = WEEKDAY_SHORT_TO_DOW[get('weekday') ?? ''];
+    if (
+      !Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) ||
+      !Number.isFinite(hour) || !Number.isFinite(minute) || !dayOfWeek
+    ) {
+      return null;
+    }
+    return { epochDay: daysFromCivil(year, month, day), minutesOfDay: hour * 60 + minute, dayOfWeek };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Inverse of `resolveMerchantLocalInstant`: given a merchant-local calendar
+ * date + minute-of-day, find the epoch-ms instant that localizes to it in
+ * `timezone`. Fixed-point iteration against `Intl.DateTimeFormat` (no `Date`
+ * object, no timezone-offset table) — converges in 1–2 passes for any real
+ * IANA zone, including on a DST-transition day, because the offset a guess
+ * lands on only needs to stabilize, not be computed analytically. Bounded to
+ * 4 iterations so a pathological/unsupported timezone can never loop.
+ */
+function epochMsFromMerchantLocal(epochDay: number, minutesOfDay: number, timezone: string): number | null {
+  const targetTotalMinutes = epochDay * 1440 + minutesOfDay;
+  let guessMs = epochDay * 86_400_000 + minutesOfDay * 60_000;
+  for (let i = 0; i < 4; i++) {
+    const local = resolveMerchantLocalInstant(guessMs, timezone);
+    if (local === null) return null;
+    const localTotalMinutes = local.epochDay * 1440 + local.minutesOfDay;
+    const diffMinutes = targetTotalMinutes - localTotalMinutes;
+    if (diffMinutes === 0) return guessMs;
+    guessMs += diffMinutes * 60_000;
+  }
+  return guessMs;
+}
+
+/** Parse 'HH:mm' (24-hour, merchant-local) to minutes since midnight, or null if malformed. */
+function parseHHmm(value: string): number | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+/** Resolve the effective intervals for one merchant-local calendar date, honoring exceptions. */
+function intervalsForDate(
+  schedule: ServiceSchedule,
+  dayOfWeek: DayOfWeek,
+  isoDate: string,
+): LocalTimeRange[] {
+  const exception = schedule.exceptions?.find(e => e.date === isoDate);
+  if (exception) {
+    if (exception.closed) return [];
+    if (exception.intervals) return exception.intervals;
+    return []; // malformed exception (neither closed nor intervals) degrades to "no hours asserted"
+  }
+  return schedule.weekly.find(d => d.day === dayOfWeek)?.intervals ?? [];
+}
+
+interface ScheduleWindow {
+  openNow: boolean;
+  /** Order acceptance is still open (implies openNow). False when closed OR past the acceptance buffer. */
+  acceptingNow: boolean;
+  /** Epoch-ms the currently-active interval closes, or null when not open. */
+  closeAtMs: number | null;
+}
+
+/**
+ * Resolve whether the merchant is open, and still accepting orders, at
+ * `now` — evaluating today's intervals AND yesterday's overnight spillover
+ * (an interval whose `closesAt <= opensAt` crosses midnight into today).
+ * Returns null when the timezone is unresolvable (fail-degraded — callers
+ * must OMIT the schedule checks, never fabricate a block).
+ */
+function resolveScheduleWindow(now: number, timezone: string, schedule: ServiceSchedule): ScheduleWindow | null {
+  const local = resolveMerchantLocalInstant(now, timezone);
+  if (local === null) return null;
+
+  const todayIso = isoDateFromEpochDay(local.epochDay);
+  const yesterdayEpochDay = local.epochDay - 1;
+  const yesterdayIso = isoDateFromEpochDay(yesterdayEpochDay);
+  const yesterdayDow = DOW_ORDER[(DOW_ORDER.indexOf(local.dayOfWeek) + 6) % 7];
+
+  const todayIntervals = intervalsForDate(schedule, local.dayOfWeek, todayIso);
+  const yesterdayIntervals = intervalsForDate(schedule, yesterdayDow, yesterdayIso);
+
+  const candidates: { openMs: number; closeMs: number }[] = [];
+
+  for (const iv of todayIntervals) {
+    const openMin = parseHHmm(iv.opensAt);
+    const closeMin = parseHHmm(iv.closesAt);
+    if (openMin === null || closeMin === null) continue; // malformed interval — skip, don't fabricate
+    const crossesMidnight = closeMin <= openMin;
+    const openMs = epochMsFromMerchantLocal(local.epochDay, openMin, timezone);
+    const closeMs = epochMsFromMerchantLocal(crossesMidnight ? local.epochDay + 1 : local.epochDay, closeMin, timezone);
+    if (openMs === null || closeMs === null) continue;
+    candidates.push({ openMs, closeMs });
+  }
+
+  // Only yesterday's midnight-crossing intervals can still be "open" today.
+  for (const iv of yesterdayIntervals) {
+    const openMin = parseHHmm(iv.opensAt);
+    const closeMin = parseHHmm(iv.closesAt);
+    if (openMin === null || closeMin === null) continue;
+    if (closeMin > openMin) continue; // does not cross midnight — irrelevant to today
+    const openMs = epochMsFromMerchantLocal(yesterdayEpochDay, openMin, timezone);
+    const closeMs = epochMsFromMerchantLocal(local.epochDay, closeMin, timezone);
+    if (openMs === null || closeMs === null) continue;
+    candidates.push({ openMs, closeMs });
+  }
+
+  const active = candidates.find(c => now >= c.openMs && now < c.closeMs);
+  if (!active) {
+    return { openNow: false, acceptingNow: false, closeAtMs: null };
+  }
+
+  const bufferMs = (schedule.orderAcceptanceBufferMinutes ?? 0) * 60_000;
+  const acceptanceCutoffMs = active.closeMs - bufferMs;
+  return { openNow: true, acceptingNow: now < acceptanceCutoffMs, closeAtMs: active.closeMs };
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -130,6 +323,15 @@ export interface FulfillmentEvaluationInput {
    * best effort, not a guarantee.
    */
   merchantTimezone: string;
+  /**
+   * RAOS-0003 v1.1 — merchant operating schedule (`MerchantProfile.
+   * serviceSchedule`). OPTIONAL: absent means the schedule/acceptance/
+   * preparation checks below are all OMITTED (never fabricate a block from
+   * a declaration the merchant never made). Only consumed by
+   * `STORE_CLOSED`, `ORDER_ACCEPTANCE_ENDED`, `PREPARATION_EXCEEDS_NEED_BY`,
+   * and `INSUFFICIENT_TIME_BEFORE_CLOSE`.
+   */
+  merchantSchedule?: import('@/lib/types/core').ServiceSchedule;
 }
 
 export interface FulfillmentEvaluationResult {
@@ -147,7 +349,7 @@ export interface FulfillmentEvaluationResult {
 export function evaluateFulfillmentFeasibility(
   input: FulfillmentEvaluationInput,
 ): FulfillmentEvaluationResult {
-  const { variant, context, now, merchantTimezone } = input;
+  const { variant, context, now, merchantTimezone, merchantSchedule } = input;
   const constraints = variant.fulfillmentConstraints;
 
   if (!constraints) {
@@ -244,8 +446,124 @@ export function evaluateFulfillmentFeasibility(
     }
   }
 
+  // 7. Merchant operating schedule (RAOS-0003 v1.1) — same-day modes only,
+  //    same gating rationale as check 6 (cutoffHourLocal): whether the store
+  //    is open right now is not a fact a multi-day shipping promise depends
+  //    on. Absent `merchantSchedule` OMITS both schedule checks entirely —
+  //    this is NOT "default to open"; it is declining to assert a claim the
+  //    merchant never declared (see ServiceSchedule doc comment, core.ts).
+  let scheduleWindow: ScheduleWindow | null = null;
+  if (
+    merchantSchedule &&
+    (context.fulfillmentMode === 'pickup' || context.fulfillmentMode === 'local_delivery')
+  ) {
+    scheduleWindow = resolveScheduleWindow(now, merchantTimezone, merchantSchedule);
+    if (scheduleWindow !== null) {
+      if (!scheduleWindow.openNow) {
+        reasons.push({
+          code: 'STORE_CLOSED',
+          message: `The store is not open for ${context.fulfillmentMode.replace('_', ' ')} at this time.`,
+          severity: 'BLOCK',
+          blocking: true,
+          source: FULFILLMENT_NAMESPACE,
+        });
+      } else if (!scheduleWindow.acceptingNow) {
+        reasons.push({
+          code: 'ORDER_ACCEPTANCE_ENDED',
+          message: `The store has stopped accepting new ${context.fulfillmentMode.replace('_', ' ')} orders for its current hours.`,
+          severity: 'BLOCK',
+          blocking: true,
+          source: FULFILLMENT_NAMESPACE,
+        });
+      }
+    }
+    // Unresolvable merchantTimezone: fail-degraded by OMITTING (mirrors
+    // checks 5/6) — a malformed timezone identifier should not manufacture
+    // a false block.
+  }
+
+  // 8/9. Preparation time vs. exact need-by / vs. store close (RAOS-0003
+  //      v1.1). Same-day modes only — preparation minutes only matter when
+  //      the promise is "today," which is exactly the scope `needByAt`
+  //      exists for (day-granularity `leadTimeDays`/`needByDate` already
+  //      covers multi-day shipping). Both sub-checks are independent and
+  //      accumulate per this function's "collect every applicable reason"
+  //      contract; each requires its own asserted input (needByAt / an
+  //      open, resolvable schedule window) and never fabricates one.
+  if (
+    constraints.preparationTimeMinutes !== undefined &&
+    (context.fulfillmentMode === 'pickup' || context.fulfillmentMode === 'local_delivery')
+  ) {
+    const prepMs = constraints.preparationTimeMinutes * 60_000;
+    const readyAtMs = now + prepMs;
+
+    if (context.needByAt) {
+      const needByAtMs = epochMsFromIsoTimestamp(context.needByAt);
+      if (needByAtMs !== null && readyAtMs > needByAtMs) {
+        reasons.push({
+          code: 'PREPARATION_EXCEEDS_NEED_BY',
+          message: `This item needs ${constraints.preparationTimeMinutes} minute(s) to prepare, which would not be ready by the requested deadline.`,
+          severity: 'BLOCK',
+          blocking: true,
+          source: FULFILLMENT_NAMESPACE,
+        });
+      }
+      // Unparseable needByAt: OMIT (fail-degraded), never fabricate a block
+      // from malformed input — same discipline as needByDate (check 5).
+    }
+
+    if (scheduleWindow !== null && scheduleWindow.openNow && scheduleWindow.closeAtMs !== null) {
+      if (readyAtMs > scheduleWindow.closeAtMs) {
+        reasons.push({
+          code: 'INSUFFICIENT_TIME_BEFORE_CLOSE',
+          message: `This item needs ${constraints.preparationTimeMinutes} minute(s) to prepare, which would not be ready before the store closes.`,
+          severity: 'BLOCK',
+          blocking: true,
+          source: FULFILLMENT_NAMESPACE,
+        });
+      }
+    }
+  }
+
   return {
     feasibility: { status: reasons.length > 0 ? 'BLOCKED' : 'FEASIBLE', reasons },
     reasons,
   };
+}
+
+// ---------------------------------------------------------------------------
+// RAOS-0003 v1.1 — pure ISO 8601 timestamp parser (no `Date` object, ever)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse an ISO 8601 timestamp with an explicit UTC offset (`Z` or
+ * `±HH:mm`) to epoch milliseconds. Returns null for anything else — no
+ * bare/local-time strings, no partial dates, no throwing on malformed
+ * input (RAOS-0000 §7.3: an agent's malformed timestamp degrades the
+ * check away, it never fabricates a block).
+ */
+function epochMsFromIsoTimestamp(iso: string): number | null {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/.exec(iso.trim());
+  if (!match) return null;
+  const [, yStr, moStr, dStr, hStr, miStr, sStr, msStr, offStr] = match;
+  const y = Number(yStr);
+  const mo = Number(moStr);
+  const d = Number(dStr);
+  const h = Number(hStr);
+  const mi = Number(miStr);
+  const s = sStr ? Number(sStr) : 0;
+  const ms = msStr ? Number(msStr.padEnd(3, '0')) : 0;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || s > 59) return null;
+
+  const epochDay = daysFromCivil(y, mo, d);
+  let totalMs = epochDay * 86_400_000 + h * 3_600_000 + mi * 60_000 + s * 1000 + ms;
+
+  if (offStr !== 'Z') {
+    const sign = offStr[0] === '-' ? -1 : 1;
+    const offH = Number(offStr.slice(1, 3));
+    const offM = Number(offStr.slice(4, 6));
+    totalMs -= sign * (offH * 3_600_000 + offM * 60_000);
+  }
+  return totalMs;
 }

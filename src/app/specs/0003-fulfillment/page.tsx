@@ -43,6 +43,30 @@ const reasonCodes = [
     severity: 'BLOCK',
     resolvable: false,
   },
+  {
+    code: 'STORE_CLOSED',
+    meaning: 'v1.1 — the store is not open at the requested time (weekly hours + exceptions)',
+    severity: 'BLOCK',
+    resolvable: false,
+  },
+  {
+    code: 'ORDER_ACCEPTANCE_ENDED',
+    meaning: 'v1.1 — still open, but past the declared order-acceptance buffer before close',
+    severity: 'BLOCK',
+    resolvable: false,
+  },
+  {
+    code: 'PREPARATION_EXCEEDS_NEED_BY',
+    meaning: "v1.1 — item preparation time would finish after the buyer's exact need-by timestamp",
+    severity: 'BLOCK',
+    resolvable: false,
+  },
+  {
+    code: 'INSUFFICIENT_TIME_BEFORE_CLOSE',
+    meaning: 'v1.1 — item preparation time would finish after the store closes',
+    severity: 'BLOCK',
+    resolvable: false,
+  },
 ];
 
 const openQuestions = [
@@ -131,7 +155,7 @@ export default function Spec0003Page() {
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
               Draft · RFC
             </span>
-            <span className="text-xs text-slate-400">v1.0.0</span>
+            <span className="text-xs text-slate-400">v1.1.0</span>
             <span className="text-xs text-slate-400">August 2026</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">
@@ -143,7 +167,19 @@ export default function Spec0003Page() {
           <p className="text-sm text-slate-500">
             Layer: RetailAgentOS extension on top of UCP (Universal Commerce Protocol) ·{' '}
             <Link href="/demo" className="text-emerald-600 hover:underline">Reference implementation in Playground</Link>
+            {' '}·{' '}
+            <Link href="/guided/platform" className="text-emerald-600 hover:underline">See it in the late-night pizza demo</Link>
           </p>
+          <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+            <strong>v1.1.0 (quick commerce)</strong> adds an optional merchant operating schedule
+            (<code className="font-mono text-xs">MerchantProfile.serviceSchedule</code>), per-item preparation time
+            (<code className="font-mono text-xs">preparationTimeMinutes</code>), and an exact deadline
+            (<code className="font-mono text-xs">BuyerContext.needByAt</code>) — four new reason codes below, all
+            additive, all optional, byte-identical v1.0 behavior when unset. See{' '}
+            <Link href="/guided/platform" className="underline font-medium">the late-night pizza demo</Link>{' '}
+            — and see <code className="font-mono text-xs">specs/work-packages/RAOS-0003-quick-commerce-provider-signals.md</code>{' '}
+            for the live courier/routing extension point this deliberately does NOT build.
+          </div>
 
           {/* RFC callout */}
           <div className="mt-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">

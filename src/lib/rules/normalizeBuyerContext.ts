@@ -171,6 +171,9 @@ export function normalizeBuyerContext(
     taxExempt,
     resaleCertificateOnFile,
     needByDate: partial.needByDate,
+    // RAOS-0003 v1.1 §4.3.2: same deliberate pass-through-unchanged exception
+    // as needByDate — see BuyerContext.needByAt doc comment (context.ts).
+    needByAt: partial.needByAt,
     trust,
   } satisfies NormalizedBuyerContext;
 }

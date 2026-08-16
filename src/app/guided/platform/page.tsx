@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { PlatformTrack } from '@/components/guided/tracks/PlatformTrack';
+import { PlatformGuidedDemo } from '@/components/guided/platform/PlatformGuidedDemo';
 
 export const metadata: Metadata = {
-  title: 'Commerce Platform Guided Demo | RetailAgentOS',
+  title: 'Late-Night Delivery Guided Demo | RetailAgentOS',
   description:
-    'See how a platform can compare candidate offers across merchants and explain why some can proceed and others cannot — no setup, no signup, 2 minutes.',
+    'See a late-night NYC pizza request evaluated across a RetailAgentOS-enabled local pizzeria, an unverified local shop and a platform-connected chain — no setup, no signup, 2 minutes.',
 };
 
 export default function GuidedPlatformPage() {
-  return <PlatformTrack />;
+  return <PlatformGuidedDemo />;
 }

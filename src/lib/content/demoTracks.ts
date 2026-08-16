@@ -40,12 +40,12 @@ export const DEMO_TRACKS: DemoTrackSummary[] = [
   {
     id: 'platform',
     audience: 'Commerce & Fulfilment Platforms',
-    title: 'Apply different merchant rules before building the cart.',
+    title: 'Make time-sensitive local commerce reliable across every merchant.',
     description:
-      'See how a platform can compare candidate offers and explain why some can proceed and others cannot.',
+      'See a late-night NYC pizza request evaluated across a RetailAgentOS-enabled local pizzeria, an unverified local shop and a platform-connected chain.',
     duration: '2 minutes',
     href: '/guided/platform',
-    ctaLabel: 'See the multi-merchant scenario',
+    ctaLabel: 'See the late-night delivery scenario',
   },
   {
     id: 'developer',
@@ -71,7 +71,7 @@ export const DEVELOPER_DEMO_TRACK = DEMO_TRACKS.find((t) => t.id === 'developer'
 export const ENTRY_CTA_LABEL: Record<'enterprise' | 'independent' | 'platform', string> = {
   enterprise: 'See the enterprise scenario — 2 min',
   independent: 'See the boutique demo — 90 sec',
-  platform: 'See the multi-merchant scenario — 2 min',
+  platform: 'See the late-night delivery scenario — 2 min',
 };
 
 // ---------------------------------------------------------------------------

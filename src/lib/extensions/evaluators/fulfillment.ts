@@ -29,7 +29,7 @@
  * real merchant timezone before evaluating.
  */
 
-import type { Variant } from '@/lib/types/core';
+import type { Variant, ServiceSchedule } from '@/lib/types/core';
 import type { BuyerContext } from '@/lib/types/context';
 import type { UcpExtension, ExtensionResult } from '../contract';
 import type { ComputedFulfillmentFeasibility } from '@/lib/types/extensions';
@@ -40,6 +40,7 @@ export { FULFILLMENT_NAMESPACE };
 type FeasibilityConfig = { variant: Variant };
 
 let _merchantTimezone = 'UTC';
+let _merchantSchedule: ServiceSchedule | undefined;
 
 /**
  * Set the merchant timezone to be used by the next FEASIBILITY evaluation.
@@ -52,10 +53,28 @@ export function setFulfillmentMerchantTimezone(timezone: string): void {
   _merchantTimezone = timezone;
 }
 
+/**
+ * RAOS-0003 v1.1 — set the merchant operating schedule (`MerchantProfile.
+ * serviceSchedule`) to be used by the next FEASIBILITY evaluation. Same
+ * consume-and-reset discipline as `setFulfillmentMerchantTimezone`. Passing
+ * `undefined` (or never calling this) means the schedule/acceptance/
+ * preparation checks are OMITTED for that evaluation — the correct default
+ * for every merchant that hasn't declared a schedule.
+ */
+export function setFulfillmentMerchantSchedule(schedule: ServiceSchedule | undefined): void {
+  _merchantSchedule = schedule;
+}
+
 function consumeMerchantTimezone(): string {
   const tz = _merchantTimezone;
   _merchantTimezone = 'UTC';
   return tz;
+}
+
+function consumeMerchantSchedule(): ServiceSchedule | undefined {
+  const schedule = _merchantSchedule;
+  _merchantSchedule = undefined;
+  return schedule;
 }
 
 export const fulfillmentEvaluator: UcpExtension<FeasibilityConfig, ComputedFulfillmentFeasibility> = {
@@ -70,6 +89,11 @@ export const fulfillmentEvaluator: UcpExtension<FeasibilityConfig, ComputedFulfi
     'OVERSIZE_RESTRICTION',
     'LEAD_TIME_EXCEEDS_NEED_BY',
     'CUTOFF_PASSED',
+    // RAOS-0003 v1.1 (quick-commerce additions):
+    'STORE_CLOSED',
+    'ORDER_ACCEPTANCE_ENDED',
+    'PREPARATION_EXCEEDS_NEED_BY',
+    'INSUFFICIENT_TIME_BEFORE_CLOSE',
   ] as const,
 
   readConfig(variant: Variant): FeasibilityConfig | undefined {
@@ -88,11 +112,13 @@ export const fulfillmentEvaluator: UcpExtension<FeasibilityConfig, ComputedFulfi
     now: number;
   }): ExtensionResult<ComputedFulfillmentFeasibility> {
     const merchantTimezone = consumeMerchantTimezone();
+    const merchantSchedule = consumeMerchantSchedule();
     const { feasibility, reasons } = evaluateFulfillmentFeasibility({
       variant: config.variant,
       context,
       now,
       merchantTimezone,
+      merchantSchedule,
     });
 
     return {

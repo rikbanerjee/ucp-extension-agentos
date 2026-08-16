@@ -1,6 +1,6 @@
 {
   "name": "@retailagentos/engine",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "RetailAgentOS reference engine — pure, deterministic offer evaluation.",
   "main": "./dist/index.cjs",

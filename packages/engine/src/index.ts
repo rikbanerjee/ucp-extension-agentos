@@ -40,7 +40,13 @@ export { setQuoteMeta } from '@/lib/extensions/evaluators/quote';
 // setInventoryHolds/setQuoteMeta above. evaluateOffer calls this
 // automatically from merchant.timezone; exported for callers that invoke
 // the FEASIBILITY evaluator directly outside the pipeline.
-export { setFulfillmentMerchantTimezone } from '@/lib/extensions/evaluators/fulfillment';
+export {
+  setFulfillmentMerchantTimezone,
+  // RAOS-0003 v1.1: merchant operating-schedule threading hook — same
+  // pattern, exported for callers that invoke the FEASIBILITY evaluator
+  // directly outside the pipeline.
+  setFulfillmentMerchantSchedule,
+} from '@/lib/extensions/evaluators/fulfillment';
 export type {
   DecisionRecord,
   EvaluateOfferInput,
@@ -78,6 +84,11 @@ export type {
   Variant,
   MerchantProfile,
   UcpManifest,
+  ServiceSchedule,
+  DailyServiceHours,
+  LocalTimeRange,
+  ServiceScheduleException,
+  DayOfWeek,
 } from '@/lib/types/core';
 
 export type {

@@ -2,7 +2,7 @@
 
 **Extension namespace:** `com.os.retailagent.shopping.fulfillment_constraints`
 **Status:** Draft · Request for Comment
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Layer:** RetailAgentOS extension on top of UCP (Universal Commerce Protocol)
 **Reference implementation:** [`src/lib/rules/fulfillment.ts`](../src/lib/rules/fulfillment.ts) — runnable in the [Playground](../src/app/demo/page.tsx)
 **Author:** Rik Banerjee · rikbanerjee007@gmail.com
@@ -360,6 +360,113 @@ No `fulfillmentConstraints` on any variant. Every buyer, every mode → `FEASIBL
 
 ---
 
+## 4.4 v1.1 — quick-commerce additions (2026-08-16)
+
+Motivated by the `/guided/platform` late-night NYC pizza scenario: v1.0's cutoff/lead-time checks
+answer "past 2pm, no more same-day pickup" and "3 days out, too late for the deadline" — both
+day-or-hour granularity. Quick commerce needs minute granularity ("accepting until 12:30 AM,"
+"ready in 16 minutes, need it by midnight") and a real weekly schedule, not a single cutoff hour.
+All additions below are **optional and additive** — a merchant/variant that declares none of them
+sees byte-identical v1.0 behavior (see `packages/engine/CHANGELOG.md` 0.4.0 entry for the full
+diff).
+
+### 4.4.1 Merchant operating schedule — `MerchantProfile.serviceSchedule?`
+
+```ts
+type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+interface LocalTimeRange {
+  opensAt: string;  // 'HH:mm', merchant-local
+  closesAt: string; // 'HH:mm'; closesAt <= opensAt means the interval crosses midnight
+}
+
+interface DailyServiceHours {
+  day: DayOfWeek;
+  intervals: LocalTimeRange[]; // multiple per day supported (lunch + dinner)
+}
+
+interface ServiceScheduleException {
+  date: string;              // 'YYYY-MM-DD', merchant-local
+  closed?: boolean;          // overrides weekly for this date
+  intervals?: LocalTimeRange[]; // replaces (not merges with) weekly's intervals for this date
+}
+
+interface ServiceSchedule {
+  weekly: DailyServiceHours[];
+  exceptions?: ServiceScheduleException[];
+  orderAcceptanceBufferMinutes?: number; // minutes before closesAt that order ACCEPTANCE ends
+}
+```
+
+**Deviation from the sketch in the work-package brief:** the brief's sketch used a single
+top-level `exceptions?` array keyed by date, matched by exact string equality against the
+merchant-local calendar date — implemented exactly as sketched, no changes needed. The one
+addition beyond the sketch is `orderAcceptanceBufferMinutes` living on `ServiceSchedule` itself
+(not per-interval) — a single per-merchant "how long before physical close does the kitchen stop
+taking new orders" buffer was sufficient to fully answer the demo scenario correctly.
+
+**Required, not optional-with-a-default?** Unlike `MerchantProfile.timezone`/`servesRegions`,
+`serviceSchedule` is **optional**. Those two are true-once-per-merchant invariants every merchant
+must have an answer for; a schedule is a genuinely new capability most non-quick-commerce
+merchants in this codebase's fixtures have no use for, and RAOS-0000 §7.4's blast-radius
+discipline argues against forcing every existing `MerchantProfile` fixture to grow one. Absence
+OMITS `STORE_CLOSED`/`ORDER_ACCEPTANCE_ENDED` — this is not "default to open," it is declining to
+assert a claim the merchant never made (§7.3 fail-degraded discipline, same shape as every other
+optional field in this spec).
+
+### 4.4.2 Preparation time — `FulfillmentConstraints.preparationTimeMinutes?`
+
+Per-variant (an item fact, not a merchant fact — two dishes from the same kitchen can have
+different prep times). Feeds `PREPARATION_EXCEEDS_NEED_BY` and `INSUFFICIENT_TIME_BEFORE_CLOSE`.
+
+### 4.4.3 Exact deadline — `BuyerContext.needByAt?`
+
+An ISO 8601 timestamp with an explicit offset (`Z` or `±HH:mm` — no bare local-time strings).
+Same deliberate-exception-to-most-restrictive-defaulting shape as `needByDate` (§4.3.1): absence
+never blocks. **Scope decision:** `needByAt` feeds ONLY the two new v1.1 checks. It does **not**
+retroactively change `LEAD_TIME_EXCEEDS_NEED_BY`, which remains keyed to `needByDate` exclusively
+— that check is day-granularity by design (§9.3) and deriving a calendar date from `needByAt`
+would just reproduce what `needByDate` already expresses. A caller that wants both check families
+to see its deadline should assert both fields.
+
+### 4.4.4 New reason codes
+
+| Code | Meaning | Gate |
+|------|---------|------|
+| `STORE_CLOSED` | Not open at the requested instant, per `serviceSchedule` | `pickup`/`local_delivery` only |
+| `ORDER_ACCEPTANCE_ENDED` | Still open, but past `closesAt − orderAcceptanceBufferMinutes` | `pickup`/`local_delivery` only |
+| `PREPARATION_EXCEEDS_NEED_BY` | `now + preparationTimeMinutes` is after `needByAt` | `pickup`/`local_delivery` only |
+| `INSUFFICIENT_TIME_BEFORE_CLOSE` | `now + preparationTimeMinutes` is after the schedule's close | `pickup`/`local_delivery` only |
+
+All four are gated to same-day modes — same rationale as v1.0's `cutoffHourLocal`: whether the
+store is open right now, or can finish an order before its own close, is not a fact a multi-day
+shipping promise depends on. All four are `BLOCK` severity, non-resolvable, same shape as every
+other v1.0 code. None duplicates an existing code's meaning: `CUTOFF_PASSED` is a single fixed
+hour a merchant declares once; `STORE_CLOSED`/`ORDER_ACCEPTANCE_ENDED` read a full weekly schedule
+with exceptions — a materially richer, and optional, superset a merchant can adopt independently
+of the older, simpler cutoff-hour field (both may be declared; both evaluate independently).
+
+### 4.4.5 What stays explicitly out of the deterministic engine
+
+Live courier capacity, routing, and delivery ETA remain platform/provider inputs, never RAOS
+engine computations — see §9.1 (unchanged from v1.0) and the new
+`specs/work-packages/RAOS-0003-quick-commerce-provider-signals.md` work-package brief, which
+documents (but does not build) the provider-signal shape the `/guided/platform` demo's fictional
+`PlatformFulfillmentSignal` data mirrors.
+
+### 4.4.6 The "keep accepting for N more minutes" customer constraint
+
+The NYC demo's shopper constraint ("only show stores that will keep accepting orders for at least
+another 30 minutes") is modeled as a **platform/discovery comparison**, not a new `BuyerContext`
+field or engine check: the merchant exposes its acceptance-cutoff fact (`serviceSchedule` +
+`orderAcceptanceBufferMinutes`, evaluated via `ORDER_ACCEPTANCE_ENDED`); the platform compares that
+signal against its own `minimumAcceptanceWindowMinutes: 30` shopper-intent value and the fixed
+scenario clock. This deliberately avoids conflating a shopper *preference* with a merchant
+*capability* — see the RAOS-0004 roadmap note below and
+`specs/wiki/pending/0004-discovery-match.md`.
+
+---
+
 ## 9. Open questions — Request for Comment
 
 These are genuine forks. If you operate a fulfillment network, this section is written for you —
@@ -525,6 +632,17 @@ a feasibility assertion, this spec has a documented seam ready for it.
 ---
 
 ## 11. Changelog
+
+### v1.1.0 — 2026-08-16 (quick-commerce additions, `/guided/platform` NYC pizza scenario)
+
+Additive only. New optional `MerchantProfile.serviceSchedule`, new optional
+`FulfillmentConstraints.preparationTimeMinutes`, new optional `BuyerContext.needByAt`. Four new
+reason codes: `STORE_CLOSED`, `ORDER_ACCEPTANCE_ENDED`, `PREPARATION_EXCEEDS_NEED_BY`,
+`INSUFFICIENT_TIME_BEFORE_CLOSE` — all gated to same-day modes, all `BLOCK`/non-resolvable, same
+shape as v1.0's codes. See §4.4 above for the full design write-up and
+`packages/engine/CHANGELOG.md` 0.4.0 for the engine-package diff. Live courier/routing/ETA signals
+remain explicitly out of scope — designed (not built) in
+`specs/work-packages/RAOS-0003-quick-commerce-provider-signals.md`.
 
 ### v1.0.0 — 2026-08-12 (initial draft, Tier 1 promotion)
 
