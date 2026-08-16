@@ -138,7 +138,7 @@ export default function ConformancePage() {
           </p>
 
           <div className="space-y-8">
-            {(['0001', '0002', '0005', '0007', '0008'] as const).map(specId => {
+            {(['0001', '0002', '0003', '0005', '0007', '0008'] as const).map(specId => {
               const rows = rowsBySpec.get(specId) ?? [];
               const spec = PUBLISHED_SPECS[specId];
               return (

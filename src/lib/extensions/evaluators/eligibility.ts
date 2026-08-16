@@ -75,17 +75,24 @@ export const eligibilityEvaluator: UcpExtension<EligibilityConfig, ComputedEligi
   version: '1.1.0',
   stage: 'ELIGIBILITY',
   priority: 10,
+  // RAOS-0003 migration (2026-08-12, engine 0.3.0): FULFILLMENT_UNAVAILABLE
+  // removed from this list — it is renamed FULFILLMENT_MODE_UNAVAILABLE and
+  // owned by the FEASIBILITY-stage evaluator now (evaluators/fulfillment.ts).
+  // REGION_RESTRICTED is KEPT: it is still emitted, unchanged, by the
+  // merchant-level servesRegions short-circuit in pipeline.ts
+  // (checkServesRegion) — see specs/0001-eligibility.md §9.6. Only the
+  // variant-level restrictedRegions emission (a different code, REGION_NOT_
+  // SERVED, RAOS-0003) has moved.
   reasonCodes: [
     'HIDDEN_PRODUCT',
     'REGION_RESTRICTED',
     'WHOLESALE_ONLY',
     'RESALE_CERTIFICATE_REQUIRED',
     'TIER_RESTRICTION',
-    'FULFILLMENT_UNAVAILABLE',
   ] as const,
 
   readConfig(variant: Variant): EligibilityConfig | undefined {
-    if (!variant.eligibilityRules && !variant.fulfillmentConstraints) return undefined;
+    if (!variant.eligibilityRules) return undefined;
     return { eligibilityRules: variant.eligibilityRules, variant };
   },
 

@@ -185,7 +185,7 @@ export default function AdoptPage() {
             contracts with a reason code on every decision.
           </p>
           <p className="mt-3 font-mono text-xs text-slate-500 tracking-wide">
-            VISIBILITY &rarr; ELIGIBILITY &rarr; PRICE &rarr; FULFILLMENT &rarr; QUOTE
+            VISIBILITY &rarr; ELIGIBILITY &rarr; FEASIBILITY &rarr; PRICE &rarr; FULFILLMENT &rarr; QUOTE
           </p>
           <p className="mt-2 text-sm text-slate-600">
             Same inputs, byte-identical output, always. No model in the loop, no clock reads inside

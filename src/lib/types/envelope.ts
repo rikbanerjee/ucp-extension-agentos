@@ -139,6 +139,11 @@ export interface TrustVerificationResult {
  *
  * Rationale:
  *   ELIGIBILITY / VISIBILITY: 3600s — eligibility rules are stable within a session
+ *   FEASIBILITY:              3600s — mode/region/carrier/lead-time/cutoff config is
+ *                                     merchant-declared and as stable as eligibility
+ *                                     (RAOS-0003; deliberately NOT the volatile
+ *                                     live-capacity signal — that's out of v1 scope,
+ *                                     see specs/0003-fulfillment.md §6)
  *   PRICE:                    300s  — promotions can end at any minute
  *   INVENTORY:                60s   — stock is the most volatile signal
  *   QUOTE:                    (owned by the quote token itself — not a pipeline TTL)
@@ -146,6 +151,7 @@ export interface TrustVerificationResult {
 export const STAGE_TTL_DEFAULTS: Readonly<Record<string, number>> = {
   VISIBILITY:  3600,
   ELIGIBILITY: 3600,
+  FEASIBILITY: 3600,
   PRICE:       300,
   FULFILLMENT: 3600,
   QUOTE:       300,   // fallback; quote tokens own their own TTL

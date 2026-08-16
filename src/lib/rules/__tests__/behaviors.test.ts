@@ -318,81 +318,54 @@ describe('Visibility and eligibility: guest-hidden products', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 5. REGION_RESTRICTED
+// 5. REGION_RESTRICTED / region-and-fulfillment migration (RAOS-0003)
+//
+// MIGRATED (2026-08-12, engine 0.3.0, BREAKING): variant-level
+// `fulfillmentConstraints.restrictedRegions` and `availableModes` no longer
+// affect `calculateVisibility`/`calculateEligibility` at all — RAOS-0003 now
+// owns both checks exclusively (src/lib/rules/fulfillment.ts,
+// evaluateFulfillmentFeasibility), emitting REGION_NOT_SERVED and
+// FULFILLMENT_MODE_UNAVAILABLE respectively. See
+// src/lib/rules/__tests__/fulfillment.test.ts for that coverage, and
+// specs/0001-eligibility.md §11 changelog / specs/0003-fulfillment.md §3 for
+// the write-up. This also resolves the pinned WP-00 asymmetry documented
+// below (the old early-return dead path is moot: the checks no longer share
+// a function with the early return that caused it).
+//
+// `REGION_RESTRICTED` survives in THIS file's scope only for the
+// merchant-level `servesRegions` short-circuit (RAOS-0001 §9.6,
+// regionAllowlist.ts) — untouched by this migration, unchanged, and tested
+// in pipeline.test.ts (`pipeline: region allowlist (RAOS-0001 OQ-2)`), not
+// here, because it is not reachable via calculateEligibility directly.
 // ---------------------------------------------------------------------------
 
-describe('Eligibility: REGION_RESTRICTED', () => {
-  it('PINNED: restricted region does NOT hide a variant lacking eligibilityRules (early-return shadow)', () => {
-    /**
-     * SURPRISE (WP-00): `calculateVisibility` early-returns VISIBLE when the
-     * variant has no `eligibilityRules` — BEFORE the
-     * `fulfillmentConstraints.restrictedRegions` check. The banana has
-     * restrictedRegions: ['HI','AK'] but no eligibilityRules, so it stays
-     * VISIBLE in HI. Note the asymmetry: `calculateEligibility` DOES catch
-     * the region (its REGION_RESTRICTED check sits above its early return).
-     * Pinned, not fixed — resolve in WP-01/WP-02.
-     */
-    const v = findVariant('v_g_003_1'); // restrictedRegions: ['HI', 'AK'], no eligibilityRules
-    const ctxHI: PricingContext = { ...BASE_CONTEXT, marketRegion: 'HI' };
-    const result = calculateVisibility(v, ctxHI);
-    expect(result.status).toBe('VISIBLE');
+describe('Eligibility: variant-level restrictedRegions/availableModes moved to RAOS-0003', () => {
+  it('a variant with fulfillmentConstraints but no eligibilityRules is VISIBLE/ELIGIBLE regardless of region or mode (RAOS-0003 owns the block now)', () => {
+    const v = findVariant('v_g_003_1'); // restrictedRegions: ['HI', 'AK'], availableModes: ['pickup', 'local_delivery']
+    const ctxHIShip: PricingContext = { ...BASE_CONTEXT, marketRegion: 'HI', fulfillmentMode: 'shipping' };
+    expect(calculateVisibility(v, ctxHIShip).status).toBe('VISIBLE');
+    const elig = calculateEligibility(v, ctxHIShip);
+    expect(elig.status).toBe('ELIGIBLE');
+    expect(elig.reasons).toHaveLength(0);
   });
 
-  it('restricted region DOES hide a variant when eligibilityRules is present (even empty)', () => {
-    // Same constraints as the banana, but with an (empty) eligibilityRules
-    // object so the early return is skipped — the region check now fires.
+  it('the same variant, WITH (even empty) eligibilityRules, is still VISIBLE/ELIGIBLE — the old early-return asymmetry no longer exists because the region/mode checks are gone from this module', () => {
     const v = {
       ...findVariant('v_g_003_1'),
       eligibilityRules: {},
     };
     const ctxHI: PricingContext = { ...BASE_CONTEXT, marketRegion: 'HI' };
-    const result = calculateVisibility(v, ctxHI);
-    expect(result.status).toBe('HIDDEN');
-    expect(result.reason).toContain('HI');
+    expect(calculateVisibility(v, ctxHI).status).toBe('VISIBLE');
+    expect(calculateEligibility(v, ctxHI).status).toBe('ELIGIBLE');
   });
 
-  it('region in restrictedRegions → BLOCKED with REGION_RESTRICTED in calculateEligibility', () => {
-    const v = findVariant('v_g_003_1');
-    const ctxAK: PricingContext = { ...BASE_CONTEXT, marketRegion: 'AK' };
-    const result = calculateEligibility(v, ctxAK);
-    expect(result.status).toBe('BLOCKED');
-    expect(result.reasons).toHaveLength(1);
-    expect(result.reasons[0].code).toBe('REGION_RESTRICTED');
-    expect(result.reasons[0].blocking).toBe(true);
-    expect(result.reasons[0].message).toContain('AK');
-  });
-
-  it('PINNED: non-restricted region → VISIBLE and ELIGIBLE even in an unsupported fulfillment mode', () => {
-    /**
-     * SURPRISE (WP-00): one would expect CA + shipping to be BLOCKED with
-     * FULFILLMENT_UNAVAILABLE (bananas are pickup/local_delivery only), but
-     * `calculateEligibility` early-returns ELIGIBLE when the variant has no
-     * `eligibilityRules` — before the availableModes check. Dead path; see
-     * the FULFILLMENT_UNAVAILABLE describe block below.
-     */
-    const v = findVariant('v_g_003_1');
-    const ctxCA: PricingContext = { ...BASE_CONTEXT, marketRegion: 'CA', fulfillmentMode: 'shipping' };
-    expect(calculateVisibility(v, ctxCA).status).toBe('VISIBLE');
-    const elig = calculateEligibility(v, ctxCA);
-    expect(elig.status).toBe('ELIGIBLE');
-    expect(elig.reasons).toHaveLength(0);
-  });
-
-  it('REGION_RESTRICTED takes precedence over other eligibility rules (early return)', () => {
-    /**
-     * SURPRISE: calculateEligibility returns early on REGION_RESTRICTED without
-     * evaluating requireWholesale, requireResaleCertificate, etc.
-     * A restricted-region wholesale customer gets only REGION_RESTRICTED,
-     * not REGION_RESTRICTED + WHOLESALE_ONLY compound.
-     */
-    const v = findVariant('v_g_003_1'); // has fulfillmentConstraints with restrictedRegions
-    const ctxWholesaleHI: PricingContext = {
-      ...WHOLESALE,
-      marketRegion: 'HI',
-    };
-    const result = calculateEligibility(v, ctxWholesaleHI);
-    expect(result.reasons).toHaveLength(1);
-    expect(result.reasons[0].code).toBe('REGION_RESTRICTED');
+  it('a wholesale buyer in a fulfillment-restricted region still gets the ordinary eligibility rule evaluation (no cross-stage short-circuit inside calculateEligibility)', () => {
+    const v = { ...findVariant('v_g_003_1'), eligibilityRules: { requireWholesale: true } };
+    const ctxGuestHI: PricingContext = { ...GUEST, marketRegion: 'HI' };
+    const result = calculateEligibility(v, ctxGuestHI);
+    // WHOLESALE_ONLY still fires on its own terms; REGION_NOT_SERVED is a
+    // FEASIBILITY-stage concern now, invisible to calculateEligibility.
+    expect(result.reasons.map(r => r.code)).toEqual(['WHOLESALE_ONLY']);
   });
 });
 
@@ -457,91 +430,20 @@ describe('Eligibility: WHOLESALE_ONLY and RESALE_CERTIFICATE_REQUIRED', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7. FULFILLMENT_UNAVAILABLE
+// 7. FULFILLMENT_UNAVAILABLE — MOVED to RAOS-0003 (2026-08-12, engine 0.3.0)
+//
+// Renamed FULFILLMENT_MODE_UNAVAILABLE, re-sourced under
+// com.os.retailagent.shopping.fulfillment_constraints, and no longer
+// reachable via calculateEligibility at all (see the migration note above
+// §5). The dead-path bug this section used to pin
+// ("shipping on a pickup-only variant WITHOUT eligibilityRules → ELIGIBLE")
+// is resolved as a consequence of the move: evaluateFulfillmentFeasibility
+// has no `eligibilityRules`-gated early return, so every variant with
+// fulfillmentConstraints is checked regardless. Full coverage —
+// including the "both a tier restriction AND a fulfillment block fire, only
+// the earlier stage's block governs the trace" precedence case — now lives
+// in src/lib/rules/__tests__/fulfillment.test.ts.
 // ---------------------------------------------------------------------------
-
-describe('Eligibility: FULFILLMENT_UNAVAILABLE', () => {
-  it('PINNED: shipping on a pickup-only variant WITHOUT eligibilityRules → ELIGIBLE (dead path)', () => {
-    /**
-     * SURPRISE (WP-00): the availableModes check in `calculateEligibility`
-     * sits AFTER the `if (!rules) return` early return, so a variant with
-     * fulfillmentConstraints but no eligibilityRules (the banana — the only
-     * such variant in the catalog) can never emit FULFILLMENT_UNAVAILABLE.
-     * Pinned, not fixed — resolve in WP-01/WP-02. The reachable path is
-     * tested below with a synthetic variant.
-     */
-    const v = findVariant('v_g_003_1'); // availableModes: ['pickup', 'local_delivery'], no eligibilityRules
-    const ctxShip: PricingContext = { ...BASE_CONTEXT, marketRegion: 'CA', fulfillmentMode: 'shipping' };
-    const result = calculateEligibility(v, ctxShip);
-    expect(result.status).toBe('ELIGIBLE');
-    expect(result.reasons).toHaveLength(0);
-  });
-
-  it('shipping on a pickup-only variant WITH eligibilityRules present → BLOCKED FULFILLMENT_UNAVAILABLE', () => {
-    // Empty eligibilityRules object skips the early return; the
-    // availableModes check then fires as the spec intends.
-    const v = {
-      ...findVariant('v_g_003_1'),
-      eligibilityRules: {},
-    };
-    const ctxShip: PricingContext = { ...BASE_CONTEXT, marketRegion: 'CA', fulfillmentMode: 'shipping' };
-    const result = calculateEligibility(v, ctxShip);
-    expect(result.status).toBe('BLOCKED');
-    expect(result.reasons[0].code).toBe('FULFILLMENT_UNAVAILABLE');
-    expect(result.reasons[0].blocking).toBe(true);
-  });
-
-  it('pickup mode on pickup/local_delivery-only product → ELIGIBLE', () => {
-    const v = findVariant('v_g_003_1');
-    const ctxPickup: PricingContext = { ...BASE_CONTEXT, marketRegion: 'CA', fulfillmentMode: 'pickup' };
-    const result = calculateEligibility(v, ctxPickup);
-    expect(result.status).toBe('ELIGIBLE');
-    expect(result.reasons).toHaveLength(0);
-  });
-
-  it('FULFILLMENT_UNAVAILABLE overrides TIER_RESTRICTION: both fire but status=BLOCKED', () => {
-    /**
-     * SURPRISE: If a product has BOTH a tier restriction AND a fulfillment
-     * constraint, the order of evaluation is:
-     *   1. WHOLESALE_ONLY / RESALE check
-     *   2. TIER_RESTRICTION → sets status='CONDITIONAL'
-     *   3. FULFILLMENT_UNAVAILABLE → sets status='BLOCKED' (unconditional)
-     *
-     * So both reasons appear in the list, but final status=BLOCKED.
-     * This is pinned — it means the client receives both codes even though
-     * the fulfillment issue would block regardless of tier.
-     *
-     * To reproduce: a product with requiredTier + availableModes restriction.
-     * The mug pallet has requiredTier='reseller_plus' but no availableModes.
-     * The banana has availableModes but no requiredTier.
-     * We test the interaction conceptually here with a vanilla object.
-     */
-    const syntheticVariant = {
-      id: 'synthetic',
-      sku: 'SYN-001',
-      title: 'Synthetic',
-      basePrice: 100,
-      currency: 'USD',
-      eligibilityRules: {
-        requireWholesale: true,
-        requiredTier: 'reseller_plus' as const,
-      },
-      fulfillmentConstraints: {
-        availableModes: ['pickup' as const],
-      },
-    };
-    const ctx: PricingContext = {
-      ...WHOLESALE_GOLD,
-      fulfillmentMode: 'shipping',
-    };
-    const result = calculateEligibility(syntheticVariant, ctx);
-    // TIER_RESTRICTION fires (gold < reseller_plus), then FULFILLMENT_UNAVAILABLE fires
-    expect(result.status).toBe('BLOCKED');
-    const codes = result.reasons.map(r => r.code);
-    expect(codes).toContain('TIER_RESTRICTION');
-    expect(codes).toContain('FULFILLMENT_UNAVAILABLE');
-  });
-});
 
 // ---------------------------------------------------------------------------
 // 8. validateCartLine: CONDITIONAL eligibility invalidates cart

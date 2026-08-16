@@ -71,7 +71,9 @@ function ReasonsTable({ record }: { record: DecisionRecord }) {
 // ---------------------------------------------------------------------------
 
 function StageChips({ record }: { record: DecisionRecord }) {
-  const stageOrder = ['VISIBILITY', 'ELIGIBILITY', 'PRICE', 'FULFILLMENT', 'QUOTE'] as const;
+  // RAOS-0003 (2026-08-12): FEASIBILITY inserted between ELIGIBILITY and
+  // PRICE — see src/lib/extensions/contract.ts STAGE_ORDER doc comment.
+  const stageOrder = ['VISIBILITY', 'ELIGIBILITY', 'FEASIBILITY', 'PRICE', 'FULFILLMENT', 'QUOTE'] as const;
   return (
     <div className="flex flex-wrap gap-2">
       {stageOrder.map(stage => {

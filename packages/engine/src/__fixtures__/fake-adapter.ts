@@ -42,6 +42,8 @@ const FAKE_PROFILE: MerchantProfile = {
   },
   // RAOS-0001 OQ-2 (2026-08-01): required field on MerchantProfile.
   servesRegions: ['US'],
+  // RAOS-0003 (2026-08-12): required field on MerchantProfile.
+  timezone: 'UTC',
   capabilities: [],
   manifest: {
     protocol: '0.1.0',

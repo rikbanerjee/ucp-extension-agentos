@@ -49,11 +49,12 @@ const goldenFixtures = goldenFixturesRaw as unknown as GoldenFixtures;
 
 // ---------------------------------------------------------------------------
 // Published spec identity (built specs only — per SITE-PLAN §1 claim
-// discipline. Planned specs 0003/0004/0006/0009/0010/0011/0012/0013pt2/0014+
-// are never listed here as covered.)
+// discipline. Planned specs 0004/0006/0009/0010/0011/0012/0013pt2/0014+
+// are never listed here as covered. 0003 shipped 2026-08-12 — RAOS-0003,
+// promoted Tier 4 → Tier 1.)
 // ---------------------------------------------------------------------------
 
-export type PublishedSpecId = '0000' | '0001' | '0002' | '0005' | '0007' | '0008' | '0013pt1';
+export type PublishedSpecId = '0000' | '0001' | '0002' | '0003' | '0005' | '0007' | '0008' | '0013pt1';
 
 export const PUBLISHED_SPECS: Record<
   PublishedSpecId,
@@ -62,16 +63,18 @@ export const PUBLISHED_SPECS: Record<
   '0000': { title: 'Protocol Foundations, Context & Conformance', namespace: '…core', specFile: 'specs/0000-foundations.md' },
   '0001': { title: 'Eligibility & Visibility Semantics', namespace: '…eligibility / …visibility', specFile: 'specs/0001-eligibility.md' },
   '0002': { title: 'Contextual Pricing (Member + Bulk)', namespace: '…member_pricing / …bulk_pricing', specFile: 'specs/0002-contextual-pricing.md' },
+  '0003': { title: 'Fulfillment Feasibility', namespace: '…fulfillment_constraints', specFile: 'specs/0003-fulfillment.md' },
   '0005': { title: 'Inventory & Availability', namespace: '…inventory', specFile: 'specs/0005-inventory.md' },
   '0007': { title: 'Quote Integrity & Price Lock', namespace: '…quote', specFile: 'specs/0007-quote-integrity.md' },
   '0008': { title: 'Trust, Provenance & Freshness', namespace: '…trust', specFile: 'specs/0008-trust-provenance.md' },
   '0013pt1': { title: 'Decision Trace (three audiences)', namespace: '…trace', specFile: 'specs/0013-intent-capture.md' },
 };
 
-// Namespace -> spec, for registry evaluators (RAOS-0001/0002/0005/0007).
+// Namespace -> spec, for registry evaluators (RAOS-0001/0002/0003/0005/0007).
 const NAMESPACE_TO_SPEC: Record<string, PublishedSpecId> = {
   'com.os.retailagent.shopping.visibility': '0001',
   'com.os.retailagent.shopping.eligibility': '0001',
+  'com.os.retailagent.shopping.fulfillment_constraints': '0003',
   'com.os.retailagent.shopping.pricing': '0002',
   'com.os.retailagent.shopping.inventory': '0005',
   'com.os.retailagent.shopping.quote': '0007',
@@ -88,11 +91,17 @@ interface SyntheticException {
 }
 
 const SYNTHETIC_ONLY_EXCEPTIONS: Record<string, SyntheticException> = {
-  // RAOS-0001 — CATALOG_UNREACHABLE_REASON_CODES (golden.test.ts PINNED test)
-  FULFILLMENT_UNAVAILABLE: {
-    testFile: 'src/lib/rules/__tests__/behaviors.test.ts',
-    reason:
-      'Unreachable from the current mock catalog: calculateEligibility returns early before the availableModes check, and the only variant with availableModes has no eligibilityRules. Pinned in golden.test.ts.',
+  // RAOS-0003 — RAOS_0003_SYNTHETIC_ONLY_CODES (2026-08-12). FULFILLMENT_UNAVAILABLE
+  // (formerly listed here as a CATALOG_UNREACHABLE_REASON_CODES pin) no longer
+  // exists — deprecated, renamed FULFILLMENT_MODE_UNAVAILABLE, and now reachable
+  // from the catalog grid. See specs/0001-eligibility.md §11 v2.0.0.
+  LEAD_TIME_EXCEEDS_NEED_BY: {
+    testFile: 'src/lib/rules/__tests__/fulfillment.test.ts',
+    reason: 'Requires an asserted BuyerContext.needByDate — the static golden CONTEXT_GRID has none, so this can never appear in the fixture grid.',
+  },
+  CUTOFF_PASSED: {
+    testFile: 'src/lib/rules/__tests__/fulfillment.test.ts',
+    reason: "Requires an injected `now` past the merchant-local cutoff hour — GOLDEN_NOW isn't chosen relative to any merchant's cutoffHourLocal, so this can never appear in the fixture grid.",
   },
   // RAOS-0005 — RAOS_0005_SYNTHETIC_ONLY_CODES
   RESERVATION_EXPIRED: {
@@ -134,6 +143,7 @@ function collectCodesFromFixtures(fixtures: GoldenFixtures): Set<string> {
     for (const reason of entry.eligibility.reasons) codes.add(reason.code);
     if (entry.price.reasons) for (const reason of entry.price.reasons) codes.add(reason.code);
     if (entry.availabilityReasons) for (const reason of entry.availabilityReasons) codes.add(reason.code);
+    if (entry.feasibilityReasons) for (const reason of entry.feasibilityReasons) codes.add(reason.code);
     if (entry.trustReasons) for (const reason of entry.trustReasons) codes.add(reason.code);
     for (const line of entry.cartValidation.lines) {
       for (const reason of line.eligibility.reasons) codes.add(reason.code);
@@ -253,6 +263,7 @@ const CAPABILITY_NAMESPACE_TO_SPEC: Record<string, PublishedSpecId> = {
   'com.os.retailagent.shopping.bulk_pricing': '0002',
   'com.os.retailagent.shopping.promo_pricing': '0002',
   'com.os.retailagent.shopping.pricing': '0002',
+  'com.os.retailagent.shopping.fulfillment_constraints': '0003',
   'com.os.retailagent.shopping.inventory': '0005',
   'com.os.retailagent.shopping.quote': '0007',
   'com.os.retailagent.shopping.trust': '0008',
@@ -285,7 +296,7 @@ export interface ArchetypeRow {
   cells: Record<PublishedSpecId, ArchetypeCell>;
 }
 
-const ARCHETYPE_SPEC_ORDER: PublishedSpecId[] = ['0000', '0001', '0002', '0005', '0007', '0008', '0013pt1'];
+const ARCHETYPE_SPEC_ORDER: PublishedSpecId[] = ['0000', '0001', '0002', '0003', '0005', '0007', '0008', '0013pt1'];
 
 function buildArchetypeGrid(): ArchetypeRow[] {
   return mockMerchants.map(merchant => {

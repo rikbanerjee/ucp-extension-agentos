@@ -16,6 +16,23 @@ const nextConfig: NextConfig = {
         destination: '/aeo-score',
         permanent: false,
       },
+      // IA redesign: /for-merchants is now the independent-retail solution
+      // page under /solutions. Kept as a permanent compatibility redirect so
+      // existing inbound links keep working (redirects run before rendering,
+      // so no src/app/for-merchants/page.tsx is needed alongside this).
+      {
+        source: '/for-merchants',
+        destination: '/solutions/independent-retail',
+        permanent: true,
+      },
+      // Guided-demo IA: /see-it-work is now the demo-selection hub; its
+      // useful scenes were extracted into /guided/{enterprise,independent,platform}.
+      // Exact-path match only — does not affect /guided/* child routes.
+      {
+        source: '/guided',
+        destination: '/see-it-work',
+        permanent: true,
+      },
     ];
   },
 };

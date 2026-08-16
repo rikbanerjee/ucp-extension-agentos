@@ -38,9 +38,9 @@ either sees the item or doesn't. This alone gets a merchant to Tier 1 ("no dead-
 - **Wholesale (Tier 2):** add `requireWholesale`, `requiredTier` (an ordered membership ladder:
   `gold < reseller_plus < distributor`), and `requireResaleCertificate` — qualification-gated
   commerce.
-- **Grocery / regulated (Tier 1 composing with 0011):** region-based restriction
-  (`REGION_RESTRICTED`) and fulfillment-mode gates compose with eligibility so a regulated item
-  can be visible but not shippable everywhere.
+- **Grocery / regulated (Tier 1 composing with 0003/0011):** region-based restriction
+  (`REGION_RESTRICTED`) composes with feasibility gates from [0003](0003-fulfillment.md) so a
+  regulated item can be visible but not shippable everywhere.
 
 Nothing here changes as tiers go up — the same evaluator, the same reason-code shape, just more
 rules declared on more variants.
@@ -48,7 +48,12 @@ rules declared on more variants.
 ## Reason codes at a glance
 
 `HIDDEN_PRODUCT`, `REGION_RESTRICTED`, `WHOLESALE_ONLY`, `RESALE_CERTIFICATE_REQUIRED`,
-`TIER_RESTRICTION`, `FULFILLMENT_UNAVAILABLE`.
+`TIER_RESTRICTION`.
+
+`FULFILLMENT_UNAVAILABLE` is **deprecated** (engine 0.3.0) — fulfillment-mode feasibility moved
+out of eligibility into its own FEASIBILITY stage; see
+[0003 · Fulfillment Feasibility](0003-fulfillment.md), which supersedes it with
+`FULFILLMENT_MODE_UNAVAILABLE`.
 
 ## Reference implementation
 

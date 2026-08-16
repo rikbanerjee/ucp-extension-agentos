@@ -28,6 +28,7 @@ import type {
   ComputedVisibility,
   ComputedEligibility,
   ComputedPriceState,
+  ComputedFulfillmentFeasibility,
 } from '@/lib/types/extensions';
 import type { ReasonEntry } from '@/lib/types/reasons';
 import type { ComputedAvailability } from '@/lib/types/inventory';
@@ -75,6 +76,19 @@ export interface GoldenEntry {
    */
   availability: ComputedAvailability;
   availabilityReasons: ReasonEntry[];
+
+  /**
+   * RAOS-0003 (2026-08-12): fulfillment feasibility output and reason codes
+   * (evaluateFulfillmentFeasibility). Present for all variants; variants
+   * without fulfillmentConstraints produce feasibility.status='FEASIBLE'
+   * with empty reasons[]. LEAD_TIME_EXCEEDS_NEED_BY and CUTOFF_PASSED are
+   * synthetic-only (see RAOS_0003_SYNTHETIC_ONLY_CODES in
+   * helpers/reasonCodeCoverage.ts) — the static CONTEXT_GRID has no
+   * needByDate, so they cannot appear here; both are exercised in
+   * fulfillment.test.ts.
+   */
+  feasibility: ComputedFulfillmentFeasibility;
+  feasibilityReasons: ReasonEntry[];
 
   /**
    * WP-06 (RAOS-0008): The provenance+freshness envelope attached centrally

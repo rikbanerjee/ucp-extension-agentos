@@ -2,7 +2,9 @@
  * WP-01 / WP-02: UCP Extension Pipeline
  *
  * `evaluateOffer` runs all enabled stage evaluators in the fixed order
- * (VISIBILITY → ELIGIBILITY → PRICE → FULFILLMENT → QUOTE), guards each
+ * (VISIBILITY → ELIGIBILITY → FEASIBILITY → PRICE → FULFILLMENT → QUOTE —
+ * reordered 2026-08-12 by RAOS-0003, engine 0.3.0; see STAGE_ORDER's doc
+ * comment in contract.ts for the full justification), guards each
  * evaluator with try/catch per RAOS-0000 §7.3 degradation semantics, and
  * folds everything into a `DecisionRecord` — the trace substrate for WP-08.
  *
@@ -51,6 +53,7 @@ import { signEnvelope, buildTrustReasonEntries, TRUST_REASON_CODES, TRUST_NAMESP
 import { STAGE_TTL_DEFAULTS } from '@/lib/types/envelope';
 import type { ReasonEntry as TrustReasonEntry } from '@/lib/types/reasons';
 import { checkServesRegion } from '@/lib/rules/regionAllowlist';
+import { setFulfillmentMerchantTimezone } from './evaluators/fulfillment';
 
 // ---------------------------------------------------------------------------
 // DecisionRecord — the trace substrate (WP-08 will render it)
@@ -162,6 +165,10 @@ type StageClass = 'SAFETY_CRITICAL' | 'ADVISORY';
 const STAGE_CLASS: Record<PipelineStage, StageClass> = {
   VISIBILITY: 'ADVISORY',
   ELIGIBILITY: 'SAFETY_CRITICAL',
+  // RAOS-0003: every v1 reason code is BLOCK + dead-end-cart, same class as
+  // ELIGIBILITY — an evaluator that throws must degrade to BLOCK, not be
+  // silently omitted (which would let an infeasible item look feasible).
+  FEASIBILITY: 'SAFETY_CRITICAL',
   PRICE: 'ADVISORY',
   FULFILLMENT: 'ADVISORY',
   QUOTE: 'SAFETY_CRITICAL',
@@ -273,6 +280,13 @@ function injectQuantityIfNeeded(
 export function evaluateOffer(input: EvaluateOfferInput): DecisionRecord {
   const { merchant, variant, quantity, now } = input;
   const trustEnforcement = input.trustEnforcement ?? 'enforce';
+
+  // RAOS-0003: thread the merchant-level timezone invariant to the
+  // FEASIBILITY-stage evaluator via the module-level slot (see
+  // evaluators/fulfillment.ts doc comment — same pattern as
+  // setInventoryHolds). Set unconditionally, every call, so no timezone
+  // value from a prior evaluation can leak into this one.
+  setFulfillmentMerchantTimezone(merchant.timezone);
 
   // Normalize context at the pipeline boundary (RAOS-0000 §4.3 + §7.2).
   const normalizedContext = normalizeBuyerContext(

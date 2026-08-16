@@ -6,9 +6,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3010",
     "build": "npm run build -w @retailagentos/engine && next build",
-    "start": "next start",
+    "start": "next start -p 3010",
     "lint": "eslint",
     "test": "vitest run --coverage",
     "test:watch": "vitest"

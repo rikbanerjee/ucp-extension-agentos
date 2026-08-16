@@ -2,29 +2,92 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { AUDIENCES } from '@/lib/content/audiences';
+import { DEVELOPER_LINKS, EVIDENCE_LINKS } from '@/lib/content/developerLinks';
+
+type FooterLink = { href: string; label: string; external?: boolean };
+type FooterColumn = { title: string; links: FooterLink[] };
+
+const columns: FooterColumn[] = [
+  {
+    title: 'Product',
+    links: [
+      { href: '/#how-it-works', label: 'How it works' },
+      { href: '/#retail-breadth', label: 'Retail scenarios' },
+      { href: '/evidence', label: 'Evidence' },
+      { href: '/#maturity', label: 'Maturity' },
+    ],
+  },
+  {
+    title: 'Solutions',
+    links: AUDIENCES.map((a) => ({ href: a.href, label: a.navLabel })),
+  },
+  {
+    title: 'Developers',
+    links: DEVELOPER_LINKS.map(({ href, label }) => ({ href, label })),
+  },
+  {
+    title: 'Company',
+    links: [
+      { href: '/vision', label: 'Vision' },
+      { href: '/buildlog', label: 'Build Log' },
+      { href: '/vision#founder', label: 'Founder' },
+      { href: 'mailto:rikbanerjee007@gmail.com', label: 'Contact' },
+      { href: 'https://www.linkedin.com/in/rik-banerjee/', label: 'LinkedIn', external: true },
+      { href: 'https://rikngeek.substack.com', label: 'Substack', external: true },
+    ],
+  },
+];
 
 export function Footer() {
   const pathname = usePathname();
   if (pathname === '/demo') return null;
   return (
     <footer className="border-t border-slate-200 bg-white shrink-0">
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-y-2 gap-x-6">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+          {columns.map((column) => (
+            <div key={column.title}>
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                {column.title}
+              </h3>
+              <ul className="space-y-2">
+                {column.links.map((link) => (
+                  <li key={link.href}>
+                    {link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link href={link.href} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
 
-        <p className="text-xs text-slate-400">
-          <a href="mailto:rikbanerjee007@gmail.com" className="text-slate-500 hover:text-slate-700 transition-colors font-medium">
-            Rik Banerjee
-          </a>
-          {' '}· UCP = the rails · <span className="font-semibold text-slate-600">RetailAgent<span className="text-emerald-600">OS</span></span> = the reasoning layer · Building in public
-        </p>
-
-        <nav className="flex items-center gap-4 text-xs text-slate-500">
-          <Link href="/for-merchants" className="hover:text-slate-800 transition-colors">For Merchants</Link>
-          <Link href="/buildlog" className="hover:text-slate-800 transition-colors">Build Log</Link>
-          <a href="https://www.linkedin.com/in/rik-banerjee/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-800 transition-colors">LinkedIn</a>
-          <a href="https://rikngeek.substack.com" target="_blank" rel="noopener noreferrer" className="hover:text-slate-800 transition-colors">Substack</a>
-          <a href="mailto:rikbanerjee007@gmail.com" className="hover:text-slate-800 transition-colors">Get in touch</a>
-        </nav>
-
+        <div className="mt-10 pt-6 border-t border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-slate-400">
+            <span className="font-semibold text-slate-600">RetailAgent<span className="text-emerald-600">OS</span></span>
+            {' '}· UCP is the rails; RetailAgentOS is the reasoning layer · Building in public
+          </p>
+          <nav className="flex items-center gap-4 text-xs text-slate-500">
+            {EVIDENCE_LINKS.map(({ href, label }) => (
+              <Link key={href} href={href} className="hover:text-slate-800 transition-colors">{label}</Link>
+            ))}
+            <Link href="/agents.md" className="hover:text-slate-800 transition-colors font-mono">/agents.md</Link>
+            <Link href="/.well-known/ucp" className="hover:text-slate-800 transition-colors font-mono">/.well-known/ucp</Link>
+          </nav>
+        </div>
       </div>
     </footer>
   );

@@ -32,6 +32,7 @@ import { calculateVisibility, calculateEligibility } from '@/lib/rules/eligibili
 import { computePrice } from '@/lib/rules/pricing';
 import { validateCartLine } from '@/lib/rules/cartValidation';
 import { evaluateInventory } from '@/lib/rules/inventory';
+import { evaluateFulfillmentFeasibility } from '@/lib/rules/fulfillment';
 import { mockProducts } from '@/lib/mock/catalog';
 import type { PricingContext } from '@/lib/types/extensions';
 import type { Variant } from '@/lib/types/core';
@@ -46,6 +47,9 @@ import {
   RAOS_0008_SYNTHETIC_ONLY_CODES,
   CATALOG_UNREACHABLE_REASON_CODES,
   RAOS_0001_MANIFEST_ONLY_CODES,
+  RAOS_0001_PIPELINE_ONLY_CODES,
+  RAOS_0003_REASON_CODES,
+  RAOS_0003_SYNTHETIC_ONLY_CODES,
 } from './helpers/reasonCodeCoverage';
 import { signEnvelope, buildTrustReasonEntries, TRUST_REASON_CODES, TRUST_NAMESPACE } from '@/lib/rules/trust';
 import { STAGE_TTL_DEFAULTS } from '@/lib/types/envelope';
@@ -496,6 +500,21 @@ function generateFixtures(): GoldenFixtures {
           now: GOLDEN_NOW,
         });
 
+        // RAOS-0003: evaluate fulfillment feasibility. Look up the owning
+        // merchant early (also needed below for the envelope) to get its
+        // timezone; fall back to 'UTC' for any variant whose merchant is
+        // somehow not found (defensive only — every catalog variant has one).
+        const owningProduct = mockProducts.find(p => p.variants.some(v => v.id === variant.id));
+        const owningMerchant = owningProduct
+          ? mockMerchants.find(m => m.merchantId === owningProduct.merchantId)
+          : undefined;
+        const feasibilityResult = evaluateFulfillmentFeasibility({
+          variant,
+          context,
+          now: GOLDEN_NOW,
+          merchantTimezone: owningMerchant?.timezone ?? 'UTC',
+        });
+
         // validateCart for single line
         const lineResult = validateCartLine(variant, qty, context);
         const cartValidation = {
@@ -522,10 +541,9 @@ function generateFixtures(): GoldenFixtures {
         // In the golden fixture grid we sign over the variant ID as a stable payload
         // (in the pipeline, the inputsHash is used; here we use variantId for simplicity
         // since this mirrors what the pipeline would produce).
-        const product = mockProducts.find(p => p.variants.some(v => v.id === variant.id));
-        const merchant = product
-          ? mockMerchants.find(m => m.merchantId === product.merchantId)
-          : undefined;
+        // Reuses the owningProduct/owningMerchant lookup from the RAOS-0003
+        // feasibility evaluation above.
+        const merchant = owningMerchant;
         const merchantIssuer = merchant
           ? merchant.endpoints.catalog.replace(/\/ucp\/catalog$/, '')
           : 'https://unknown.test';
@@ -561,6 +579,9 @@ function generateFixtures(): GoldenFixtures {
           // WP-05: inventory availability output and reasons
           availability: inventoryResult.availability,
           availabilityReasons: inventoryResult.reasons,
+          // RAOS-0003: fulfillment feasibility output and reasons
+          feasibility: feasibilityResult.feasibility,
+          feasibilityReasons: feasibilityResult.reasons,
           // WP-06 (RAOS-0008): provenance+freshness envelope and trust reasons
           envelope: {
             issuer: envelope.provenance.issuer,
@@ -663,7 +684,8 @@ describe('Reason code coverage', () => {
     const reachable = RAOS_0001_REASON_CODES.filter(
       code =>
         !(CATALOG_UNREACHABLE_REASON_CODES as readonly string[]).includes(code) &&
-        !(RAOS_0001_MANIFEST_ONLY_CODES as readonly string[]).includes(code),
+        !(RAOS_0001_MANIFEST_ONLY_CODES as readonly string[]).includes(code) &&
+        !(RAOS_0001_PIPELINE_ONLY_CODES as readonly string[]).includes(code),
     );
     assertReasonCodeCoverage(reachable, fixtures);
   });
@@ -671,6 +693,25 @@ describe('Reason code coverage', () => {
   it('all RAOS-0002 reason codes appear in at least one fixture', () => {
     const fixtures = IS_UPDATE_MODE ? generatedFixtures : (fixturesOnDisk ?? generatedFixtures);
     assertReasonCodeCoverage(RAOS_0002_REASON_CODES as unknown as readonly string[], fixtures);
+  });
+
+  it('all catalog-reachable RAOS-0003 reason codes appear in at least one fixture', () => {
+    /**
+     * FULFILLMENT_MODE_UNAVAILABLE and REGION_NOT_SERVED: v_g_003_1 (bananas)
+     * — availableModes: ['pickup','local_delivery'], restrictedRegions:
+     * ['HI','AK']. HAZMAT_RESTRICTION / OVERSIZE_RESTRICTION: the Wholesale B
+     * hazmat/oversize variants added alongside this spec.
+     *
+     * LEAD_TIME_EXCEEDS_NEED_BY and CUTOFF_PASSED are synthetic-only — the
+     * static CONTEXT_GRID has no needByDate and GOLDEN_NOW isn't chosen
+     * relative to any merchant's cutoff hour. Both are exercised in
+     * fulfillment.test.ts.
+     */
+    const fixtures = IS_UPDATE_MODE ? generatedFixtures : (fixturesOnDisk ?? generatedFixtures);
+    const reachable = RAOS_0003_REASON_CODES.filter(
+      code => !(RAOS_0003_SYNTHETIC_ONLY_CODES as readonly string[]).includes(code),
+    );
+    assertReasonCodeCoverage(reachable, fixtures);
   });
 
   it('all catalog-reachable RAOS-0005 reason codes appear in at least one fixture', () => {
@@ -731,22 +772,24 @@ describe('Reason code coverage', () => {
     ).toHaveLength(0);
   });
 
-  it('PINNED: FULFILLMENT_UNAVAILABLE is unreachable from the current catalog (dead path)', () => {
+  it('RESOLVED (2026-08-12, RAOS-0003): CATALOG_UNREACHABLE_REASON_CODES is now empty — the WP-00 dead path no longer exists', () => {
     /**
-     * SURPRISE (WP-00): `calculateEligibility` early-returns when a variant has
-     * no `eligibilityRules` — BEFORE the `availableModes` fulfillment check.
-     * The only catalog variant with `availableModes` (v_g_003_1) has no
-     * `eligibilityRules`, so no fixture can ever contain this code. The code
-     * path is exercised via synthetic variants in behaviors.test.ts.
-     *
-     * If this test fails, the path became reachable (WP-01/WP-02 refactor or
-     * new mock data): remove the code from CATALOG_UNREACHABLE_REASON_CODES
-     * and regenerate goldens with UPDATE_GOLDEN=1.
+     * This test used to pin FULFILLMENT_UNAVAILABLE as permanently
+     * unreachable from `calculateEligibility` (a dead path caused by the
+     * `eligibilityRules`-gated early return running before the
+     * `availableModes` check). The RAOS-0003 migration removed the check
+     * from `calculateEligibility` entirely rather than fix the ordering —
+     * it now lives in `evaluateFulfillmentFeasibility`, which has no such
+     * early return (see specs/0001-eligibility.md §11 and
+     * `Eligibility: variant-level restrictedRegions/availableModes moved to
+     * RAOS-0003` in behaviors.test.ts). There is no longer a dead code path
+     * to pin. This test guards against a future PR silently repopulating
+     * CATALOG_UNREACHABLE_REASON_CODES without a matching investigation.
      */
+    expect(CATALOG_UNREACHABLE_REASON_CODES).toHaveLength(0);
     const fixtures = IS_UPDATE_MODE ? generatedFixtures : (fixturesOnDisk ?? generatedFixtures);
     const covered = collectCodesFromFixtures(fixtures);
-    for (const code of CATALOG_UNREACHABLE_REASON_CODES) {
-      expect(covered.has(code), `${code} unexpectedly appeared in fixtures — dead path is now live`).toBe(false);
-    }
+    expect(covered.has('FULFILLMENT_UNAVAILABLE')).toBe(false); // code no longer exists at all
+    expect(covered.has('FULFILLMENT_MODE_UNAVAILABLE')).toBe(true); // its RAOS-0003 replacement IS reachable
   });
 });

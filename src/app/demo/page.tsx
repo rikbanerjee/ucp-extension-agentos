@@ -8,6 +8,8 @@ import type { BuyerContext, CustomerType, MembershipTier, LoyaltyTier } from '@/
 import type { ComputedVisibility, ComputedEligibility, ComputedPriceState } from '@/lib/types/extensions';
 import { CartLine } from '@/lib/types/core';
 import { calculateEligibility, calculateVisibility } from '@/lib/rules/eligibility';
+import { evaluateFulfillmentFeasibility } from '@/lib/rules/fulfillment';
+import type { ComputedFulfillmentFeasibility } from '@/lib/types/extensions';
 import { getApplicablePrice, computePrice } from '@/lib/rules/pricing';
 import { validateCartLine } from '@/lib/rules/cartValidation';
 import { evaluateOffer } from '@retailagentos/engine';
@@ -26,13 +28,25 @@ import { ViewToggle } from '@/components/ui/ViewToggle';
 import { DemoInfographics } from '@/components/demo/DemoInfographics';
 import { QuoteSimulator } from '@/components/demo/QuoteSimulator';
 
-function getWhyLine(visibility: ComputedVisibility, eligibility: ComputedEligibility, priceState: ComputedPriceState): string {
+function getWhyLine(
+  visibility: ComputedVisibility,
+  eligibility: ComputedEligibility,
+  priceState: ComputedPriceState,
+  feasibility?: ComputedFulfillmentFeasibility,
+): string {
   if (visibility.status === 'HIDDEN') {
     return `Hidden — ${visibility.reason || 'not visible in this context.'}`;
   }
   if (eligibility.status === 'BLOCKED') {
     const reason = eligibility.reasons.find(r => r.blocking);
     return `Blocked — ${reason?.message || 'buyer does not meet requirements.'}`;
+  }
+  // RAOS-0003: "first-blocking-stage governs" (STAGE_ORDER: ELIGIBILITY before
+  // FEASIBILITY) — an eligibility BLOCKED above already returned; a
+  // feasibility block is checked next, before eligibility's CONDITIONAL path.
+  if (feasibility?.status === 'BLOCKED') {
+    const reason = feasibility.reasons[0];
+    return `Blocked — ${reason?.message || 'cannot be fulfilled in this context.'}`;
   }
   if (eligibility.status === 'CONDITIONAL') {
     return `Conditional — ${eligibility.reasons[0]?.message || 'additional requirements needed.'}`;
@@ -301,18 +315,30 @@ export default function DemoPage() {
       const variant = product.variants[0]; // simplify to single variant for demo
       const visibility = calculateVisibility(variant, effectiveContext);
       const eligibility = calculateEligibility(variant, effectiveContext);
+      // RAOS-0003: fulfillment feasibility — "can this reach this buyer at
+      // all," independent of eligibility (who may buy). Same fixed now=0
+      // baseline as eligibility/pricing in this quick-view path (see the
+      // staleToggle comment above for why envelope-only "now" is separate).
+      const feasibilityMerchant = mockMerchants.find(m => m.merchantId === product.merchantId);
+      const feasibility = evaluateFulfillmentFeasibility({
+        variant,
+        context: effectiveContext,
+        now: 0,
+        merchantTimezone: feasibilityMerchant?.timezone ?? 'UTC',
+      }).feasibility;
 
       const isVisible = visibility.status === 'VISIBLE';
       const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             product.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesMerchant = merchantFilter === 'all' || product.merchantId === merchantFilter;
-      const meetsEligibilityFilter = !hideIneligible || (isVisible && eligibility.status !== 'BLOCKED');
+      const meetsEligibilityFilter = !hideIneligible || (isVisible && eligibility.status !== 'BLOCKED' && feasibility.status !== 'BLOCKED');
 
       return {
         product,
         variant,
         visibility,
         eligibility,
+        feasibility,
         show: matchesSearch && matchesMerchant && meetsEligibilityFilter
       };
     }).filter(item => item.show);
@@ -357,12 +383,22 @@ export default function DemoPage() {
           <h1 className="text-sm font-bold text-slate-900 truncate">Agent Reasoning Playground</h1>
           <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">Change the buyer context on the left — watch what the agent is allowed to see, recommend, and do on the right.</p>
         </div>
-        <a
-          href="/for-merchants#readiness"
-          className="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-        >
-          Check agent-readiness →
-        </a>
+        <div className="shrink-0 flex items-center gap-3">
+          {/* Restrained next-step links — keeps the full-screen tool intact, no persistent footer */}
+          <nav aria-label="Next steps" className="hidden lg:flex items-center gap-3 text-xs font-medium text-slate-500">
+            <a href="/adopt" className="hover:text-slate-800 transition-colors whitespace-nowrap">Start with the adoption guide</a>
+            <span className="text-slate-300" aria-hidden="true">·</span>
+            <a href="/specs" className="hover:text-slate-800 transition-colors whitespace-nowrap">Specifications</a>
+            <span className="text-slate-300" aria-hidden="true">·</span>
+            <a href="/evidence/conformance" className="hover:text-slate-800 transition-colors whitespace-nowrap">Conformance</a>
+          </nav>
+          <a
+            href="/solutions/independent-retail#readiness"
+            className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
+          >
+            Check agent-readiness →
+          </a>
+        </div>
       </div>
       {/* Three-column layout — desktop side-by-side, mobile single-panel */}
       <div className="flex-1 flex overflow-hidden min-h-0">
@@ -642,18 +678,27 @@ export default function DemoPage() {
           {activeTab === 'catalog' && (
             <div className="space-y-4 max-w-3xl mx-auto">
               {filteredCatalog.map(item => {
-                const { product, variant, visibility, eligibility } = item;
+                const { product, variant, visibility, eligibility, feasibility } = item;
                 const merchant = mockMerchants.find(m => m.merchantId === product.merchantId);
                 const priceState = getApplicablePrice(variant, 1, effectiveContext);
 
                 const isGrocery = product.merchantId === 'm_grocery_003';
                 const isWholesale = product.merchantId === 'm_wholesale_002';
 
+                // RAOS-0003: a feasibility BLOCK displays the same as an
+                // eligibility BLOCK — both are dead-end-cart, BLOCK-severity
+                // stops. "First-blocking-stage governs" (eligibility first)
+                // for which MESSAGE shows (getWhyLine below); the BADGE just
+                // needs to show BLOCKED if either stage blocked.
+                const displayStatus = eligibility.status === 'BLOCKED' || feasibility.status === 'BLOCKED'
+                  ? 'BLOCKED'
+                  : eligibility.status;
+
                 let badgeVariant: BadgeVariant = 'neutral';
                 if (visibility.status === 'HIDDEN') badgeVariant = 'neutral';
-                else if (eligibility.status === 'ELIGIBLE') badgeVariant = 'success';
-                else if (eligibility.status === 'CONDITIONAL') badgeVariant = 'warning';
-                else if (eligibility.status === 'BLOCKED') badgeVariant = 'error';
+                else if (displayStatus === 'ELIGIBLE') badgeVariant = 'success';
+                else if (displayStatus === 'CONDITIONAL') badgeVariant = 'warning';
+                else if (displayStatus === 'BLOCKED') badgeVariant = 'error';
 
                 return (
                   <Panel
@@ -666,11 +711,11 @@ export default function DemoPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{merchantMeta[product.merchantId]?.humanName ?? merchant?.merchantName}</span>
                           <Badge variant={badgeVariant}>
-                            {visibility.status === 'HIDDEN' ? 'HIDDEN' : eligibility.status}
+                            {visibility.status === 'HIDDEN' ? 'HIDDEN' : displayStatus}
                           </Badge>
                         </div>
                         <p className="text-xs text-slate-500 mb-1.5 italic">
-                          {getWhyLine(visibility, eligibility, priceState)}
+                          {getWhyLine(visibility, eligibility, priceState, feasibility)}
                         </p>
                         <h3 className="text-lg font-bold text-slate-900">{product.title}</h3>
                         <p className="text-sm text-slate-600 mt-1">{product.description}</p>
@@ -947,6 +992,13 @@ export default function DemoPage() {
                 // grid still calls rules directly — rewiring that is TODO WP-08 debt).
                 const visibility = calculateVisibility(variant, effectiveContext);
                 const eligibility = calculateEligibility(variant, effectiveContext);
+                // RAOS-0003: same direct-rule-call convention as visibility/eligibility above.
+                const feasibility = evaluateFulfillmentFeasibility({
+                  variant,
+                  context: effectiveContext,
+                  now: pipelineNow,
+                  merchantTimezone: merchant.timezone,
+                }).feasibility;
                 const { priceState, reasons: priceReasons } = computePrice(variant, quantity, effectiveContext);
 
                 const isBoutique = product.merchantId === 'm_boutique_001';
@@ -1001,6 +1053,7 @@ export default function DemoPage() {
                   extensions: {
                     visibility,
                     eligibility,
+                    fulfillment_feasibility: feasibility,
                     pricing: payloadPricing,
                     ...(variant.bulkPricing ? { bulk_pricing_rules: variant.bulkPricing } : {}),
                     ...(variant.promoPricing ? { promo_pricing_rules: variant.promoPricing } : {}),

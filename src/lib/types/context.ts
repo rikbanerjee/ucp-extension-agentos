@@ -89,6 +89,22 @@ export interface BuyerContext {
   resaleCertificateOnFile: boolean;
 
   /**
+   * RAOS-0003 §4 — the buyer's fulfillment deadline, if any ('YYYY-MM-DD',
+   * evaluated against the merchant's local calendar — see `MerchantProfile.timezone`
+   * in core.ts). Consumed by `LEAD_TIME_EXCEEDS_NEED_BY`.
+   *
+   * OPTIONAL BY DESIGN (RAOS-0000 §13 changelog, following the 0001 §9.6
+   * `servesRegions` precedent): the naive "most-restrictive" reading of an
+   * unknown/missing field (§4.3) would be to treat absence as the most
+   * urgent possible deadline and block on lead time by default — that would
+   * break every existing fixture and every buyer who simply hasn't stated a
+   * deadline. Absence means "no deadline asserted ⇒ never blocks on lead
+   * time," the opposite of the usual most-restrictive default. This is a
+   * deliberate, spec-documented exception to §4.3 for this field only.
+   */
+  needByDate?: string;
+
+  /**
    * Trust envelope (RAOS-0000 §4.2). Describes how much to believe the above
    * claims. Missing → treated as asserted (most-restrictive) by
    * `normalizeBuyerContext`. Optional for backward compat with legacy callers.
@@ -110,6 +126,8 @@ export interface NormalizedBuyerContext extends Required<Pick<BuyerContext, 'loy
   accountLinked: boolean;
   taxExempt: boolean;
   resaleCertificateOnFile: boolean;
+  /** RAOS-0003 §4 — passed through as-is; absence is meaningful (see BuyerContext.needByDate). */
+  needByDate?: string;
   trust: BuyerContextTrust;
 }
 

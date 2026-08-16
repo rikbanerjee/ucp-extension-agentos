@@ -75,14 +75,21 @@ const capabilityCatalog: Record<string, UcpCapabilityEntry> = {
     required: false,
     tier: 2
   },
+  /**
+   * RAOS-0003 (promoted Tier 4 → Tier 1, 2026-08-12): fulfillment feasibility
+   * — mode, region, hazmat/oversize carrier restrictions, lead-time-vs-need-by,
+   * and same-day cutoff. Required for all Qualified merchants, same floor as
+   * ext.eligibility and ext.inventory: "no dead-end carts" includes "can this
+   * reach this buyer at all."
+   */
   'ext.fulfillment_constraints': {
     id: 'ext.fulfillment_constraints',
     name: 'Fulfillment Constraints',
     version: '1.0.0',
     namespace: 'com.os.retailagent.shopping.fulfillment_constraints',
-    description: 'Complex constraint solving for shipping/pickup modes and regional availability.',
-    required: false,
-    tier: 4
+    description: 'Deterministic reach: mode, region, hazmat/oversize carrier restrictions, lead-time-vs-need-by, and same-day cutoff feasibility.',
+    required: true,
+    tier: 1
   },
   'ext.loyalty': {
     id: 'ext.loyalty',
@@ -229,6 +236,9 @@ export const mockMerchants: MerchantProfile[] = [
     // RAOS-0001 OQ-2 (2026-08-01): servesRegions is now required on
     // MerchantProfile. Boutique A is a US/CA DTC store.
     servesRegions: ['US', 'CA'],
+    // RAOS-0003 (2026-08-12): timezone is now required on MerchantProfile.
+    // Boutique A is a West Coast DTC store.
+    timezone: 'America/Los_Angeles',
     capabilities: coreCapabilities,
     manifest: {
       protocol: '1.0',
@@ -239,6 +249,7 @@ export const mockMerchants: MerchantProfile[] = [
         'ext.visibility',
         'ext.eligibility',
         'ext.inventory',
+        'ext.fulfillment_constraints',
         'ext.member_pricing',
         'ext.pricing',
       ),
@@ -265,6 +276,10 @@ export const mockMerchants: MerchantProfile[] = [
     // scenario.test.ts, which exercises a CA buyer and a HI buyer against
     // this exact merchant).
     servesRegions: ['US', 'CA', 'HI'],
+    // RAOS-0003 (2026-08-12): Wholesale B ships from a Central-time DC —
+    // its cutoff/lead-time worked example (hazmat + oversize freight) uses
+    // this timezone.
+    timezone: 'America/Chicago',
     capabilities: coreCapabilities,
     manifest: {
       protocol: '1.0',
@@ -275,6 +290,7 @@ export const mockMerchants: MerchantProfile[] = [
         'ext.visibility',
         'ext.eligibility',
         'ext.inventory',
+        'ext.fulfillment_constraints',
         'ext.member_pricing',
         'ext.bulk_pricing',
         'ext.pricing',
@@ -304,6 +320,9 @@ export const mockMerchants: MerchantProfile[] = [
     // blocks HI/AK for THAT variant specifically; this allowlist is the
     // separate, merchant-level "do we ship here at all" gate (RAOS-0001 §9).
     servesRegions: ['US', 'HI', 'AK'],
+    // RAOS-0003 (2026-08-12): Grocery C's same-day-cutoff and lead-time
+    // worked examples (deli cutoff, custom bakery order) use this timezone.
+    timezone: 'America/New_York',
     capabilities: coreCapabilities,
     manifest: {
       protocol: '1.0',

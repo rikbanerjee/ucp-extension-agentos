@@ -157,6 +157,10 @@ export function normalizeBuyerContext(
     ? false
     : partial.resaleCertificateOnFile === true;
 
+  // RAOS-0003 §4 (RAOS-0000 §13 changelog): needByDate is a deliberate
+  // EXCEPTION to the most-restrictive-default rule (§4.3). Absence means "no
+  // deadline asserted" — passed through unchanged, never defaulted or
+  // coerced. See BuyerContext.needByDate doc comment (context.ts) for why.
   return {
     customerType,
     loyaltyTier,
@@ -166,6 +170,7 @@ export function normalizeBuyerContext(
     accountLinked,
     taxExempt,
     resaleCertificateOnFile,
+    needByDate: partial.needByDate,
     trust,
   } satisfies NormalizedBuyerContext;
 }

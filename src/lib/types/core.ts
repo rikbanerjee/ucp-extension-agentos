@@ -127,6 +127,28 @@ export interface MerchantProfile {
    *     backstop for the callers types can't reach.
    */
   servesRegions: string[];
+  /**
+   * IANA timezone identifier (e.g. `'America/Los_Angeles'`) the merchant
+   * operates on. REQUIRED (2026-08-12, RAOS-0003 §4 — see
+   * `specs/0003-fulfillment.md` §4 and RAOS-0000 §13 changelog).
+   *
+   * Same rationale and shape of decision as `servesRegions` above: a
+   * same-day cutoff ("order by 3pm") or a lead-time-vs-need-by comparison is
+   * meaningless without a merchant-local clock to evaluate it against, and
+   * this is a merchant-level invariant (true once per merchant, not once
+   * per variant) — exactly `servesRegions`'s shape. Required (not
+   * optional-with-a-UTC-default) for the same reason `servesRegions` is
+   * required: a silently-wrong default here is a silent failure of the
+   * exact safety property RAOS-0003 exists to fix (promising same-day
+   * pickup after the real local cutoff has passed). TypeScript refusing to
+   * compile a profile that omits it converts that failure mode from
+   * "wrong at runtime" to "won't build."
+   *
+   * `CUTOFF_PASSED` and `LEAD_TIME_EXCEEDS_NEED_BY` (RAOS-0003) are the only
+   * consumers; every other check in the fulfillment-feasibility evaluator is
+   * timezone-independent.
+   */
+  timezone: string;
   /** The locked `{ tier, capabilities[] }` manifest published at `/.well-known/ucp`. */
   manifest: UcpManifest;
 }
