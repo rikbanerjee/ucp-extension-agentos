@@ -13,6 +13,7 @@ const columns: FooterColumn[] = [
     title: 'Product',
     links: [
       { href: '/#how-it-works', label: 'How it works' },
+      { href: '/retailer-readiness', label: 'Readiness Studio' },
       { href: '/#retail-breadth', label: 'Retail scenarios' },
       { href: '/evidence', label: 'Evidence' },
       { href: '/#maturity', label: 'Maturity' },

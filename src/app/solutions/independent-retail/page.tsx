@@ -7,7 +7,7 @@ import { NextBestAction } from '@/components/guided/NextBestAction';
 import { ENTRY_CTA_LABEL } from '@/lib/content/demoTracks';
 
 export const metadata: Metadata = {
-  title: 'For Independent & Specialty Retailers | RetailAgentOS',
+  title: 'For Boutique & Specialty Retailers | RetailAgentOS',
   description:
     'Help AI find your products and represent your store correctly — without rebuilding your storefront. See what AI shopping agents may get wrong about your store today.',
 };
@@ -101,7 +101,7 @@ export default function IndependentRetailPage() {
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-            Independent & Specialty Retailers
+            Boutique & Specialty Retailers
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl leading-tight">
             Help AI find your products
@@ -124,6 +124,12 @@ export default function IndependentRetailPage() {
               className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2"
             >
               See the demo <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/retailer-readiness"
+              className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:border-emerald-400 hover:bg-emerald-100 transition-colors flex items-center gap-2"
+            >
+              Check my catalog <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>

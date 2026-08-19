@@ -141,6 +141,8 @@ export type {
   SchemaOrgProduct,
   SchemaOrgOffer,
   SchemaOrgAvailability,
+  SchemaOrgProjectionOptions,
   ProductFeedRow,
   FeedAvailability,
+  FeedProjectionOptions,
 } from '@/lib/projections/index';

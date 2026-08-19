@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * /guided/independent — Independent & Specialty Retailers guided demo.
+ * /guided/independent — Boutique & Specialty Retailers guided demo.
  *
  * AgentDemoStrip stays the central visual (Scene 3) exactly as it does on
  * /solutions/independent-retail#agent-demo — reused here in embedded mode
