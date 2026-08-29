@@ -260,12 +260,12 @@ export function PlatformGuidedDemo() {
       render: (nav: GuidedNav) => (
         <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
           <NextBestAction
-            heading="Bring one time-sensitive commerce promise."
-            body="Map the merchant and platform signals needed to answer it before checkout."
-            primaryLabel="Discuss a quick-commerce pilot"
+            heading="Test one merchant rule that creates failed carts today."
+            body="Bring one pricing, eligibility, inventory or fulfilment rule. We’ll show the merchant inputs, the decision returned to the platform and the explanation an agent receives."
+            primaryLabel="Discuss a merchant-rule pilot"
             primaryHref={QUICK_COMMERCE_MAILTO}
-            secondaryLabel="Read the fulfilment specification"
-            secondaryHref="/specs/0003-fulfillment"
+            secondaryLabel="Run the late-night pizza scenario"
+            secondaryHref="/guided/platform"
             tertiaryLabel="Try another demo"
             tertiaryHref="/see-it-work"
             onReplay={nav.onRestart}

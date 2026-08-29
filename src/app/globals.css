@@ -26,3 +26,9 @@ body {
   position: relative;
   z-index: 1;
 }
+
+@media print {
+  nav, footer, .no-print, [aria-label="Readiness Studio steps"] { display: none !important; }
+  .print-result { max-width: none !important; }
+  body { background: white; }
+}

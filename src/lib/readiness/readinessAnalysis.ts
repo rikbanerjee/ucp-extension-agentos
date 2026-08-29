@@ -199,7 +199,13 @@ export function topGaps(result: LayeredReadinessResult, max = 3): ReadinessFindi
   const all = [...result.catalog, ...result.ucp.findings, ...result.raos.findings];
   const severityRank: Record<ReadinessFinding['severity'], number> = { blocking: 0, warning: 1, information: 2 };
   return [...all]
-    .filter((f) => f.status !== 'ready' && f.status !== 'not_applicable')
+    .filter((f) => (
+      f.status === 'needs_input'
+      || f.status === 'needs_platform_installation'
+      || f.status === 'needs_live_verification'
+      || f.severity === 'blocking'
+      || f.severity === 'warning'
+    ))
     .sort((a, b) => severityRank[a.severity] - severityRank[b.severity] || a.id.localeCompare(b.id))
     .slice(0, max);
 }

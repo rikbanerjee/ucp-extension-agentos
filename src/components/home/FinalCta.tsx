@@ -5,7 +5,7 @@ const paths = [
   {
     audience: 'Boutique & Specialty Retailer',
     headline: 'Check my catalog',
-    href: '/retailer-readiness',
+    href: '/retailer-readiness?audience=boutique',
   },
   {
     audience: 'Enterprise or Platform',

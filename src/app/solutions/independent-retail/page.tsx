@@ -126,7 +126,7 @@ export default function IndependentRetailPage() {
               See the demo <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              href="/retailer-readiness"
+              href="/retailer-readiness?audience=boutique"
               className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:border-emerald-400 hover:bg-emerald-100 transition-colors flex items-center gap-2"
             >
               Check my catalog <ArrowRight className="w-4 h-4" />
@@ -276,7 +276,7 @@ export default function IndependentRetailPage() {
           <p className="text-sm text-slate-600 leading-relaxed mb-4">
             Eligibility, contextual pricing, inventory and quote integrity are built and tested against
             {testStat ? ` ${testStat.value} automated checks` : ' a growing automated test suite'}.
-            Promotion stacking, loyalty and full fulfilment feasibility are designed but not yet built —
+            Promotion stacking and loyalty are designed but not yet built. Fulfilment feasibility covers modes, regions, lead time, cutoffs, operating hours, order buffers and need-by evaluation; live delivery windows and courier routing are not implemented —
             the public scorecard shows exactly which is which.
           </p>
           <Link href="/evidence" className="text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors">

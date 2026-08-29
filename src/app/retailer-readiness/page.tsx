@@ -9,7 +9,10 @@ export const metadata: Metadata = {
     'Upload a catalog export, answer a few business questions, and see what an AI shopper can safely sell — then download a practical implementation plan for UCP and RetailAgentOS.',
 };
 
-export default function RetailerReadinessPage() {
+export default async function RetailerReadinessPage({ searchParams }: { searchParams: Promise<{ audience?: string; sample?: string }> }) {
+  const params = await searchParams;
+  const audience = params.audience === 'boutique' || params.audience === 'enterprise' ? params.audience : 'direct';
+  const sampleHref = `/retailer-readiness?${new URLSearchParams({ audience, sample: '1' }).toString()}`;
   return (
     <div>
       <section className="border-b border-slate-200 bg-gradient-to-b from-emerald-50 to-white">
@@ -31,10 +34,10 @@ export default function RetailerReadinessPage() {
               Check my catalog
             </a>
             <a
-              href="#wizard"
+              href={sampleHref}
               className="inline-flex min-h-[44px] items-center rounded-md border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
             >
-              Try a sample catalog
+              See a sample result
             </a>
           </div>
 
@@ -79,7 +82,7 @@ export default function RetailerReadinessPage() {
       </section>
 
       <section className="border-t border-slate-200 bg-slate-50">
-        <StudioWizard />
+        <StudioWizard audience={audience} loadSample={params.sample === '1'} />
       </section>
     </div>
   );

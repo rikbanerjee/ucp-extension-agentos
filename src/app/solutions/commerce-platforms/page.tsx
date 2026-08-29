@@ -187,12 +187,12 @@ export default function CommercePlatformsPage() {
         {/* Pilot CTA */}
         <NextBestAction
           variant="dark"
-          heading="Ready to test a real merchant-rule problem?"
-          body="Bring one rule that creates invalid carts or platform-specific exceptions."
-          primaryLabel="Discuss a platform pilot"
+          heading="Test one merchant rule that creates failed carts today."
+          body="Bring one pricing, eligibility, inventory or fulfilment rule. We’ll show the merchant inputs, the decision returned to the platform and the explanation an agent receives."
+          primaryLabel="Discuss a merchant-rule pilot"
           primaryHref={PLATFORM_MAILTO}
-          secondaryLabel="Read the adoption guide"
-          secondaryHref="/adopt"
+          secondaryLabel="Run the late-night pizza scenario"
+          secondaryHref="/guided/platform"
         />
 
       </div>

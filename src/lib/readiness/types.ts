@@ -12,6 +12,7 @@
  */
 
 export type CatalogImportSource = 'shopify-csv' | 'generic-csv' | 'generic-json' | 'sample';
+export type ReadinessAudience = 'boutique' | 'enterprise' | 'direct';
 
 export type ReadinessLayer = 'catalog' | 'ucp' | 'raos';
 

@@ -6,6 +6,7 @@
 //
 // To refresh: re-read POSITIONING.md's scorecard table and update the objects below — do not
 // hand-edit numbers in the page component.
+import { VERIFICATION_SNAPSHOT, verificationTestLabel } from '@/lib/content/verificationSnapshot';
 
 export type ScorecardStatus = 'built' | 'partial' | 'designed' | 'planned' | 'non-goal';
 
@@ -21,7 +22,7 @@ export const STATUS_META: Record<ScorecardStatus, StatusMeta> = {
     status: 'built',
     glyph: '✅',
     label: 'Built & tested',
-    description: 'Code exists, is exercised by an automated test, and is part of the 328/328 passing suite.',
+    description: 'Code exists, is exercised by an automated test, and is part of the current verified suite.',
   },
   partial: {
     status: 'partial',
@@ -257,7 +258,7 @@ export const SCORECARD_SECTIONS: ScorecardSection[] = [
         id: 'e6',
         requirement: 'Fulfillment feasibility (RAOS-0003)',
         status: 'partial',
-        note: 'Mode/region flags are evaluated today via RAOS-0001; real feasibility (windows, lead times, BOPIS, cutoffs) is still designed only — no specs/0003-*.md written.',
+        note: 'Built and tested: mode and region checks, lead time, cutoff, weekly operating hours, order-acceptance buffer and need-by evaluation. Provider-supplied delivery windows, courier capacity, route selection and multi-stop fulfilment remain unsupported.',
       },
       {
         id: 'e7',
@@ -305,7 +306,7 @@ export const SCORECARD_SECTIONS: ScorecardSection[] = [
         id: 'h1',
         requirement: 'Test harness + golden fixtures + coverage',
         status: 'built',
-        note: 'Vitest, 13 test suites, 328/328 tests passing. Line coverage is 93.8% — scoped to src/lib/rules, not the whole codebase.',
+        note: `Vitest, ${verificationTestLabel} tests passing as verified ${VERIFICATION_SNAPSHOT.verifiedAt}. Coverage is scoped to src/lib/rules, not the whole codebase.`,
         evidence: [
           { path: 'vitest.config.ts', label: 'coverage.include scope' },
         ],
@@ -332,17 +333,16 @@ export interface SummaryStat {
   detail: string;
 }
 
-// Numbers here must match VERIFICATION-NEEDED.md exactly — do not hand-tune.
 export const SUMMARY_STATS: SummaryStat[] = [
   {
-    value: '328/328',
+    value: verificationTestLabel,
     label: 'Automated tests passing',
-    detail: '13 test suites, npx vitest run — verified 2026-07-04.',
+    detail: `npm test — verified ${VERIFICATION_SNAPSHOT.verifiedAt}.`,
   },
   {
-    value: 'Clean',
+    value: VERIFICATION_SNAPSHOT.typecheckStatus === 'passing' ? 'Passing' : 'Failing',
     label: 'TypeScript',
-    detail: 'npx tsc --noEmit exits with zero errors.',
+    detail: 'npx tsc --noEmit after building the engine declarations.',
   },
   {
     value: '93.8%',
@@ -350,9 +350,9 @@ export const SUMMARY_STATS: SummaryStat[] = [
     detail: 'Statements 92.8% · Branches 89.18% · Functions 82.25% · Lines 93.8% — measured over src/lib/rules only, per vitest.config.ts.',
   },
   {
-    value: 'Passing',
+    value: VERIFICATION_SNAPSHOT.buildStatus === 'passing' ? 'Passing' : 'Failing',
     label: 'Production build',
-    detail: 'npm run build — 24 routes generated successfully (Next.js 16.2.6, Turbopack).',
+    detail: 'npm run build (Next.js 16.2.6, Turbopack).',
   },
   {
     value: 'ESM + CJS',
@@ -393,4 +393,4 @@ export const CLAIMS_WE_DONT_MAKE: AvoidedClaim[] = [
   },
 ];
 
-export const VERIFIED_DATE = '2026-07-04';
+export const VERIFIED_DATE = VERIFICATION_SNAPSHOT.verifiedAt;

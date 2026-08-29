@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { analyzeReadiness } from '../readinessAnalysis';
+import { analyzeReadiness, topGaps } from '../readinessAnalysis';
 import { generateAllArtifacts, generateRaosCatalogJson, generateProductFeedCsv } from '../downloads';
 import { validateOfficialUcpBusinessProfile } from '../ucpBusinessProfileSchema';
 import { DEFAULT_RULE_DEFAULTS, DEFAULT_STORE_PROFILE } from '../types';
@@ -70,6 +70,22 @@ describe('readiness analysis', () => {
     });
     const result = analyzeReadiness(session, 0);
     expect(result.raos.status).toBe('needs_input');
+  });
+
+  it('only exposes actionable blocking or warning findings as gaps', () => {
+    const result = analyzeReadiness(makeSession(), 0);
+    const gaps = topGaps(result);
+    expect(gaps.map((finding) => finding.id)).not.toContain('ucp-profile-draft-ready');
+    expect(gaps.every((finding) => ['needs_input', 'needs_platform_installation', 'needs_live_verification'].includes(finding.status))).toBe(true);
+    expect(gaps.map((finding) => finding.id)).toContain('ucp-endpoints-missing');
+  });
+
+  it('orders blocking findings ahead of warnings', () => {
+    const result = analyzeReadiness(makeSession({ importResult: {
+      source: 'sample', rows: [row], unparsedRowCount: 0, warnings: [],
+      blocking: [{ id: 'catalog-block', layer: 'catalog', status: 'needs_input', severity: 'blocking', title: 'Missing price', explanation: 'Missing price.', nextAction: 'Fix it.', owner: 'retail_sme' }],
+    } }), 0);
+    expect(topGaps(result)[0].severity).toBe('blocking');
   });
 });
 

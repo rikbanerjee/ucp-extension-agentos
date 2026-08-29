@@ -4,6 +4,8 @@ import { useMemo, useState, useCallback } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import type { StudioSession } from '@/lib/readiness';
 import { DEFAULT_RULE_DEFAULTS, validateStoreProfile, validateRuleDefaults } from '@/lib/readiness';
+import type { ReadinessAudience, ImportResult } from '@/lib/readiness';
+import { SAMPLE_CATALOG_ROWS, SAMPLE_STORE_DOMAIN, SAMPLE_STORE_NAME } from '@/lib/readiness/sampleCatalog';
 import Step1AddCatalog from './steps/Step1AddCatalog';
 import Step2ReviewCatalog from './steps/Step2ReviewCatalog';
 import Step3StoreDetails from './steps/Step3StoreDetails';
@@ -16,6 +18,7 @@ export interface StepProps {
   session: StudioSession;
   updateSession: (patch: Partial<StudioSession>) => void;
   goToStep: (index: number) => void;
+  audience?: ReadinessAudience;
 }
 
 const STEP_LABELS = [
@@ -38,6 +41,26 @@ function initialSession(): StudioSession {
   };
 }
 
+export function createSampleSession(): StudioSession {
+  const importResult: ImportResult = {
+    source: 'sample', rows: SAMPLE_CATALOG_ROWS, blocking: [], warnings: [], unparsedRowCount: 0,
+  };
+  return {
+    importResult,
+    storeProfile: {
+      storeName: SAMPLE_STORE_NAME, storeDomain: SAMPLE_STORE_DOMAIN, currency: 'USD', timezone: 'America/New_York',
+      regions: ['US'], fulfillmentModes: ['shipping', 'pickup', 'local_delivery'],
+    },
+    ruleDefaults: DEFAULT_RULE_DEFAULTS,
+    overrides: [],
+    scenario: {
+      productVariantKey: `${SAMPLE_CATALOG_ROWS[0].productId}::${SAMPLE_CATALOG_ROWS[0].variantId}`,
+      customerType: 'guest', marketRegion: 'US', quantity: 1, fulfillmentMode: 'shipping',
+      orderDate: '2026-08-19', orderTime: '12:00',
+    },
+  };
+}
+
 function canContinue(step: number, session: StudioSession): boolean {
   switch (step) {
     case 0:
@@ -53,9 +76,9 @@ function canContinue(step: number, session: StudioSession): boolean {
   }
 }
 
-export default function StudioWizard() {
-  const [step, setStep] = useState(0);
-  const [session, setSession] = useState<StudioSession>(initialSession);
+export default function StudioWizard({ audience = 'direct', loadSample = false }: { audience?: ReadinessAudience; loadSample?: boolean }) {
+  const [step, setStep] = useState(loadSample ? 6 : 0);
+  const [session, setSession] = useState<StudioSession>(() => loadSample ? createSampleSession() : initialSession());
   const [confirmReset, setConfirmReset] = useState(false);
 
   const updateSession = useCallback((patch: Partial<StudioSession>) => {
@@ -121,7 +144,7 @@ export default function StudioWizard() {
         Step {step + 1} of {STEP_LABELS.length}: {STEP_LABELS[step]}
       </div>
 
-      <StepComponent session={session} updateSession={updateSession} goToStep={goToStep} />
+      <StepComponent session={session} updateSession={updateSession} goToStep={goToStep} audience={audience} />
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-6">
         <div>
