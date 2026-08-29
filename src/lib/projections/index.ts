@@ -10,6 +10,6 @@
 
 export { buildManifest } from './manifest';
 export { toSchemaOrgProduct } from './schemaOrg';
-export type { SchemaOrgProduct, SchemaOrgOffer, SchemaOrgAvailability } from './schemaOrg';
+export type { SchemaOrgProduct, SchemaOrgOffer, SchemaOrgAvailability, SchemaOrgProjectionOptions } from './schemaOrg';
 export { toProductFeedRow, toProductFeed } from './feed';
-export type { ProductFeedRow, FeedAvailability } from './feed';
+export type { ProductFeedRow, FeedAvailability, FeedProjectionOptions } from './feed';

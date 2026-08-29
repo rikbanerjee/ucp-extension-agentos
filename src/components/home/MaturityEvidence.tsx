@@ -25,7 +25,7 @@ const categories = [
     title: 'In pilot or partially built',
     count: partialCount,
     color: 'amber',
-    body: 'Fulfilment feasibility exists for mode and region checks today; delivery windows and lead times are still being designed.',
+    body: 'Fulfilment checks modes, regions, lead time, cutoff, operating hours, order buffers and need-by dates. Live delivery windows and courier routing remain out of scope.',
   },
   {
     icon: PenLine,

@@ -35,8 +35,8 @@ export const AUDIENCES: AudienceSummary[] = [
   },
   {
     id: 'independent-retail',
-    navLabel: 'Independent & Specialty Retail',
-    label: 'Independent & Specialty Retailers',
+    navLabel: 'Boutique & Specialty Retail',
+    label: 'Boutique & Specialty Retailers',
     headline: 'Help AI find your products—and represent your store correctly.',
     body: 'Make your products, prices and delivery rules understandable to AI shoppers without rebuilding your storefront.',
     valuePoints: [

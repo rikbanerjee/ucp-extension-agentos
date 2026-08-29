@@ -387,3 +387,43 @@ describe('toProductFeed', () => {
     expect(row.availability).toBe('in stock');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Backward-compatible projection options (Retailer Readiness Studio,
+// RAOS-corrective-pass 2026-08-19, item 8) — closes the projection gap: the
+// Studio's exports must use the retailer's own selected regions rather than
+// the pilot's hard-coded ['US', 'CA']. Every test above this point calls
+// these functions with NO second argument and must keep passing unchanged —
+// that is the backward-compatibility contract these tests verify.
+// ---------------------------------------------------------------------------
+
+describe('toSchemaOrgProduct — optional shippingRegions (backward-compatible)', () => {
+  it('defaults to the pilot regions when no options are given', () => {
+    const product = toSchemaOrgProduct(VARIANT_IN_STOCK);
+    const countries = product.offers.shippingDetails.map((d) => d.shippingDestination.addressCountry);
+    expect(countries).toEqual(['US', 'CA']);
+  });
+
+  it('uses the caller-supplied shippingRegions when given', () => {
+    const product = toSchemaOrgProduct(VARIANT_IN_STOCK, { shippingRegions: ['US', 'MX', 'GB'] });
+    const countries = product.offers.shippingDetails.map((d) => d.shippingDestination.addressCountry);
+    expect(countries).toEqual(['US', 'MX', 'GB']);
+  });
+});
+
+describe('toProductFeed / toProductFeedRow — optional shipsToRegions (backward-compatible)', () => {
+  it('defaults to "US,CA" when no options are given', () => {
+    const [row] = toProductFeed([VARIANT_IN_STOCK]);
+    expect(row.ships_to).toBe('US,CA');
+  });
+
+  it('uses the caller-supplied shipsToRegions when given', () => {
+    const [row] = toProductFeed([VARIANT_IN_STOCK], { shipsToRegions: ['US'] });
+    expect(row.ships_to).toBe('US');
+  });
+
+  it('joins multiple caller-supplied regions with a comma', () => {
+    const [row] = toProductFeed([VARIANT_IN_STOCK], { shipsToRegions: ['US', 'CA', 'MX'] });
+    expect(row.ships_to).toBe('US,CA,MX');
+  });
+});

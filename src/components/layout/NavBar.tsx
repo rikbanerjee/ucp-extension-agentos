@@ -16,7 +16,18 @@ type NavEntry =
 // New top-level IA (replaces the audience-grouped nav): Product / Solutions /
 // Developers / Evidence / About, plus the primary "See it work" CTA.
 const navEntries: NavEntry[] = [
-  { kind: 'link', href: '/#how-it-works', label: 'Product' },
+  {
+    kind: 'dropdown',
+    dropdown: {
+      id: 'product',
+      label: 'Product',
+      items: [
+        { href: '/', label: 'Overview' },
+        { href: '/#how-it-works', label: 'How it works' },
+        { href: '/retailer-readiness', label: 'Readiness Studio' },
+      ],
+    },
+  },
   {
     kind: 'dropdown',
     dropdown: {

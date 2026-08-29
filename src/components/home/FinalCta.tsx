@@ -3,9 +3,9 @@ import { ArrowRight } from 'lucide-react';
 
 const paths = [
   {
-    audience: 'Independent Retailer',
-    headline: 'See what AI may get wrong about my store',
-    href: '/aeo-score',
+    audience: 'Boutique & Specialty Retailer',
+    headline: 'Check my catalog',
+    href: '/retailer-readiness?audience=boutique',
   },
   {
     audience: 'Enterprise or Platform',

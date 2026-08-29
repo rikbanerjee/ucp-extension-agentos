@@ -116,17 +116,29 @@ function toSchemaOrgAvailability(state: InventoryState): SchemaOrgAvailability {
 // Shipping destinations (US + CA pilot scope)
 // ---------------------------------------------------------------------------
 
-/** The two shipping regions for the pilot. Frozen — extend when CAD/V2 lands. */
+/** The two shipping regions for the pilot. Used whenever a caller doesn't supply its own. */
 const PILOT_SHIPPING_REGIONS: readonly string[] = ['US', 'CA'];
 
-function buildShippingDetails(): SchemaShippingDetails[] {
-  return PILOT_SHIPPING_REGIONS.map((country) => ({
+function buildShippingDetails(regions: readonly string[]): SchemaShippingDetails[] {
+  return regions.map((country) => ({
     '@type': 'OfferShippingDetails',
     shippingDestination: {
       '@type': 'DefinedRegion',
       addressCountry: country,
     },
   }));
+}
+
+/**
+ * Optional projection settings (added for the Retailer Readiness Studio,
+ * RAOS-corrective-pass 2026-08-19). Backward-compatible: every field is
+ * optional and defaults to the original pilot-hard-coded values, so
+ * existing callers and snapshot tests that call `toSchemaOrgProduct(variant)`
+ * with no second argument are unaffected.
+ */
+export interface SchemaOrgProjectionOptions {
+  /** Regions this offer ships to. Defaults to the pilot's `['US', 'CA']`. */
+  shippingRegions?: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -152,18 +164,19 @@ function buildShippingDetails(): SchemaShippingDetails[] {
  *   or `toVariants()` output.
  * @returns A schema.org Product JSON-LD object ready for serialisation.
  */
-export function toSchemaOrgProduct(variant: Variant): SchemaOrgProduct {
+export function toSchemaOrgProduct(variant: Variant, options?: SchemaOrgProjectionOptions): SchemaOrgProduct {
   const inventoryState: InventoryState =
     variant.inventory?.state ?? 'in_stock';
 
   const availability = toSchemaOrgAvailability(inventoryState);
+  const shippingRegions = options?.shippingRegions ?? PILOT_SHIPPING_REGIONS;
 
   const offer: SchemaOrgOffer = {
     '@type': 'Offer',
     price: variant.basePrice,
     priceCurrency: variant.currency,
     availability,
-    shippingDetails: buildShippingDetails(),
+    shippingDetails: buildShippingDetails(shippingRegions),
     ...(variant.callForPrice
       ? {
           priceSpecification: {

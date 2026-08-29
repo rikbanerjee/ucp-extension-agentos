@@ -119,8 +119,20 @@ function toFeedAvailability(state: InventoryState): FeedAvailability {
 // Shipping regions (pilot)
 // ---------------------------------------------------------------------------
 
-/** Comma-separated shipping region string for the pilot. */
+/** Comma-separated shipping region string used whenever a caller doesn't supply its own. */
 const PILOT_SHIPS_TO = 'US,CA';
+
+/**
+ * Optional projection settings (added for the Retailer Readiness Studio,
+ * RAOS-corrective-pass 2026-08-19). Backward-compatible: every field is
+ * optional and defaults to the original pilot-hard-coded values, so
+ * existing callers and snapshot tests that call `toProductFeedRow(variant)`
+ * / `toProductFeed(variants)` with no second argument are unaffected.
+ */
+export interface FeedProjectionOptions {
+  /** Regions this variant ships to, as ISO 3166-1 alpha-2 codes. Defaults to `['US', 'CA']`. */
+  shipsToRegions?: readonly string[];
+}
 
 // ---------------------------------------------------------------------------
 // Main projections
@@ -139,7 +151,7 @@ const PILOT_SHIPS_TO = 'US,CA';
  * @param variant - A canonical RAOS Variant.
  * @returns A single feed row for this variant.
  */
-export function toProductFeedRow(variant: Variant): ProductFeedRow {
+export function toProductFeedRow(variant: Variant, options?: FeedProjectionOptions): ProductFeedRow {
   const inventoryState: InventoryState =
     variant.inventory?.state ?? 'in_stock';
 
@@ -151,6 +163,8 @@ export function toProductFeedRow(variant: Variant): ProductFeedRow {
     ? ''
     : `${variant.basePrice.toFixed(2)} ${variant.currency}`;
 
+  const shipsTo = options?.shipsToRegions?.length ? options.shipsToRegions.join(',') : PILOT_SHIPS_TO;
+
   return {
     id: variant.id,
     title: variant.title,
@@ -159,7 +173,7 @@ export function toProductFeedRow(variant: Variant): ProductFeedRow {
     sku: variant.sku,
     currency: variant.currency,
     call_for_price: variant.callForPrice ?? false,
-    ships_to: PILOT_SHIPS_TO,
+    ships_to: shipsTo,
   };
 }
 
@@ -172,6 +186,6 @@ export function toProductFeedRow(variant: Variant): ProductFeedRow {
  * @param variants - All normalized variants from the adapter.
  * @returns An array of feed rows, one per variant, in input order.
  */
-export function toProductFeed(variants: Variant[]): ProductFeedRow[] {
-  return variants.map(toProductFeedRow);
+export function toProductFeed(variants: Variant[], options?: FeedProjectionOptions): ProductFeedRow[] {
+  return variants.map((v) => toProductFeedRow(v, options));
 }
