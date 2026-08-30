@@ -3,6 +3,7 @@ import { AudienceCards } from '@/components/home/AudienceCards';
 import { TransactionShowcase } from '@/components/home/TransactionShowcase';
 import { RetailBreadth } from '@/components/home/RetailBreadth';
 import { HowItWorks } from '@/components/home/HowItWorks';
+import { AgentChannelSection } from '@/components/home/AgentChannelSection';
 import { MaturityEvidence } from '@/components/home/MaturityEvidence';
 import { DeveloperGateway } from '@/components/home/DeveloperGateway';
 import { FinalCta } from '@/components/home/FinalCta';
@@ -15,6 +16,7 @@ export default function Home() {
       <TransactionShowcase />
       <RetailBreadth />
       <HowItWorks />
+      <AgentChannelSection />
       <MaturityEvidence />
       <DeveloperGateway />
       <FinalCta />

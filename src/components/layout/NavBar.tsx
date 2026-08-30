@@ -25,6 +25,7 @@ const navEntries: NavEntry[] = [
         { href: '/', label: 'Overview' },
         { href: '/#how-it-works', label: 'How it works' },
         { href: '/retailer-readiness', label: 'Readiness Studio' },
+        { href: '/agent-ready-storefront', label: 'Agent-ready storefront' },
       ],
     },
   },
