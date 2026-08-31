@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.1.80'],
+  async headers() {
+    return [{
+      source: '/webmcp-showcase/:path*',
+      headers: [{ key: 'Origin-Agent-Cluster', value: '?1' }],
+    }, {
+      source: '/agent-ready-storefront/:path*',
+      headers: [{ key: 'Origin-Agent-Cluster', value: '?1' }],
+    }];
+  },
   async redirects() {
     return [
       // /home retired — the root `/` is the single front door (Story-first).

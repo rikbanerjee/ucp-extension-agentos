@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/engine",
+    "packages/platform-contracts",
+    "packages/webmcp"
   ],
   "scripts": {
     "dev": "next dev -p 3010",

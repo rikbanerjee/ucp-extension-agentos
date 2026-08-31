@@ -46,15 +46,15 @@ Current status, with evidence: [`VERIFICATION-NEEDED.md`](./VERIFICATION-NEEDED.
 
 ## WebMCP Challenge showcase
 
-Open [`/webmcp-showcase`](http://localhost:3010/webmcp-showcase) to see a controlled Fresh Corner Market fixture and a TheCustomHub-style quote path. The page registers browser tools through `document.modelContext` when the experimental browser surface is available; elsewhere it labels the same visible workflow as an interactive simulation. The deterministic engine, not the browser or a model, decides whether a cart may be prepared.
+Open [`/webmcp-showcase`](http://localhost:3010/webmcp-showcase) to see isolated controlled Fresh Corner Market and TheCustomHub quote fixtures. The page calls the `document.modelContext` lifecycle when supported, and otherwise offers a clearly labelled deterministic replay using the same descriptors. The deterministic engine, not the browser or a model, decides whether a cart may be prepared; each storefront session is server-bound and checkout is never registered.
 
-Current tool inventory: `search_products`, `evaluate_offer`, `prepare_cart`, and `request_quote`. The latter always returns `fixedPrice: null`; checkout is a shopper-confirmed handoff.
+Tool inventory: `get_storefront_capabilities`, `search_catalog`, `evaluate_shopping_plan`, `find_valid_alternatives`, `apply_plan_repair`, `prepare_validated_cart`, and `request_quote`. The quote result always preserves `fixedPrice: null`; Phase 1 has no checkout tool.
 
 ```ts
 await document.modelContext?.registerTool(tool, { signal: controller.signal });
 ```
 
-The production abstraction is [`packages/webmcp/src`](./packages/webmcp/src). This is challenge-period, controlled demonstration work: no live TheCustomHub integration, authentication, persistence, payment processing, or marketplace control is claimed. See [`submissions/webmcp-challenge`](./submissions/webmcp-challenge/README.md) for the evidence and remaining external gates.
+The standalone package is [`packages/webmcp`](./packages/webmcp), with emitted ESM, CommonJS, and declaration artifacts. Browser deployment verification is documented in [`specs/WEBMCP-CHROME-VERIFICATION.md`](./specs/WEBMCP-CHROME-VERIFICATION.md). This is challenge-period, controlled demonstration work: no live TheCustomHub integration, authentication, persistence, payment processing, or marketplace control is claimed.
 
 ## The demo (Playground)
 
