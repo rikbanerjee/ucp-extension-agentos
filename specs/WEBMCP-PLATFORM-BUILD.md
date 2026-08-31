@@ -34,7 +34,7 @@ Planned packages: `@retailagentos/webmcp` for browser-independent tool registrat
 ## Phase checklist
 
 - [x] Phase 0 — grounding, safeguards, baseline record, durable agent instructions.
-- [~] Phase 1 — WebMCP SDK and platform contracts (source + focused tests added; package build setup still needs workspace dependency installation).
+- [ ] Phase 1 — TODO / intentionally deferred: complete standalone package setup and validation for the WebMCP SDK and platform contracts.
 - [x] Phase 2 — local showcase gateway and engine-derived decision tests.
 - [x] Phase 3 — owned-storefront and marketplace showcase.
 - [ ] Phase 4 — Readiness Studio implementation package.
@@ -65,18 +65,18 @@ No production persistence, authentication, SaaS tenancy, payment session, market
 
 ## Current implementation status
 
-Phase 0 is complete. Phase 1 source is in progress: `packages/webmcp` provides a React-free, document-first SDK with feature detection, schema metadata, compact output mapping, gateway/bridge delegation, and AbortSignal cleanup. `packages/platform-contracts` provides the tenant and connector boundaries. Package builds are currently blocked because the new workspaces have not yet received their local `tsup` dev dependency; the existing engine's private install is not reused as a package boundary.
+Phase 0 is complete. **Phase 1 is intentionally deferred/TODO while OpenAI challenge readiness is the active priority.** Its source is preserved: `packages/webmcp` provides a React-free, document-first SDK with feature detection, schema metadata, compact output mapping, gateway/bridge delegation, and AbortSignal cleanup. `packages/platform-contracts` provides the tenant and connector boundaries. Do not represent either package as independently build-validated until workspace dependency installation, emitted-artifact smoke tests, and full regression verification are complete.
 
 Phase 2 is complete locally. `src/lib/showcase/gateway.ts` calls the real engine exactly once per offer evaluation, maps its `DecisionRecord` to compact responses, re-evaluates every cart line, and stores idempotent demo cart results outside the engine. Route handlers expose search, evaluation, cart preparation, and quote requests under `/api/showcase/*`. Inputs are bounded and structured errors are returned. Time is injected at the route boundary. Quote requests never fabricate a price.
 
-Phase 3 is complete locally. `/agent-ready-storefront` is an accessible, responsive interactive storefront showcase with an owned-storefront flow and an Etsy marketplace-bridge explanation. The owned flow calls the local gateway and visibly demonstrates search, real-engine evaluation, product selection, cart preparation, a cart update, and a shopper-confirmed checkout boundary. GB is blocked with `REGION_RESTRICTED`; bulk custom shirts use a quote-request path. Native browser support is feature-detected and ordinary browsers use a clearly labelled simulation. The Etsy mode explicitly states that it does not control Etsy pages or checkout and has no live integration claim. The primary nav and homepage now link to the route.
+Phase 3 is complete locally. `/webmcp-showcase` is the canonical accessible, responsive Agent Storefront; `/agent-ready-storefront` remains a compatibility route. The owned flow calls the local gateway and visibly demonstrates search, real-engine evaluation, product selection, cart preparation, a cart update, and a shopper-confirmed checkout boundary. Fresh Corner Market is the clearly labelled fictional hero fixture; TheCustomHub is a controlled quote-only fixture and returns `fixedPrice: null`. The client now instantiates `createRetailAgentWebMcp`, connects a same-origin fetch gateway and visible storefront bridge, reports actual registration results, and aborts registrations on unmount. Ordinary browsers receive a clearly labelled interactive simulation. The Etsy mode explicitly states that it does not control Etsy pages or checkout and has no live integration claim.
 
 The WebMCP Challenge submission package is complete as documentation, but its readiness audit identified four hard gates: the showcase must call the SDK registration lifecycle and bind tool callbacks to visible UI state; a public HTTPS deployment must be verified; a public repository with a root open-source license is required; and challenge-period WebMCP work must be committed with clear dated evidence. The current page's `document.modelContext` feature detection is not proof of tool registration and must not be presented as such.
 
 ## Exact next action for a future agent
 
-For the challenge track, wire `createRetailAgentWebMcp` into `/agent-ready-storefront`, bind a fetch gateway and visible storefront bridge, add page-level registration/invocation tests, and verify the deployed route in both supported challenge browsers. For the platform track after submission, extend Readiness Studio with operating-mode advice, downloadable storefront configuration, and a deterministic agent-storefront implementation brief while preserving browser-local catalog processing.
+Add page-level fake-`ModelContext` integration tests for registration, cleanup, and visible state updates; then verify the deployed `/webmcp-showcase` in supported challenge browsers. For the platform track after challenge submission, resume Phase 1 by building both packages independently and validating their emitted artifacts before beginning Phase 4.
 
 ## Last verified results
 
-2026-08-29 — `npm test`: 486 passed / 22 files passed. Focused SDK/platform/gateway tests: 8 passed. `npx tsc --noEmit`: passed after Phase 3; gateway test: 3 passed. Engine portion of `npm run build` succeeded; full Next.js completion must be re-verified in Phase 7.
+2026-08-30 — focused WebMCP SDK and showcase gateway tests: 6 passed. `npx tsc --noEmit` passed. `npm run lint` continues to report pre-existing repository lint errors outside the showcase. A full production build was started; final Next.js completion still requires a clean recorded run.

@@ -53,6 +53,12 @@ export function Hero() {
           >
             See it work &rarr;
           </Link>
+          <Link
+            href="/webmcp-showcase"
+            className="text-sm font-semibold text-emerald-700 hover:text-emerald-900 transition-colors"
+          >
+            See an agent operate a store &rarr;
+          </Link>
           <a
             href="#audiences"
             className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"

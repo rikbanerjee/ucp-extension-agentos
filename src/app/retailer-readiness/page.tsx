@@ -79,6 +79,9 @@ export default async function RetailerReadinessPage({ searchParams }: { searchPa
           expose live endpoints and connect checkout. Prefer the full guided walkthrough instead?{' '}
           <Link href="/see-it-work" className="underline hover:text-slate-700">See it work</Link>.
         </p>
+        <p className="mt-3 max-w-2xl text-xs text-slate-500">
+          Next phase: these readiness inputs will generate a merchant-specific Agent Storefront preview and implementation package. Today&apos;s <Link href="/webmcp-showcase" className="underline hover:text-slate-700">WebMCP showcase</Link> is a controlled demonstration, not a generated merchant deployment.
+        </p>
       </section>
 
       <section className="border-t border-slate-200 bg-slate-50">

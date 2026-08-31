@@ -16,5 +16,7 @@ RetailAgentOS is expanding additively from a deterministic merchant-reasoning en
 - UCP, MCP, WebMCP, feeds, Schema.org, and human UI derive from the same canonical merchant/catalog/policy objects. WebMCP results must not recalculate decisions.
 - Owned storefronts may integrate WebMCP and cart preparation; marketplace integrations use connector and checkout-handoff mode.
 - Label experimental WebMCP behavior honestly, degrade gracefully, and update the build document after every material phase with tests and the next safe action.
+- The canonical Phase 1 route is `/webmcp-showcase`; `/agent-ready-storefront` is retained as a compatibility entry point. The page must call the WebMCP registration lifecycle, display actual registered-tool results, and abort registrations on unmount. Feature detection alone is not native-WebMCP proof.
+- Keep controlled Fresh Corner and TheCustomHub-style fixtures separate from live merchant systems. The Phase 2 handoff/design record is `specs/WEBMCP-PHASE-2-READINESS-INTEGRATION.md`.
 
 ## Imported Claude Cowork project instructions

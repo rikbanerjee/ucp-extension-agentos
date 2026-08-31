@@ -12,6 +12,7 @@ export interface DeveloperLink {
 
 export const DEVELOPER_LINKS: DeveloperLink[] = [
   { label: 'Developer Overview', href: '/developers', description: 'The technical gateway: architecture, pipeline, specs, playground.' },
+  { label: 'WebMCP implementation', href: '/webmcp-showcase', description: 'Native browser-tool registration, deterministic decisions, and the interactive fallback.' },
   { label: 'Specifications', href: '/specs', description: 'Open RAOS specs — eligibility, pricing, inventory, quote integrity, trust.' },
   { label: 'Live Playground', href: '/demo', description: 'Run real buyer contexts against the reference engine.' },
   { label: 'Adoption Guide', href: '/adopt', description: 'The tiered adoption ladder, from discoverable to fully integrated.' },

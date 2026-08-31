@@ -44,6 +44,18 @@ fixture determinism tests, and the engine extracted as an installable package. N
 specs are catalogued with briefs. A real merchant pilot (TheCustomHub) is in progress.
 Current status, with evidence: [`VERIFICATION-NEEDED.md`](./VERIFICATION-NEEDED.md).
 
+## WebMCP Challenge showcase
+
+Open [`/webmcp-showcase`](http://localhost:3010/webmcp-showcase) to see a controlled Fresh Corner Market fixture and a TheCustomHub-style quote path. The page registers browser tools through `document.modelContext` when the experimental browser surface is available; elsewhere it labels the same visible workflow as an interactive simulation. The deterministic engine, not the browser or a model, decides whether a cart may be prepared.
+
+Current tool inventory: `search_products`, `evaluate_offer`, `prepare_cart`, and `request_quote`. The latter always returns `fixedPrice: null`; checkout is a shopper-confirmed handoff.
+
+```ts
+await document.modelContext?.registerTool(tool, { signal: controller.signal });
+```
+
+The production abstraction is [`packages/webmcp/src`](./packages/webmcp/src). This is challenge-period, controlled demonstration work: no live TheCustomHub integration, authentication, persistence, payment processing, or marketplace control is claimed. See [`submissions/webmcp-challenge`](./submissions/webmcp-challenge/README.md) for the evidence and remaining external gates.
+
 ## The demo (Playground)
 
 Three mock merchant archetypes prove one protocol surface supports radically different
