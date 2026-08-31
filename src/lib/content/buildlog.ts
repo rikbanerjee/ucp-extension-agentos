@@ -11,14 +11,56 @@ export interface BuildLogEntry {
   bullets: string[];
   proves: string;
   next?: string;
+  evidence?: Array<{
+    label: string;
+    href: string;
+    description?: string;
+  }>;
 }
 
 export const buildLog: BuildLogEntry[] = [
   {
+    id: 'webmcp-challenge-2026',
+    week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
+    date: 'Aug 30–31, 2026',
+    current: true,
+    title: 'RetailAgentOS becomes operable through native browser tools',
+    shipped: 'Native browser WebMCP showcase + canonical seven-tool catalog',
+    narrative:
+      'The UCP manifest, deterministic engine, external/client adapters, and projections were already in place before this challenge work began. On Aug 30, I added the browser-local WebMCP delivery layer: a controlled storefront showcase that registers the same canonical descriptors it can replay, while keeping commerce decisions in the engine. The Aug 31 hardening pass made the registration lifecycle and proof surfaces more explicit. This is not a claim that a generalized remote MCP server is live.',
+    bullets: [
+      'Native browser WebMCP registration is available at /webmcp-showcase through document.modelContext when supported, with a clearly labelled deterministic replay fallback.',
+      'One seven-tool descriptor catalog drives native registration and replay; phase tools register dynamically and registrations abort on reset, scenario change, and unmount.',
+      'Fresh Corner and TheCustomHub are controlled fixtures. TheCustomHub is quote-only; checkout, payment, order placement, authentication, and marketplace control are not exposed.',
+      'The generalized remote/server MCP design remains a separate, unshipped architecture.',
+    ],
+    proves:
+      'A browser agent can discover and invoke controlled local shopping actions without duplicating policy logic in React or presenting a fixture as a production merchant integration.',
+    next:
+      'Independent Chrome/origin-trial QA, stronger judge-facing evidence, a generalized remote MCP server, production authentication/persistence/rate limits/multi-tenancy, and real cryptography remain separate work.',
+    evidence: [
+      {
+        label: '92753e5',
+        href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/92753e5',
+        description: 'Initial browser adapter, descriptors, package, and gateway.',
+      },
+      {
+        label: 'd094e12',
+        href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/d094e12',
+        description: 'Canonical route and purchase-plan showcase documentation.',
+      },
+      {
+        label: 'e464bb8',
+        href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/e464bb8',
+        description: 'Showcase hardening and lifecycle evidence.',
+      },
+    ],
+  },
+  {
     id: 'week-7',
     week: 'Week 7',
     date: 'August 2026',
-    current: true,
+    current: false,
     title: 'The manifest said one thing, the engine did another',
     shipped: 'Manifest projection fixed + region allowlist folded into the engine',
     narrative:
@@ -33,7 +75,7 @@ export const buildLog: BuildLogEntry[] = [
     ],
     proves:
       "Declaration and enforcement have to be the same code path, or they drift — a rule that's merely documented and separately re-implemented per integration will eventually diverge, not from malice but because \"remembered to pre-check\" doesn't scale past one partner.",
-    next: 'The engine and specs are real, tested, and now closing the gaps a real pilot surfaces rather than the gaps I imagined in advance. Next: the remaining Track B closeout items, then the same discipline applied to the MCP server and crypto signing seams already flagged as simulated.',
+    next: 'The engine and specs are real, tested, and now closing the gaps a real pilot surfaces rather than the gaps I imagined in advance. Next: the remaining Track B closeout items, then the same discipline applied to the generalized remote/server MCP and crypto signing seams already flagged as simulated.',
   },
   {
     id: 'week-6',
@@ -53,7 +95,7 @@ export const buildLog: BuildLogEntry[] = [
     ],
     proves:
       'A tool people can\'t enter in thirty seconds isn\'t ready yet, no matter how much is working underneath it.',
-    next: 'The engine and the specs are real. The remaining seam is that crypto signing and the MCP server are still running behind simulated interfaces. The next honest step is making those real — a live server that agents can actually query, and signatures that a third party can verify.',
+    next: 'The engine and the specs are real. The remaining seam is that crypto signing and the generalized remote/server MCP are still running behind simulated or designed interfaces. The next honest step is making those real — a hosted server that agents can actually query, and signatures that a third party can verify.',
   },
   {
     id: 'week-5',
@@ -69,7 +111,7 @@ export const buildLog: BuildLogEntry[] = [
       'Provenance envelope on every answer: issuer, timestamp, per-stage TTL, and a staleness flag agents can act on',
       'Price-lock quote: the price an agent sees is the price honored at checkout, with a configurable lock window',
       'Three-audience Decision Trace — one decision, explained three ways: plain language (shopper), operational (merchant), structured detail (developer)',
-      'Crypto signing and the MCP server are behind real interfaces — but still simulated, not production keys. The seam is clearly marked.',
+      'Crypto signing and the generalized remote/server MCP are behind designed interfaces — but still simulated or unshipped, not production keys or transport. The seam is clearly marked.',
     ],
     proves:
       'A spec that isn\'t testable is just a wish. The moment the same inputs always produce the same answer, you have something buildable.',

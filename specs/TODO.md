@@ -2,13 +2,13 @@
 
 Items that are decided in direction but intentionally not built yet. See `questions.md` for the
 decisions behind each, `specs/PRODUCT-BACKLOG.md` for prioritized feature work, and
-`specs/MASTER-BUILD-PLAN.md` for the work-package execution plan (the real MCP endpoint below
+`specs/MASTER-BUILD-PLAN.md` for the work-package execution plan (the generalized remote MCP endpoint below
 is scheduled there as **WP-19**, Wave 5).
 
 ## Infrastructure / platform
 
-- **Real MCP endpoint** — *(D2, decided 2026-06-07)* Keep the MCP surface **simulated** for now;
-  build the real MCP server + transport as the **next step once the specs are fully finalized**.
+- **Generalized remote MCP endpoint** — *(D2, decided 2026-06-07)* Keep the remote/server MCP surface **simulated** for now;
+  build the generalized remote MCP server + transport as the **next step once the specs are fully finalized**.
   Until then, MCP tools/resources are modeled in demo-mode only.
   - Depends on: RAOS-0000 (manifest `{ tier, capabilities[] }` shape), RAOS-0007 (quote lock),
     RAOS-0008 (provenance/freshness — real crypto + transport).

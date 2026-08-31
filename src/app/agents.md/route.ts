@@ -34,14 +34,44 @@ Commerce Protocol). UCP gives you the transport and catalog rails; RetailAgentOS
 makes the merchant's *rules* — eligibility, pricing, inventory, trust — machine
 readable, so you get a structured reason instead of a dead end.
 
-**What exists today, plainly:** a live manifest endpoint (\`/.well-known/ucp\`),
+## Current delivery surfaces — what is live and what is not
+
+| Surface | Status | What an agent can rely on |
+|---|---|---|
+| UCP manifest, specs, engine, adapters, and projections | Live before the WebMCP challenge | Canonical merchant rules and their derived UCP-facing representations. |
+| Packaged \`@retailagentos/engine\` | Live before the WebMCP challenge | Deterministic commerce decisions outside the browser. |
+| External/client adapter seam | Live before the WebMCP challenge | A documented integration boundary over the same engine. |
+| Native browser WebMCP showcase | Live challenge delivery | Browser-local tool registration and controlled shopping actions at \`/webmcp-showcase\`. |
+| Controlled showcase HTTP routes | Live challenge delivery | Server-bound fixture data for the showcase only. |
+| Generalized remote/server MCP | Not shipped | Designed architecture; no hosted remote MCP server is available. |
+| Production multi-tenant API | Not shipped | No production authentication, persistence, rate limiting, or tenant platform. |
+| Checkout, payment, or order placement | Not exposed | Cart preparation and quote-only fixtures stop before commerce execution. |
+
+## Before WebMCP Challenge
+
+RetailAgentOS already shipped a UCP manifest endpoint (\`/.well-known/ucp\`),
 a reference evaluation engine (\`@retailagentos/engine\`, this repo's
-\`src/lib/rules\`) that computes the reasoning shown below, and an open spec
-suite (\`/specs\`) that documents the contract. There is **no live MCP
-transport or hosted evaluate endpoint yet** — an MCP transport onto this same
-engine is planned, not shipped. Everything below is either a live HTTP surface
-you can curl right now, or a documented contract you can implement against
-using the specs and the reference engine.
+\`src/lib/rules\`), external/client adapter seams, and projections derived from
+the same merchant and policy objects. The architecture also documented a thin
+generalized remote/server MCP adapter over that engine. That design was not a
+hosted remote MCP service.
+
+## WebMCP Challenge extension — Aug 30–31 2026
+
+Native browser WebMCP is now shipped as a controlled showcase at
+\`/webmcp-showcase\`. The delivery is evidenced by commits
+[\`92753e5\`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/92753e5),
+[\`d094e12\`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/d094e12),
+and [\`e464bb8\`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/e464bb8).
+When the browser supports it, the page uses the \`document.modelContext\`
+lifecycle to register the canonical tool descriptors; deterministic replay is
+clearly labelled when that API is unavailable.
+
+Browser agents should discover the registered tools, call
+\`get_storefront_capabilities\` first, then use phase tools as they are
+dynamically registered for the active controlled fixture. There is no checkout
+tool. TheCustomHub is a controlled, quote-only fixture, not a live merchant
+integration.
 
 ---
 
@@ -339,6 +369,15 @@ is invented for this file — traceable to \`golden.json\`, entry label
 
 If you're a person instead of an agent, \`/adopt\` and \`/specs\` are the
 human-readable versions of the same material.
+
+---
+
+## 8. Current limits
+
+Native browser WebMCP is shipped for the controlled showcase. A generalized
+remote MCP server and production evaluate transport are still designed, not
+shipped. Real cryptographic signing, production authentication, persistence,
+multi-tenancy, payment, checkout, and order placement are not available here.
 `;
 
 export function GET() {

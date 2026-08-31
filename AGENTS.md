@@ -20,5 +20,6 @@ RetailAgentOS is expanding additively from a deterministic merchant-reasoning en
 - Keep controlled Fresh Corner and TheCustomHub-style fixtures separate from live merchant systems. The Phase 2 handoff/design record is `specs/WEBMCP-PHASE-2-READINESS-INTEGRATION.md`.
 - The canonical seven-tool descriptor catalog lives in `packages/webmcp`; native and replay execution must invoke those same handlers, with shopper approval coordinated outside the engine.
 - Dynamic phase tools are registrations, not disabled UI affordances. Abort registration controllers on reset, scenario switch, and unmount; never duplicate commerce-policy calculation in React or WebMCP.
+- Historical provenance matters: native browser WebMCP is shipped for the controlled showcase; the generalized remote/server MCP is designed, not shipped. Keep pre-challenge foundations distinct from Aug 30–31, 2026 challenge commits `92753e5`, `d094e12`, and `e464bb8`, and update public agent, evidence, developer, and build-log surfaces together when changing this terminology.
 
 ## Imported Claude Cowork project instructions

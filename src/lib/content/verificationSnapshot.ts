@@ -12,13 +12,13 @@ export interface VerificationSnapshot {
  * verification commands; product claims must not infer live-service status.
  */
 export const VERIFICATION_SNAPSHOT: VerificationSnapshot = {
-  verifiedAt: '2026-08-19',
-  testsPassed: 486,
-  testsTotal: 486,
+  verifiedAt: '2026-08-31',
+  testsPassed: 503,
+  testsTotal: 503,
   buildStatus: 'passing',
   typecheckStatus: 'passing',
   knownLimitations: [
-    'No hosted live transport, persistence, production multi-tenancy, agent authentication or rate limiting.',
+    'No generalized remote MCP server or production multi-tenant transport, persistence, agent authentication, or rate limiting.',
     'Provider-supplied delivery windows, courier capacity, route selection and multi-stop fulfilment are not implemented.',
   ],
 };

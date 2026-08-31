@@ -174,7 +174,7 @@ export default function CommercePlatformsPage() {
           <p className="text-sm text-slate-600 leading-relaxed mb-4">
             Eligibility, contextual pricing, inventory and quote integrity are built and tested
             {testStat ? ` — ${testStat.value} automated checks pass today` : ''}. There is no live
-            MCP transport, no agent authentication or rate limiting, and no persistence or
+            generalized remote MCP transport, no agent authentication or rate limiting, and no persistence or
             multi-tenant production infrastructure yet — those are explicit non-goals of the
             current reference phase. One merchant pilot integration is in progress; none has
             shipped. We have not measured conversion impact — no pilot data exists yet.

@@ -40,7 +40,7 @@ version is just: trust the simulated signature, respect the default TTLs, and sh
 ## Layering up
 
 The only thing that changes with scale is *swapping simulated crypto for real crypto*
-(WP-19, once a real MCP transport exists) — nothing about the contract shape changes. This is
+(WP-19, once a generalized remote MCP transport exists) — nothing about the contract shape changes. This is
 intentional: the seam was built to make that swap mechanical.
 
 ## Reason codes at a glance

@@ -218,6 +218,6 @@ Closing Q2 is the gate for most of the remaining plan:
 - **Q5 upstream contribution** — the pilot's failure-rate evidence is the admission ticket for
   filing RAOS-0001 and RAOS-0007 as UCP extension proposals. Without it there's nothing to file.
 - **Q8 platform adapter** — one proven integration is the template for the Shopify app.
-- **Q10 real MCP server** — generalizes the transport this pilot builds first.
+- **Q10 generalized remote MCP server** — generalizes the remote/server transport this pilot builds first.
 
 Everything above the S3 line on the maturity ladder is downstream of this one file being full.

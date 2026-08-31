@@ -59,8 +59,8 @@ const specs = [
   { code: 'RAOS-0013', title: 'Intent Capture', href: '/specs/0013-intent-capture' },
 ];
 
-const limitations = [
-  'No live MCP transport ships yet — the engine is packaged so one can be built outside this repo.',
+export const developerLimitations = [
+  'Native browser WebMCP tools ship at /webmcp-showcase; the generalized remote/server MCP is designed, not shipped.',
   'Cryptographic signing is simulated by locked decision, labeled TRUST_SIMULATED wherever it applies.',
   'No agent authentication, rate limiting, persistence, or multi-tenant production infrastructure.',
   'Promotion stacking, loyalty and restricted-goods enforcement are designed but not implemented.',
@@ -111,6 +111,37 @@ export default function DevelopersPage() {
             </p>
           )}
         </div>
+
+        <section className="mb-12 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-7">
+          <div className="flex items-center gap-2 mb-3">
+            <PlayCircle className="w-5 h-5 text-emerald-700" />
+            <h2 className="text-xl font-bold text-slate-900">Delivery surfaces</h2>
+          </div>
+          <p className="text-sm leading-relaxed text-slate-700 max-w-3xl">
+            UCP and projections remain the canonical interoperable representations. Native browser
+            WebMCP now adds controlled local actions; a generalized remote/server MCP remains a
+            designed future transport, not a hosted service.
+          </p>
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-white bg-white/80 p-4 text-sm text-slate-600">
+              <p className="font-semibold text-slate-900 mb-1">UCP + projections</p>
+              <p>Manifest, specs, feeds, and UI all derive from canonical merchant policy objects.</p>
+            </div>
+            <Link href="/webmcp-showcase" className="rounded-xl border border-white bg-white/80 p-4 text-sm text-slate-600 hover:border-emerald-300">
+              <p className="font-semibold text-slate-900 mb-1">Browser-local WebMCP</p>
+              <p>Discover controlled tools and prepare allowed actions without reimplementing decisions.</p>
+            </Link>
+            <div className="rounded-xl border border-white bg-white/80 p-4 text-sm text-slate-600">
+              <p className="font-semibold text-slate-900 mb-1">Remote MCP, future</p>
+              <p>
+                <a href="https://github.com/rikbanerjee/ucp-extension-agentos/tree/main/packages/webmcp" className="underline underline-offset-2 hover:text-emerald-800">Inspect the browser package</a>{' '}
+                and the{' '}
+                <a href="https://github.com/rikbanerjee/ucp-extension-agentos/blob/main/specs/ARCH-UCP-EXTENSION-MCP.md" className="underline underline-offset-2 hover:text-emerald-800">remote/server architecture</a>;
+                the latter is documented, not shipped.
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* Technical overview grid */}
         <div className="mb-20 grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -184,7 +215,7 @@ export default function DevelopersPage() {
             <h2 className="text-lg font-bold text-slate-900">Known limitations</h2>
           </div>
           <ul className="space-y-2.5">
-            {limitations.map((item) => (
+            {developerLimitations.map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-slate-600 leading-relaxed">
                 <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0 mt-2" />
                 {item}

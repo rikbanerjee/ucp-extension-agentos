@@ -56,6 +56,18 @@ await document.modelContext?.registerTool(tool, { signal: controller.signal });
 
 The standalone package is [`packages/webmcp`](./packages/webmcp), with emitted ESM, CommonJS, and declaration artifacts. Browser deployment verification is documented in [`specs/WEBMCP-CHROME-VERIFICATION.md`](./specs/WEBMCP-CHROME-VERIFICATION.md). This is challenge-period, controlled demonstration work: no live TheCustomHub integration, authentication, persistence, payment processing, or marketplace control is claimed.
 
+### Challenge provenance
+
+The UCP manifest/specs, deterministic engine, external/client adapter seams, and projections predate the challenge. The native browser WebMCP delivery was added during the Aug 30–31, 2026 challenge work; it should not be presented as a new generalized commerce platform or as a hosted remote MCP server.
+
+| Commit | Evidence |
+|---|---|
+| [`92753e5`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/92753e5) | Browser adapter, canonical descriptors, package, and controlled gateway. |
+| [`d094e12`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/d094e12) | Canonical showcase route and purchase-plan documentation. |
+| [`e464bb8`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/e464bb8) | Showcase hardening and explicit lifecycle evidence. |
+
+Native browser WebMCP is shipped at `/webmcp-showcase`. A generalized remote/server MCP, production authentication, persistence, multi-tenancy, payments, and real merchant control remain unshipped.
+
 ## The demo (Playground)
 
 Three mock merchant archetypes prove one protocol surface supports radically different

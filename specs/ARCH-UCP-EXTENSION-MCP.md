@@ -6,6 +6,8 @@
 **Scope:** (1) How vendors/merchants extend UCP on RetailAgentOS via a first-class *extension* mechanism, and (2) how MCP exposes that extended commerce surface to AI shopping agents.
 **Companion docs:** [`specs/PROGRAM-PLAN.md`](./PROGRAM-PLAN.md) (spec catalog, conformance tiers, waves), [`questions.md`](../questions.md) (locked decisions), RAOS-0001 (`src/app/specs/0001-eligibility`).
 
+> **Delivery status update (2026-08-31):** This document describes the future generalized **remote/server MCP** architecture. It is not a claim that such a hosted transport has shipped. The native browser WebMCP showcase delivered during the Aug 30–31 challenge is a separate, controlled browser-local surface at `/webmcp-showcase`.
+
 > **Verification note (per AGENTS.md):** This repo runs **Next.js 16.2.6** with App-Router Route Handlers. All transport recommendations in §6 were checked against `node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md` — `route.ts` handlers, Web `Request`/`Response`, typed `RouteContext<'/path'>`, and the "Route Handlers are not cached by default; only `GET` may opt into caching" rule. No framework behavior is assumed from general training.
 
 ---

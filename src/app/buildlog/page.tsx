@@ -45,10 +45,10 @@ export default function BuildLogPage() {
           <div className="mt-6 inline-flex items-start gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 max-w-2xl">
             <span className="text-xs font-semibold bg-slate-200 text-slate-600 rounded-full px-2.5 py-0.5 shrink-0 mt-0.5">Up next</span>
             <p className="text-sm text-slate-600 leading-relaxed">
-              <span className="font-semibold text-slate-800">Making the last simulated seams real.</span>{' '}
-              The engine is deterministic and the specs are live. What remains: a real MCP server
-              that agents can actually query, and cryptographic signatures a third party can
-              independently verify. No timeline overclaim — these ship when they ship correctly.
+              <span className="font-semibold text-slate-800">Native browser WebMCP is shipped.</span>{' '}
+              Next are independent Chrome/origin-trial QA and clearer judge-facing evidence; a
+              generalized remote MCP server, production authentication, persistence, rate limits,
+              multi-tenancy, and cryptographic signatures are separate work. No timeline overclaim.
             </p>
           </div>
         </div>
@@ -91,6 +91,25 @@ export default function BuildLogPage() {
 
               {/* Narrative — builder's voice */}
               <p className="text-[15px] leading-7 text-slate-600 mb-5">{entry.narrative}</p>
+
+              {entry.evidence && (
+                <div className="mb-5" aria-label={`Evidence for ${entry.title}`}>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Evidence</p>
+                  <ul className="space-y-1.5">
+                    {entry.evidence.map((evidence) => (
+                      <li key={evidence.href} className="text-sm text-slate-600">
+                        <a
+                          href={evidence.href}
+                          className="font-mono font-semibold text-emerald-700 hover:text-emerald-900 underline underline-offset-2"
+                        >
+                          {evidence.label}
+                        </a>
+                        {evidence.description && <span>{' — '}{evidence.description}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Diagram, if this entry has one */}
               {entry.diagramId && DIAGRAMS[entry.diagramId] && (

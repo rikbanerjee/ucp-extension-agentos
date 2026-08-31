@@ -118,7 +118,7 @@ const worked = [
   { step: 'Adapter', detail: 'CustomHubAdapter: products.json → variants; compareAtPrice → applied offer; inventoryQty → inventory state; null variant rows stripped' },
   { step: 'Buyer context', detail: 'region (US/CA allowlist via checkServesRegion) + fulfillment mode' },
   { step: 'Tier 0', detail: 'manifest via Cloud Function; JSON-LD via prerender (the SPA is invisible to agents otherwise)' },
-  { step: 'Tier 1–2', detail: 'eligibility + inventory + quote via evaluateOffer/issueQuote behind a Cloud Run MCP server' },
+  { step: 'Tier 1–2', detail: 'eligibility + inventory + quote via evaluateOffer/issueQuote behind a future Cloud Run remote MCP server' },
   { step: 'Differentiator', detail: 'callForPrice: true custom/bulk SKUs route to structured intent capture instead of dead-ending at a contact form' },
 ];
 
@@ -351,7 +351,7 @@ export default function AdoptPage() {
             </div>
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-800 mb-1">Interactive</p>
-              <p className="text-sm text-slate-600">Expose <code className="font-mono text-xs">evaluateOffer</code> and <code className="font-mono text-xs">issueQuote</code> as MCP tools on a long-lived server. The MCP layer is a thin adapter: authenticate, inject <code className="font-mono text-xs">now</code>, call the engine, return its output unmodified.</p>
+              <p className="text-sm text-slate-600">Expose <code className="font-mono text-xs">evaluateOffer</code> and <code className="font-mono text-xs">issueQuote</code> as remote MCP tools on a future long-lived server. The remote MCP layer is a thin adapter: authenticate, inject <code className="font-mono text-xs">now</code>, call the engine, return its output unmodified.</p>
             </div>
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-800 mb-1">Checkout</p>
@@ -373,7 +373,7 @@ export default function AdoptPage() {
             A real made-to-order apparel merchant (Vite/React SPA on Firebase, Stripe checkout,
             ~59-product Shopify-shaped <code className="font-mono text-xs">products.json</code>) adopting
             the ladder as a pilot. This is in-progress integration work, not a completed live
-            deployment &mdash; nothing here claims a completed real purchase or a live MCP endpoint.
+            deployment &mdash; nothing here claims a completed real purchase or a live remote MCP endpoint.
           </p>
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-sm">

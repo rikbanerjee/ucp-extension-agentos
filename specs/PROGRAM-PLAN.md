@@ -448,7 +448,7 @@ A spec is "done" (Draft·RFC ready to publish) when:
   step (memory + questions.md D1). No sub-agent designs or builds the trace format without explicit
   user sign-off.
 - **Real vs simulated endpoint (D2) — LOCKED.** MCP stays **simulated**; 0007/0008 design the
-  *contract* now and the real MCP server + transport (and real crypto) is the **next step once specs
+  *contract* now and the real generalized remote/server MCP transport (and real crypto) is the **next step once specs
   are finalized**. Tracked in [`specs/TODO.md`](./TODO.md) ("Real MCP endpoint").
 - **Stacking precedence (B4) — LOCKED.** Priority-ladder model + per-offer `stackable`/`exclusive`
   flags; loyalty burn applied last. 0006 is unblocked on this decision.

@@ -36,7 +36,7 @@ mapped 1:1 to conformance tiers for engineers.
 2. **Claim discipline** (EVIDENCE-PLAN §5): every number rendered on a page must match
    `VERIFICATION-NEEDED.md`. Known stale numbers to fix on sight: "130+ checks" → **328
    tests**; "96% coverage" → **93.8% lines on `src/lib/rules`** (or omit). Nothing may say
-   "live MCP," "real purchase," or "cryptographically signed" until BUILD-PLAN Q2/Q8 land.
+   "live remote MCP server," "real purchase," or "cryptographically signed" until BUILD-PLAN Q2/Q8 land.
 3. **Plain-language rule** for retailer-facing surfaces: use HOMEPAGE-COPY's translation
    glossary (never "reason codes" above the fold — "every no comes with a why").
 4. **One source of truth:** pages render data from the engine/registry/fixtures where

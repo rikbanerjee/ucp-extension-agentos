@@ -292,9 +292,23 @@ export const SCORECARD_SECTIONS: ScorecardSection[] = [
       },
       {
         id: 'g1',
-        requirement: 'MCP server (tools + resources over the pipeline)',
+        requirement: 'Native WebMCP browser delivery layer',
+        status: 'built',
+        note: 'Controlled browser-local tools ship at /webmcp-showcase. Native verification in the ChatGPT in-app browser is complete; public Chrome/origin-trial QA has not yet been completed.',
+        evidence: [
+          { path: 'packages/webmcp/src/index.ts', label: 'canonical descriptor catalog' },
+          { path: 'src/app/webmcp-showcase/page.tsx', label: 'browser registration lifecycle' },
+          { path: 'specs/WEBMCP-CHROME-VERIFICATION.md', label: 'browser verification record' },
+        ],
+      },
+      {
+        id: 'g2',
+        requirement: 'Generalized remote MCP server',
         status: 'designed',
-        note: 'Zero live transport code (WP-19 unstarted). The engine is now packaged (@retailagentos/engine) specifically so a real transport can be built outside this repo — the TheCustomHub pilot is the first concrete attempt, in progress, not shipped.',
+        note: 'The architecture is documented, but no hosted remote server, agent authentication layer, or production transport has shipped.',
+        evidence: [
+          { path: 'specs/ARCH-UCP-EXTENSION-MCP.md', label: 'remote/server architecture' },
+        ],
       },
     ],
   },
@@ -372,8 +386,8 @@ export const CLAIMS_WE_DONT_MAKE: AvoidedClaim[] = [
     why: 'No persistence, no multi-tenant infra, no agent auth, no rate limiting — all explicit non-goals of the current demo phase (row i1).',
   },
   {
-    claim: '"Live MCP server"',
-    why: 'Zero live transport code exists yet (row g1). The engine is packaged so one can be built outside this repo; none has shipped.',
+    claim: '"Production remote MCP server"',
+    why: 'Native browser WebMCP ships for the controlled showcase (row g1), but no generalized remote/server MCP transport, hosted endpoint, or agent authentication layer exists (row g2).',
   },
   {
     claim: '"Cryptographically signed"',

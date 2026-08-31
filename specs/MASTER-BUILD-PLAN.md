@@ -714,7 +714,7 @@ Single-merchant only; marketplace cart flagged V2. Codes: `HANDOFF_READY`,
 
 ### WAVE 5 — Real surface (post-spec-finalization, per D2)
 
-#### WP-19 · Real MCP server `(L · ← v1.5 complete; lifts specs/TODO.md item)`
+#### WP-19 · Generalized remote MCP server `(L · ← v1.5 complete; lifts specs/TODO.md item)`
 One "RetailAgentOS Shopping" MCP server as Next.js 16 `route.ts` (verify
 against `node_modules/next/dist/docs/` route-handler + after/streaming docs):
 resources (`raos://merchant/{id}/manifest|catalog|product/{pid}`,

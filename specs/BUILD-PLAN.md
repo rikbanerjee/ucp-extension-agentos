@@ -150,8 +150,8 @@ profiles with zero hand-written JSON. One platform done properly beats four half
 From `../EVIDENCE-PLAN.md`. Largely landed via the SITE-PLAN work; keep as packaging-only.
 **Not** a place to spend a week when Q2 is open.
 
-### Q10 · Real MCP server `(L · ← Q2 proves the pattern)`
-The transport half of the old Q8. Generalize the pilot's transport into the kit: WP-19 brief in
+### Q10 · Generalized remote MCP server `(L · ← Q2 proves the pattern)`
+The remote/server transport half of the old Q8. Generalize the pilot's transport into the kit: WP-19 brief in
 `MASTER-BUILD-PLAN.md`. Hard gate: the MCP `evaluate_offer` result must deep-equal the pipeline
 result for identical inputs.
 

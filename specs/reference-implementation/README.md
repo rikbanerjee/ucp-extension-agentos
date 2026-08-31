@@ -53,7 +53,7 @@ the packaged tarball installs cleanly in an external project).
 - **Engine extraction:** done — `packages/engine` builds a portable `dist/` (ESM + CJS +
   types), pinned at `0.1.0`.
 - **TheCustomHub pilot:** kit-side work (Track A) is done; merchant-side wiring (Track B —
-  adapter, manifest route, schema.org markup, live MCP server) is the pending work. See
+  adapter, manifest route, schema.org markup, generalized remote MCP server) is the pending work. See
   `PUNCH-LIST.md` at the project root, item 1.
 
 ## Done-for-pilot definition (the bar, not just the build)
