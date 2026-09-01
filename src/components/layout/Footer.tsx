@@ -86,7 +86,7 @@ export function Footer() {
               <Link key={href} href={href} className="hover:text-slate-800 transition-colors">{label}</Link>
             ))}
             <Link href="/agents.md" className="hover:text-slate-800 transition-colors font-mono">/agents.md</Link>
-            <Link href="/.well-known/ucp" className="hover:text-slate-800 transition-colors font-mono">/.well-known/ucp</Link>
+            <Link href="/.well-known/ucp" className="hover:text-slate-800 transition-colors font-mono break-all">/.well-known/ucp</Link>
           </nav>
         </div>
       </div>

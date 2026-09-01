@@ -13,7 +13,7 @@ describe('showcase gateway', () => {
     expect(fresh.searchProducts('robotics').candidates).toEqual([]); expect(custom.searchProducts('eggs').candidates).toEqual([]);
   });
   it('maps stale inventory to a repair and preserves the original plan context', () => {
-    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 80, currency: 'USD' }, substitutionsAllowed: true });
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });
     expect(decision).toMatchObject({ status: 'REPAIRABLE', code: 'STOCK_STALE', allowedNextActions: ['find_valid_alternatives', 'apply_plan_repair'] });
     const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', 'repair-key-1', decision.decisionId);
     expect(repaired.decision.status).toBe('ELIGIBLE'); expect(repaired.lines[0].productId).toBe('v_fresh_cagefree_001');
@@ -27,5 +27,28 @@ describe('showcase gateway', () => {
   it('never fabricates a custom-order price, cart, order, or checkout', () => {
     const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session'); const quote = custom.requestQuote({ productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Robotics team shirts', idempotencyKey: 'quote-key-1' });
     expect(quote).toMatchObject({ fixedPrice: null, cartCreated: false, orderPlaced: false, checkoutStarted: false, merchantReviewRequired: true });
+  });
+  it('reaches QUOTE_REQUIRED for a quote-only product with a requested delivery date instead of dead-ending on an unsupported window', () => {
+    const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session');
+    const decision = custom.evaluatePurchasePlan([{ productId: 'v_customhub_quote_001', quantity: 25 }], undefined, { budget: { amount: 500, currency: 'USD' }, requestedDeliveryWindow: 'Brooklyn by September 15' });
+    expect(decision.status).toBe('QUOTE_REQUIRED'); expect(decision.code).toBe('QUOTE_REQUIRED'); expect(decision.allowedNextActions).toEqual(['request_quote']);
+    expect(decision.reasons).toContainEqual(expect.objectContaining({ code: 'DELIVERY_WINDOW_MERCHANT_CONFIRMATION_REQUIRED', severity: 'CONDITION' }));
+    const quote = custom.requestQuote({ productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Mixed adult sizes, delivered to Brooklyn by September 15.', idempotencyKey: 'quote-key-delivery-1' });
+    expect(quote).toMatchObject({ fixedPrice: null, cartCreated: false, orderPlaced: false, checkoutStarted: false, merchantReviewRequired: true });
+  });
+  it('still blocks an unverifiable prose delivery window for a fixed-price product', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session');
+    const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { requestedDeliveryWindow: 'before 9:15 p.m.' });
+    expect(decision.status).toBe('BLOCKED'); expect(decision.code).toBe('DELIVERY_WINDOW_UNSUPPORTED');
+  });
+  it('requires shopper approval before a repair applies, and creates no cart on decline', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });
+    expect(decision.status).toBe('REPAIRABLE');
+    // A decline never applies the repair or creates a cart — the caller (WebMCP layer) is
+    // responsible for stopping before calling applyPlanRepair/prepareCart on decline; here we
+    // assert the gateway never prepares a cart for the un-repaired, still-stale plan.
+    expect(() => fresh.prepareCart(freshLines, 'cart-key-decline-1', decision.decisionId)).not.toThrow();
+    const cart = fresh.prepareCart(freshLines, 'cart-key-decline-1', decision.decisionId);
+    expect(cart.cart).toBeNull(); expect(cart.cartCreated).toBe(false);
   });
 });

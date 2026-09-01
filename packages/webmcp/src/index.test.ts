@@ -14,4 +14,31 @@ describe('RetailAgentOS WebMCP descriptors', () => {
   it('cleans a partial registration instead of claiming a native registry', async () => { let calls = 0; const context = { registerTool: vi.fn(() => { calls += 1; if (calls === 2) throw new Error('nope'); }) }; const sdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}) }, adapter: { getModelContext: () => context } }); await expect(sdk.register()).rejects.toThrow('REGISTRATION_FAILED'); });
   it('defers phase-tool removal until after an executing repair returns', async () => { const { sdk, descriptors } = setup(); const registration = await sdk.register(); await descriptors.find((tool) => tool.name === 'evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] }); const repair = descriptors.find((tool) => tool.name === 'apply_plan_repair')!; const result = await repair.execute({ decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' }); expect(result).toMatchObject({ status: 'APPLIED' }); expect(registration.registeredTools).toContain('apply_plan_repair'); await registration.settleRegistry(); expect(registration.registeredTools).toContain('prepare_validated_cart'); expect(registration.registeredTools).not.toContain('apply_plan_repair'); });
   it('delegates quote work and preserves a null fixed price', async () => { const { sdk } = setup(false); const registration = await sdk.register(); const result = await registration.invoke('request_quote', { quantity: 25, requirements: 'Robotics shirts', idempotencyKey: 'abcdefgh' }); expect(result.fixedPrice).toBeNull(); });
+  it('labels a guided invocation as replay even when a native model context exists', async () => {
+    const events: string[] = []; const descriptors: WebMcpToolDescriptor[] = [];
+    const sdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}), onLifecycle: (event) => events.push(`${event.tool}:${event.lifecycle}:${event.source}`) }, adapter: { getModelContext: () => ({ registerTool: vi.fn((tool: WebMcpToolDescriptor) => { descriptors.push(tool); }) }) }, clock: () => 1 });
+    const registration = await sdk.register();
+    expect(registration.supported).toBe(true);
+    await registration.invoke('get_storefront_capabilities', {});
+    expect(events).toContain('get_storefront_capabilities:invoked:replay');
+    expect(events.every((entry) => !entry.includes(':invoked:native'))).toBe(true);
+  });
+  it('labels a real native descriptor call as native, never mutated by a concurrent guided call', async () => {
+    const events: string[] = []; const descriptors: WebMcpToolDescriptor[] = [];
+    const sdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}), onLifecycle: (event) => events.push(`${event.tool}:${event.lifecycle}:${event.source}`) }, adapter: { getModelContext: () => ({ registerTool: vi.fn((tool: WebMcpToolDescriptor) => { descriptors.push(tool); }) }) }, clock: () => 1 });
+    const registration = await sdk.register();
+    const nativeDescriptor = descriptors.find((tool) => tool.name === 'get_storefront_capabilities')!;
+    // Simulate the real browser invoking the registered descriptor directly (no `source` option, as a
+    // genuine WebMCP host would never set it) concurrently with a guided replay call.
+    await Promise.all([nativeDescriptor.execute({}, { signal: new AbortController().signal }), registration.invoke('search_catalog', { query: 'eggs' })]);
+    expect(events).toContain('get_storefront_capabilities:invoked:native');
+    expect(events).toContain('search_catalog:invoked:replay');
+  });
+  it('returns equivalent commerce results for native and guided execution of the same descriptor', async () => {
+    const { sdk, descriptors } = setup(true); await sdk.register();
+    const capabilities = descriptors.find((tool) => tool.name === 'get_storefront_capabilities')!;
+    const nativeResult = await capabilities.execute({});
+    const replayResult = await capabilities.execute({}, { source: 'replay' });
+    expect(nativeResult).toEqual(replayResult);
+  });
 });

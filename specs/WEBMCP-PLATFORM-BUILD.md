@@ -77,6 +77,71 @@ The WebMCP Challenge submission package is complete as documentation, but its re
 
 Run native browser acceptance on a deployed HTTPS origin: observe actual tool discovery and `toolchange` in ChatGPT/Codex and Chrome (origin trial or local experimental flag), including Fresh Corner approval and decline, TheCustomHub quote, cancellation, and response-header checks. See [`WEBMCP-CHROME-VERIFICATION.md`](./WEBMCP-CHROME-VERIFICATION.md).
 
+## Judge-facing activation pass (2026-08-31)
+
+The showcase was reworked so a first-time visitor can understand and experience it without opening
+DevTools, while preserving every invariant above.
+
+- The page now leads with a business outcome ("The browser agent asks. RetailAgentOS checks what
+  the retailer can actually promise.") instead of a protocol diagram, with an explicit two-path
+  activation panel: "Try with a browser agent" (truthful native-detection status, the shopper
+  prompt, and a copy action that never claims to run the agent) and "Watch guided mission" (a
+  prominent button available even when native WebMCP is detected, always labelled "Guided replay ·
+  Same RetailAgentOS handlers · No external agent").
+- `src/app/agent-ready-storefront/storefront-client.tsx` was split into focused components under
+  `src/components/showcase/`: `ShowcaseHero`, `MissionLauncher`, `ScenarioSelector`,
+  `ShopperApprovalCard`, `MissionTimeline`, `DecisionSummary`, and `DeveloperEvidence` (which also
+  carries the collapsed "One decision, multiple channels" WebMCP/UCP/MCP/feeds explainer). The
+  orchestrator component keeps state ownership and still calls only the shared `packages/webmcp`
+  descriptors and the same-origin `/api/showcase/*` gateway — no commerce logic was duplicated.
+  Protocol/registry vocabulary (schema, descriptor, registry parity, provenance envelope) moved
+  into progressively-disclosed developer evidence; above-the-fold copy uses retail language (safe
+  action, current inventory, valid price, merchant policy, shopper approval, cart for review,
+  merchant quote).
+- Mission Control is now a business-readable event timeline translating real registration,
+  invocation, decision, approval, cart, and quote telemetry into plain language (e.g. "Stale
+  inventory prevented cart preparation", "Waiting for shopper approval"), with raw tool
+  name/lifecycle/decision-code/source detail collapsed behind a "Show technical detail" toggle.
+  Checkout is always shown as withheld. Nothing here is a hard-coded success sequence — every row
+  is driven by an actual `WebMcpTelemetryEvent`.
+- **Native-vs-replay telemetry fix (`packages/webmcp/src/index.ts`)**: the SDK previously set a
+  single module-level `source` flag to `'native'` the moment `document.modelContext` was found
+  during `register()`, and never changed it again — so a guided-mission call made through
+  `registration.invoke()` would be mislabeled `native` telemetry on any browser that merely
+  supported WebMCP, even though no external agent invoked it. `WebMcpToolDescriptor.execute` now
+  accepts an explicit, per-invocation `source` option: the guided `invoke()` path always passes
+  `source: 'replay'`; a real browser calling the registered descriptor directly never sets that
+  option, so an omitted value means native. There is no shared mutable flag for invocation
+  telemetry, so concurrent native and guided calls cannot mislabel each other (registration events
+  — `registered`/`unregistered` — still correctly reflect whether `document.modelContext` is
+  present, since dynamic phase-tool registration genuinely happens through the real API when
+  available, independent of who triggered the transition).
+- **TheCustomHub delivery-window fix (`src/lib/showcase/gateway.ts`)**: `evaluatePurchasePlan()`
+  previously blocked *every* non-empty `requestedDeliveryWindow` with `DELIVERY_WINDOW_UNSUPPORTED`
+  before checking whether the line needed a quote — so a correctly-behaving agent asking for
+  TheCustomHub's September 15 delivery got an incorrect dead end instead of `QUOTE_REQUIRED`. The
+  gateway now evaluates lines first: a quote-only line lets `QUOTE_REQUIRED` win, and the requested
+  date is carried forward as a `DELIVERY_WINDOW_MERCHANT_CONFIRMATION_REQUIRED` (`CONDITION`)
+  reason — never converted into a promised date or a fabricated price. A fixed-price line with an
+  unverifiable prose delivery window is still blocked with `DELIVERY_WINDOW_UNSUPPORTED`, unchanged.
+- TheCustomHub's primary label no longer reads "Not live" (which read to reviewers as "broken").
+  The scenario card now reads "Controlled quote workflow · Send customization and delivery
+  requirements for merchant review without inventing a price," with the full disclosure —
+  "Authorized controlled fixture. No live TheCustomHub catalog, quote, cart, or order API is called
+  in this showcase." — preserved in the expanded developer evidence, unambiguously distinguishing
+  "functionally live as a controlled WebMCP demonstration" from "merchant backend integration is
+  not live."
+- Added: two new native-vs-replay labeling tests plus a native/guided result-equivalence test in
+  `packages/webmcp/src/index.test.ts`; four new gateway tests (TheCustomHub quote-with-delivery-date,
+  fixed-price unsupported-window regression, decline-creates-no-cart) in
+  `src/lib/showcase/gateway.test.ts`; an 11-case fake-`document.modelContext` integration harness in
+  `src/app/agent-ready-storefront/storefront-client.test.tsx` (new `jsdom` + `@testing-library/react`
+  dev dependencies, wired through a per-file `// @vitest-environment jsdom` override and
+  `vitest.setup.ts` — the default `node` environment and coverage config for `src/lib/rules` are
+  unchanged). Full suite: 520/520 passing (up from the 486 baseline). `npx tsc --noEmit`, ESLint on
+  every changed file, `@retailagentos/webmcp`'s `tsup` build, and `next build` (Turbopack, all 39
+  routes) all complete cleanly as of this pass.
+
 ## Last verified results
 
-2026-08-31 — The package workspace is explicitly installed and `@retailagentos/webmcp` emits ESM, CommonJS, and declaration artifacts. Its SDK normalizes omitted browser execution options and combines browser cancellation with an independent storefront-session lifecycle signal. Controlled Fresh Corner and TheCustomHub fixtures are server-bound, have separate catalogs, versions, policies, sessions, decisions, and idempotency namespaces. The page renders actual native registrations only after registration succeeds and shows browser-observed parity when `getTools()` is available. Focused SDK and gateway tests pass; full-suite and production-build results must be recorded only after they are re-run. Native ChatGPT/Codex and deployed Chrome verification remain external browser checks, not claims made by this record.
+2026-08-31 — The package workspace is explicitly installed and `@retailagentos/webmcp` emits ESM, CommonJS, and declaration artifacts. Its SDK normalizes omitted browser execution options and combines browser cancellation with an independent storefront-session lifecycle signal. Controlled Fresh Corner and TheCustomHub fixtures are server-bound, have separate catalogs, versions, policies, sessions, decisions, and idempotency namespaces. The page renders actual native registrations only after registration succeeds and shows browser-observed parity when `getTools()` is available. Native-vs-replay telemetry now carries an explicit per-invocation source instead of a capability-inferred flag, and TheCustomHub's requested-delivery-date line reaches `QUOTE_REQUIRED` instead of an unsupported-window dead end. Focused SDK, gateway, and component-integration tests pass (520/520 full suite); `tsc --noEmit`, lint, the package build, and `next build` all complete successfully. Native ChatGPT/Codex and deployed Chrome verification remain external browser checks, not claims made by this record.
