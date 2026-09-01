@@ -79,7 +79,7 @@ export function Footer() {
         <div className="mt-10 pt-6 border-t border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-400">
             <span className="font-semibold text-slate-600">RetailAgent<span className="text-emerald-600">OS</span></span>
-            {' '}· UCP is the rails; RetailAgentOS is the reasoning layer · Building in public
+            {' '}· UCP is the commerce rail; WebMCP is the browser action surface; RetailAgentOS is the reasoning layer · Building in public
           </p>
           <nav className="flex items-center gap-4 text-xs text-slate-500">
             {EVIDENCE_LINKS.map(({ href, label }) => (
