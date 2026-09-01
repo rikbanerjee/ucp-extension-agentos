@@ -1,4 +1,97 @@
-# RetailAgentOS — the merchant reasoning layer for agentic commerce
+# RetailAgentOS
+
+**RetailAgentOS lets a shopping AI act safely on a real store — WebMCP exposes only the next safe
+browser action, and RetailAgentOS's deterministic engine decides what that action is allowed to be.**
+
+- **Live demo:** [www.retailagentos.com/webmcp-showcase](https://www.retailagentos.com/webmcp-showcase)
+- **Video:** `[VIDEO LINK]`
+
+## Test prompt
+
+Paste this into the browser agent (or use the page's own "Watch guided mission" button if no
+WebMCP-capable agent is connected):
+
+> Build a dinner-and-lunch cart under $25 using Fresh Corner's available local-delivery mode. If
+> inventory cannot be trusted, show me a valid substitute and wait for my approval. Prepare a cart
+> for review, but do not check out.
+
+## What the human and the agent do together
+
+The agent reads the storefront's registered WebMCP tools, searches the catalog, and asks
+RetailAgentOS to evaluate the shopping plan. When the engine finds the eggs' inventory data stale,
+it doesn't fail — it proposes a merchant-valid substitute (Cage-Free Eggs) and pauses. **The human
+shopper approves or declines that substitute** — a real click, never auto-approved and never
+inferred. Only after approval does the agent invoke `prepare_validated_cart`, and only because
+RetailAgentOS revalidated inventory, price, fulfillment, and the $25 budget does a cart actually
+appear. The agent can optionally ask RetailAgentOS to revise that cart (e.g. "make it two loaves of
+bread"); the engine re-checks everything again before replacing it. Checkout is never registered as
+a tool — the mission stops at a prepared cart.
+
+## Why WebMCP is essential here
+
+Without WebMCP, an AI shopping agent either scrapes a page and guesses (wrong prices, phantom
+stock, invented delivery promises) or a merchant hand-builds a bespoke, ungoverned integration per
+agent. WebMCP gives the agent a small, typed, discoverable set of *safe next actions* — and because
+RetailAgentOS controls which tools are registered and what each one is allowed to return, the agent
+can never reach a tool it shouldn't, invent a price the merchant didn't set, or push a cart past a
+constraint (budget, inventory, fulfillment mode) the merchant actually enforces. The browser
+registration lifecycle (`registerTool`/`AbortSignal`) is what makes "safe next action" a real,
+revocable guarantee instead of a hopeful convention.
+
+## Judge in 90 seconds
+
+1. Open the live demo URL above.
+2. Confirm the page reports **"Native WebMCP detected"** (or, if your browser doesn't support
+   `document.modelContext` yet, that's expected — use "Watch guided mission" instead, which runs the
+   identical RetailAgentOS handlers without an external agent).
+3. Paste the test prompt above into your WebMCP-capable browser agent.
+4. **Approve** the proposed substitution when the agent presents it (Cage-Free Eggs for the
+   stale-inventory Farm Eggs).
+5. Observe the prepared cart — Mission Control shows the real registration/invocation/decision
+   telemetry that produced it, and Decision Summary shows RetailAgentOS's authoritative
+   `CART_PREPARED` status.
+6. Optionally, click "Watch guided cart revision" (or ask your agent) to see RetailAgentOS govern a
+   cart change — it only replaces the cart because the revised plan still satisfies budget,
+   inventory, and fulfillment.
+7. Switch to the **TheCustomHub** scenario and try the quote flow — a custom order that must go to
+   merchant review, never a fabricated price.
+8. Expand **Developer Evidence** at the bottom for the raw tool schemas, full telemetry log, and
+   registry parity check.
+
+## Controlled-fixture disclosure
+
+Fresh Corner Market and TheCustomHub are **fictional, server-bound controlled fixtures** built for
+this showcase — not live merchant systems. Every decision (eligibility, price, inventory,
+fulfillment, quote status) is produced by `@retailagentos/engine`, the same deterministic evaluator
+used elsewhere in this repo; nothing is hand-scripted for the demo. Checkout, payment, and order
+placement are never registered as tools. TheCustomHub never receives cart preparation — it is
+quote-only, and its quotes always carry `fixedPrice: null`. No live TheCustomHub catalog, quote,
+cart, or order API is called. A generalized remote/server MCP integration is designed but not
+shipped; this demo is the native browser WebMCP surface only.
+
+## What was built during the challenge
+
+RetailAgentOS's UCP manifest, deterministic engine, external/client adapter seams, and projections
+**predate** the WebMCP Challenge. The native browser WebMCP delivery — everything at
+`/webmcp-showcase` — was built during the challenge window (Aug 25–Sep 3, 2026):
+
+| Commit | What it added |
+|---|---|
+| [`92753e5`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/92753e5) | Browser adapter, canonical seven-tool descriptors, `packages/webmcp`, controlled gateway. |
+| [`d094e12`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/d094e12) | Canonical `/webmcp-showcase` route and purchase-plan documentation. |
+| [`e464bb8`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/e464bb8) | Showcase hardening and explicit lifecycle evidence. |
+| [`d9a5eb5`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/d9a5eb5) | Judge-facing UX rework and native-vs-replay telemetry truthfulness fixes. |
+| [`0228160`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/0228160) | Optional `revise_validated_cart` cart-revision extension. |
+| *pending/uncommitted* | Submission-hardening pass: grouped Mission Control telemetry, a completed shopper-approval sequence with correct actor attribution, `CART_PREPARED`/`CART_REVISED`-aware Decision Summary copy, a canonical Farm Eggs title/unit, unit×line-total display in the revised cart, and a 320px layout fix. See `specs/WEBMCP-PLATFORM-BUILD.md`'s "Submission-hardening pass" section for the full record. |
+
+Native browser WebMCP is shipped for this controlled showcase. A generalized remote/server MCP,
+production authentication, persistence, multi-tenancy, payments, and real merchant control remain
+unshipped — see [`specs/WEBMCP-PLATFORM-BUILD.md`](./specs/WEBMCP-PLATFORM-BUILD.md)'s "Current
+submission status" for the single authoritative record of what's shipped, verified, and not.
+
+---
+
+## The reasoning layer underneath
 
 UCP (Universal Commerce Protocol) gives commerce the rails: discovery, catalog, cart,
 checkout handoff. But a merchant's *reasoning* — who may see an item, who qualifies to buy
@@ -11,7 +104,7 @@ deterministic, versioned, machine-readable UCP extensions with a reason code att
 every decision — published as open, upstream-candidate RFCs, and proven by a runnable
 reference implementation in this repo.
 
-## The three ideas
+### The three ideas
 
 1. **One pipeline.** Every decision runs `VISIBILITY → ELIGIBILITY → PRICE → FULFILLMENT →
    QUOTE` through pure, registered evaluators. Same inputs → byte-identical output; no
@@ -24,7 +117,7 @@ reference implementation in this repo.
    the spec pages, the packaged engine (`@retailagentos/engine`), and any MCP transport all
    call the same evaluators.
 
-## Where to go
+### Where to go
 
 | You want to | Read |
 |---|---|
@@ -34,8 +127,9 @@ reference implementation in this repo.
 | Build the next spec / task (coding agents start here) | [`specs/BUILD-PLAN.md`](./specs/BUILD-PLAN.md) |
 | See the engine package + the live merchant pilot | [`specs/reference-implementation/`](./specs/reference-implementation/README.md) |
 | Know what's verified real vs. asserted | [`VERIFICATION-NEEDED.md`](./VERIFICATION-NEEDED.md) |
+| Full WebMCP platform build record and current submission status | [`specs/WEBMCP-PLATFORM-BUILD.md`](./specs/WEBMCP-PLATFORM-BUILD.md) |
 
-## What's built today
+### What's built today
 
 Seven specs published as Draft·RFC with tested reference implementations — 0000 Foundations,
 0001 Eligibility, 0002 Contextual Pricing, 0005 Inventory, 0007 Quote Integrity, 0008
@@ -44,29 +138,15 @@ fixture determinism tests, and the engine extracted as an installable package. N
 specs are catalogued with briefs. A real merchant pilot (TheCustomHub) is in progress.
 Current status, with evidence: [`VERIFICATION-NEEDED.md`](./VERIFICATION-NEEDED.md).
 
-## WebMCP Challenge showcase
+## WebMCP implementation notes
 
-Open [`/webmcp-showcase`](http://localhost:3010/webmcp-showcase) to see isolated controlled Fresh Corner Market and TheCustomHub quote fixtures. The page leads with the business outcome — "The browser agent asks. RetailAgentOS checks what the retailer can actually promise." — then offers two clearly separated paths: **Try with a browser agent** (real `document.modelContext` registration status, the shopper prompt, a copy action) and **Watch guided mission** (a deterministic replay of the same canonical descriptors, always labelled "Guided replay · Same RetailAgentOS handlers · No external agent," available even when a native agent is detected). The deterministic engine, not the browser or a model, decides whether a cart may be prepared; each storefront session is server-bound and checkout is never registered. A Mission Control timeline translates real registration/invocation/decision telemetry into plain retail language, with raw tool names, lifecycle, and decision codes progressively disclosed.
-
-Tool inventory: `get_storefront_capabilities`, `search_catalog`, `evaluate_shopping_plan`, `find_valid_alternatives`, `apply_plan_repair`, `prepare_validated_cart`, and `request_quote`. The quote result always preserves `fixedPrice: null`; Phase 1 has no checkout tool.
+Tool inventory: `get_storefront_capabilities`, `search_catalog`, `evaluate_shopping_plan`, `find_valid_alternatives`, `apply_plan_repair`, `prepare_validated_cart`, and `request_quote` (the seven canonical Phase 1 tools), plus the optional `revise_validated_cart` extension (registered only after a Fresh Corner cart exists). The quote result always preserves `fixedPrice: null`; no checkout tool is ever registered.
 
 ```ts
 await document.modelContext?.registerTool(tool, { signal: controller.signal });
 ```
 
-The standalone package is [`packages/webmcp`](./packages/webmcp), with emitted ESM, CommonJS, and declaration artifacts. Browser deployment verification is documented in [`specs/WEBMCP-CHROME-VERIFICATION.md`](./specs/WEBMCP-CHROME-VERIFICATION.md). This is challenge-period, controlled demonstration work: no live TheCustomHub integration, authentication, persistence, payment processing, or marketplace control is claimed.
-
-### Challenge provenance
-
-The UCP manifest/specs, deterministic engine, external/client adapter seams, and projections predate the challenge. The native browser WebMCP delivery was added during the Aug 30–31, 2026 challenge work; it should not be presented as a new generalized commerce platform or as a hosted remote MCP server.
-
-| Commit | Evidence |
-|---|---|
-| [`92753e5`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/92753e5) | Browser adapter, canonical descriptors, package, and controlled gateway. |
-| [`d094e12`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/d094e12) | Canonical showcase route and purchase-plan documentation. |
-| [`e464bb8`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/e464bb8) | Showcase hardening and explicit lifecycle evidence. |
-
-Native browser WebMCP is shipped at `/webmcp-showcase`. A generalized remote/server MCP, production authentication, persistence, multi-tenancy, payments, and real merchant control remain unshipped.
+The standalone package is [`packages/webmcp`](./packages/webmcp), with emitted ESM, CommonJS, and declaration artifacts. Browser deployment verification is documented in [`specs/WEBMCP-CHROME-VERIFICATION.md`](./specs/WEBMCP-CHROME-VERIFICATION.md).
 
 ## The demo (Playground)
 
@@ -84,13 +164,18 @@ npm install
 npm run dev
 ```
 
-Then open `http://localhost:3000` — `/demo` is the Playground (context simulator, cart
-validation, payload inspector with human/JSON toggle), `/specs` hosts the spec pages, and
+Then open `http://localhost:3000` (or the port `npm run dev` reports) — `/demo` is the
+Playground (context simulator, cart validation, payload inspector with human/JSON toggle),
+`/specs` hosts the spec pages, `/webmcp-showcase` is the WebMCP demo above, and
 `src/app/sandbox/reference/` holds a runnable per-spec cookbook.
 
 > **Note for coding agents:** this repo runs Next.js 16 with breaking changes vs. your
 > training data — read `node_modules/next/dist/docs/` before touching routing/pages
 > (see `AGENTS.md`).
+
+## License
+
+Licensed under the [Apache License, Version 2.0](./LICENSE).
 
 ## Contributing
 

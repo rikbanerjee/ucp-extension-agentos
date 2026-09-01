@@ -20,10 +20,43 @@ export interface BuildLogEntry {
 
 export const buildLog: BuildLogEntry[] = [
   {
+    id: 'webmcp-submission-hardening-2026',
+    week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
+    date: 'Sep 1, 2026',
+    current: true,
+    title: 'Submission-hardening pass: grouped telemetry, a real approval sequence, and a truthful decision summary',
+    shipped: 'Mission Control grouping, completed-approval sequence, cart-state-aware decision copy, canonical Farm Eggs fixture, unit×line-total display, and a 320px layout fix',
+    narrative:
+      'A code review of the Aug 30–31 challenge work and the following judge-facing/cart-revision passes found a batch of correctness and polish gaps: Mission Control could show duplicate identical rows for a single registration wave, the shopper-approval card vanished the instant it was clicked instead of showing a completed state, the Decision Summary kept showing stale "ready to prepare" copy after a cart already existed, the shared mock catalog\'s split product/variant titles caused Farm Eggs to mislabel its quantity unit as generic "each," the revised cart showed a bare total with no unit price once quantity was 2, and the footer overflowed horizontally at a 320px viewport. This pass fixed all of them without touching engine decision logic, verified end-to-end against a real document.modelContext in Chrome (not feature detection), and added or extended tests for every fix.',
+    bullets: [
+      'Mission Control groups consecutive raw registered/unregistered events from the same registration wave into one business-readable row ("WebMCP exposed 3 planning capabilities") while Developer Evidence still renders every raw event unmodified.',
+      'The shopper-approval card now shows a completed "Approved by shopper" state, then a real telemetry-driven "Cart preparation unlocked" step, then correctly attributed native/guided invocation — never a UI click relabeled as a WebMCP invocation.',
+      'Decision Summary now shows CART_PREPARED/CART_REVISED copy straight from the gateway response once a cart exists, instead of the underlying plan decision\'s now-stale ELIGIBLE "ready to prepare" text.',
+      'Farm Eggs has one canonical, self-contained title ("Farm Eggs, dozen") and a correct "1 dozen" quantity unit, sourced from the showcase fixture through an explicit per-variant map instead of a fragile title-substring heuristic.',
+      'The revised cart shows unit price × quantity = line total (e.g. "$8.50 × 2 = $17.00") whenever a line quantity is greater than 1.',
+      'Fixed a 320px horizontal-overflow bug in the site footer (an un-wrapped developer-links row).',
+      'Verified live against a real native document.modelContext in Chrome: the full Fresh Corner approve → CART_PREPARED → CART_REVISED journey, with Mission Control grouping and Decision Summary copy confirmed correct throughout.',
+    ],
+    // Evidence below lists the commits this pass builds on; this pass's own changes are recorded
+    // in git history as of whenever they are committed (see specs/WEBMCP-PLATFORM-BUILD.md's
+    // "Current submission status" for the exact commit list once available).
+    proves:
+      'A truthfulness- and UX-focused review pass can close real correctness and polish gaps in a shipped WebMCP surface without touching the deterministic engine or reintroducing any of the native/guided or approval-attribution invariants the earlier passes established.',
+    next:
+      'Independent Chrome/origin-trial QA on the deployed origin, a generalized remote MCP server, production authentication/persistence/rate limits/multi-tenancy, and real cryptography remain separate work.',
+    evidence: [
+      { label: '92753e5', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/92753e5', description: 'Initial browser adapter, descriptors, package, and gateway.' },
+      { label: 'd094e12', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/d094e12', description: 'Canonical route and purchase-plan showcase documentation.' },
+      { label: 'e464bb8', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/e464bb8', description: 'Showcase hardening and lifecycle evidence.' },
+      { label: 'd9a5eb5', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/d9a5eb5', description: 'Judge-facing WebMCP showcase UX and truthfulness fixes.' },
+      { label: '0228160', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/0228160', description: 'Optional revise_validated_cart cart-revision extension.' },
+    ],
+  },
+  {
     id: 'webmcp-challenge-2026',
     week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
     date: 'Aug 30–31, 2026',
-    current: true,
+    current: false,
     title: 'RetailAgentOS becomes operable through native browser tools',
     shipped: 'Native browser WebMCP showcase + canonical seven-tool catalog',
     narrative:

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Copy, PlayCircle, ShieldCheck } from 'lucide-react';
+import { formatCartLineDisplay } from '@/lib/showcase/cartLineDisplay';
 
 export interface DisplayCartLine { productId: string; quantity: number; title?: string; price?: number; unitPrice?: number; lineTotal?: number; }
 export interface DisplayCart { reference: string; revision?: number; lines: DisplayCartLine[]; total?: number; currency?: string; budget?: { amount: number; currency: string }; remainingBudget?: number; fulfillment?: string; }
@@ -88,9 +89,14 @@ export function CartRevisionPanel({ visible, native, registering, revisionState,
               <ShieldCheck size={16} aria-hidden="true" /> RetailAgentOS approved this revision
             </h3>
             <div className="mt-2 min-w-[16rem] space-y-1 text-sm text-emerald-900">
-              {cart.lines.map((line) => (
-                <p key={line.productId}>{line.quantity} × {line.title ?? line.productId} · ${(line.price ?? line.unitPrice ?? 0).toFixed(2)} each</p>
-              ))}
+              {cart.lines.map((line) => {
+                const { unitPriceLabel, totalLabel, showLineTotal } = formatCartLineDisplay(line);
+                return (
+                  <p key={line.productId}>
+                    {line.quantity} × {line.title ?? line.productId} · {showLineTotal ? `${unitPriceLabel} × ${line.quantity} = ${totalLabel}` : `${unitPriceLabel} each`}
+                  </p>
+                );
+              })}
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-emerald-900 sm:grid-cols-3">
               {previousCart?.total !== undefined && <Fact label="Previous total" value={`$${previousCart.total.toFixed(2)}`} />}

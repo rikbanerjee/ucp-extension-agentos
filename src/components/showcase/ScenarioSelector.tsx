@@ -1,6 +1,7 @@
 'use client';
 
 import { CircleAlert } from 'lucide-react';
+import { FARM_EGGS_PRICE, FARM_EGGS_TITLE, SOURDOUGH_PRICE, SOURDOUGH_TITLE } from '@/lib/showcase/productDisplay';
 
 type Scenario = 'fresh' | 'custom';
 
@@ -45,8 +46,8 @@ export function ScenarioProducts({ scenario }: { scenario: Scenario }) {
   if (scenario === 'fresh') {
     return (
       <>
-        <Product title="Farm Eggs" detail="1 dozen · inventory is stale" price="$6.99" warning />
-        <Product title="Artisan Sourdough Bread" detail="900g loaf · delivery-ready" price="$8.50" />
+        <Product title={FARM_EGGS_TITLE} detail="inventory is stale" price={`$${FARM_EGGS_PRICE.toFixed(2)}`} warning />
+        <Product title={SOURDOUGH_TITLE} detail="delivery-ready" price={`$${SOURDOUGH_PRICE.toFixed(2)}`} />
       </>
     );
   }

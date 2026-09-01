@@ -2,6 +2,7 @@
   "name": "@retailagentos/platform-contracts",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Framework-neutral multi-tenant and commerce connector contracts for RetailAgentOS.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",

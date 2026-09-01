@@ -14,13 +14,51 @@ interface MissionTimelineProps {
   currentState: string;
 }
 
+interface MissionRow { id: string; description: string; tool: WebMcpTelemetryEvent['tool']; lifecycle: WebMcpTelemetryEvent['lifecycle']; source: WebMcpTelemetryEvent['source']; decisionCode?: string; durationMs?: number; groupSize: number; }
+
+/**
+ * Collapses a run of consecutive raw `registered`/`unregistered` events that all belong to the same
+ * registration wave (identical lifecycle, previous/next state, and registry delta) into one
+ * business-readable row. Every other lifecycle (`invoked`, `completed`, `waiting_for_shopper`,
+ * `failed`, `cancelled`, `registration_cleanup`) is never grouped — each is its own real action.
+ * The raw `events` array passed in is read only, never mutated or filtered: nothing here drops or
+ * rewrites telemetry, it only changes how consecutive same-wave rows are displayed.
+ */
+function groupMissionEvents(events: WebMcpTelemetryEvent[]): MissionRow[] {
+  const rows: MissionRow[] = [];
+  let signature: string | null = null;
+  for (const event of events) {
+    const isBatchable = event.lifecycle === 'registered' || event.lifecycle === 'unregistered';
+    const tools = (event.lifecycle === 'registered' ? event.registryAdded : event.registryRemoved) ?? [];
+    const nextSignature = isBatchable ? `${event.lifecycle}|${event.previousState ?? ''}|${event.nextState ?? ''}|${tools.join(',')}` : null;
+    const last = rows[rows.length - 1];
+    if (isBatchable && last && nextSignature === signature) {
+      last.groupSize += 1;
+      last.id = event.id;
+      last.description = describeMissionEvent(event, last.groupSize);
+    } else {
+      rows.push({ id: event.id, description: describeMissionEvent(event, 1), tool: event.tool, lifecycle: event.lifecycle, source: event.source, decisionCode: event.decisionCode, durationMs: event.durationMs, groupSize: 1 });
+    }
+    signature = nextSignature;
+  }
+  return rows;
+}
+
 /**
  * Business-readable timeline of the actual WebMCP telemetry — nothing here is a hard-coded
  * "success" sequence; every row comes from a real registration, invocation, or decision event.
+ *
+ * A single WebMCP registration "wave" (e.g. the 3 base tools registering on mount, or the 2 repair
+ * tools registering together) fires one raw telemetry event per tool, all sharing the same
+ * lifecycle/previous-state/next-state/registry-delta. `groupMissionEvents` collapses exactly that
+ * kind of consecutive, same-wave duplicate into a single business-readable row — it never merges
+ * events from different waves or different lifecycles, and it never drops or rewrites the
+ * underlying `events` array itself. The raw per-event telemetry stays fully intact for the
+ * Developer Evidence panel, which renders `events` unmodified.
  */
 export function MissionTimeline({ events, native, guidedActive, activeTools, withheldTools, currentState }: MissionTimelineProps) {
   const [showRaw, setShowRaw] = useState(false);
-  const ordered = events.slice().reverse();
+  const ordered = groupMissionEvents(events).reverse();
   const modeLabel = guidedActive ? 'Guided replay' : native ? 'Native WebMCP' : 'Not yet running';
 
   return (
@@ -68,14 +106,15 @@ export function MissionTimeline({ events, native, guidedActive, activeTools, wit
 
       <ol aria-live="polite" className="mt-5 space-y-2 border-t border-white/10 pt-4 text-sm">
         {ordered.length ? (
-          ordered.slice(0, 12).map((event) => (
-            <li key={event.id} className="break-words">
-              <span>{describeMissionEvent(event)}</span>
+          ordered.slice(0, 12).map((row) => (
+            <li key={row.id} className="break-words">
+              <span>{row.description}</span>
               {showRaw && (
                 <span className="mt-0.5 block text-xs text-slate-400">
-                  {event.tool} · {event.lifecycle.replaceAll('_', ' ')} · source: {event.source}
-                  {event.decisionCode ? ` · ${event.decisionCode}` : ''}
-                  {event.durationMs !== undefined ? ` · ${event.durationMs}ms` : ''}
+                  {row.tool} · {row.lifecycle.replaceAll('_', ' ')} · source: {row.source}
+                  {row.decisionCode ? ` · ${row.decisionCode}` : ''}
+                  {row.durationMs !== undefined ? ` · ${row.durationMs}ms` : ''}
+                  {row.groupSize > 1 ? ` · ${row.groupSize} raw events grouped (see full event log below)` : ''}
                 </span>
               )}
             </li>
@@ -104,18 +143,24 @@ export function MissionTimeline({ events, native, guidedActive, activeTools, wit
   );
 }
 
-function describeMissionEvent(event: WebMcpTelemetryEvent): string {
+/**
+ * A registration "wave" — the base tools on mount, or the repair-tool pair on a stale-inventory
+ * evaluation — fires one raw `registered`/`unregistered` event per tool, all carrying the identical
+ * registry delta. `groupSize` is the number of raw events `groupMissionEvents` collapsed into this
+ * row; it is only meaningful (and only changes the wording) for those batched lifecycle events.
+ */
+function describeMissionEvent(event: WebMcpTelemetryEvent, groupSize = 1): string {
   const { tool, lifecycle } = event;
   if (lifecycle === 'registered') {
-    if (!event.previousState) return `WebMCP registered ${event.registryAdded?.length ?? ''} planning tools`.trim();
-    if (tool === 'find_valid_alternatives' || tool === 'apply_plan_repair') return 'Repair tools were registered';
+    if (!event.previousState) return `WebMCP exposed ${groupSize} planning capabilit${groupSize === 1 ? 'y' : 'ies'}`;
+    if (tool === 'find_valid_alternatives' || tool === 'apply_plan_repair') return `WebMCP exposed ${groupSize} repair capabilit${groupSize === 1 ? 'y' : 'ies'}`;
     if (tool === 'prepare_validated_cart') return 'Cart preparation became available';
     if (tool === 'request_quote') return 'Merchant quote tool became available';
     if (tool === 'revise_validated_cart') return 'Cart revision capability registered';
     return `${toolLabel(tool)} became available`;
   }
   if (lifecycle === 'unregistered') {
-    if (tool === 'find_valid_alternatives' || tool === 'apply_plan_repair') return 'Repair tools were withdrawn';
+    if (tool === 'find_valid_alternatives' || tool === 'apply_plan_repair') return `WebMCP withdrew ${groupSize} repair capabilit${groupSize === 1 ? 'y' : 'ies'}`;
     return `${toolLabel(tool)} was withdrawn`;
   }
   if (lifecycle === 'registration_cleanup') return `${toolLabel(tool)} registration was cleaned up`;

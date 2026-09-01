@@ -23,6 +23,23 @@ async function advanceToCartPrepared(opts: { enableCartRevision?: boolean } = { 
 
 describe('RetailAgentOS WebMCP descriptors', () => {
   it('provides strict schemas and standard annotations for seven tools', () => { const names = ['get_storefront_capabilities', 'search_catalog', 'evaluate_shopping_plan', 'find_valid_alternatives', 'apply_plan_repair', 'prepare_validated_cart', 'request_quote'] as const; expect(names).toHaveLength(7); names.forEach((name) => expect(getWebMcpToolSchema(name)).toMatchObject({ type: 'object', additionalProperties: false })); });
+  it('declares a bounded fulfillmentMode enum on evaluate_shopping_plan, distinct from requestedDeliveryWindow, and rejects it via additionalProperties elsewhere', () => {
+    const schema = getWebMcpToolSchema('evaluate_shopping_plan') as { properties: Record<string, unknown>; additionalProperties: boolean };
+    expect(schema.properties.fulfillmentMode).toMatchObject({ type: 'string', enum: ['shipping', 'pickup', 'local_delivery'] });
+    expect(schema.properties.requestedDeliveryWindow).toMatchObject({ type: 'string' });
+    expect(schema.additionalProperties).toBe(false);
+    // fulfillmentMode is not accepted on tools that don't declare it — it cannot be smuggled in via extra properties.
+    expect((getWebMcpToolSchema('prepare_validated_cart') as { properties: Record<string, unknown> }).properties.fulfillmentMode).toBeUndefined();
+  });
+  it('passes an explicit fulfillmentMode through to the gateway, separate from requestedDeliveryWindow, and rejects an invalid enum value', async () => {
+    const backingGateway = gateway();
+    const sdkWithSpy = createRetailAgentWebMcp({ gateway: backingGateway, storefront: { getBuyerContext: () => ({}) }, adapter: { getModelContext: () => undefined } });
+    const evaluate = sdkWithSpy.getDescriptors().evaluate_shopping_plan;
+    await evaluate.execute({ lines: [{ productId: 'eggs', quantity: 1 }], fulfillmentMode: 'local_delivery' });
+    expect(backingGateway.evaluateShoppingPlan).toHaveBeenCalledWith(expect.objectContaining({ fulfillmentMode: 'local_delivery', requestedDeliveryWindow: undefined }), expect.anything());
+    const result = await evaluate.execute({ lines: [{ productId: 'eggs', quantity: 1 }], fulfillmentMode: 'drone_delivery' });
+    expect(result.nextAction).toBe('Review the request and try again.');
+  });
   it('registers only base tools initially, then replaces phase tools after decision', async () => { const { sdk, descriptors, context } = setup(); const registration = await sdk.register(); expect(registration.registeredTools).toEqual(['get_storefront_capabilities', 'search_catalog', 'evaluate_shopping_plan']); await descriptors.find((tool) => tool.name === 'evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] }, { signal: new AbortController().signal }); expect(registration.registeredTools).toEqual(expect.arrayContaining(['find_valid_alternatives', 'apply_plan_repair'])); expect(registration.registeredTools).not.toContain('prepare_validated_cart'); expect(context.registerTool).toHaveBeenCalledTimes(5); });
   it('uses execution signals, cleans registration signals, and falls back to replay without native registration', async () => { const { sdk, descriptors } = setup(); const registration = await sdk.register(); const controller = new AbortController(); await descriptors[0].execute({}, { signal: controller.signal }); registration.dispose(); expect(registration.registeredTools).toEqual([]); const replay = setup(false); const replayRegistration = await replay.sdk.register(); expect(replayRegistration.supported).toBe(false); expect(replayRegistration.getReplayTools()).toEqual(getToolsForState('initial')); });
   it('normalizes missing, empty, and already-aborted execution options without secondary signal errors', async () => { const { sdk, descriptors } = setup(); await sdk.register(); await expect(descriptors[0].execute({})).resolves.toMatchObject({ code: 'OK' }); await expect(descriptors[0].execute({}, {})).resolves.toMatchObject({ code: 'OK' }); const controller = new AbortController(); controller.abort(); await expect(descriptors[0].execute({}, { signal: controller.signal })).resolves.toMatchObject({ code: 'CANCELLED' }); });

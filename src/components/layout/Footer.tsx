@@ -81,7 +81,7 @@ export function Footer() {
             <span className="font-semibold text-slate-600">RetailAgent<span className="text-emerald-600">OS</span></span>
             {' '}· UCP is the commerce rail; WebMCP is the browser action surface; RetailAgentOS is the reasoning layer · Building in public
           </p>
-          <nav className="flex items-center gap-4 text-xs text-slate-500">
+          <nav className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
             {EVIDENCE_LINKS.map(({ href, label }) => (
               <Link key={href} href={href} className="hover:text-slate-800 transition-colors">{label}</Link>
             ))}

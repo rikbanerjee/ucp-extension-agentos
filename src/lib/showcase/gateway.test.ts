@@ -18,6 +18,24 @@ describe('showcase gateway', () => {
     const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', 'repair-key-1', decision.decisionId);
     expect(repaired.decision.status).toBe('ELIGIBLE'); expect(repaired.lines[0].productId).toBe('v_fresh_cagefree_001');
     const cart = fresh.prepareCart(repaired.lines, 'cart-key-1', repaired.decision.decisionId); expect(cart.cart?.total).toBe(15.99); expect(cart.checkoutStarted).toBe(false);
+    expect(cart.cart?.lines.find((line) => line.productId === 'v_g_inv_001_1')?.title).toBe('Artisan Sourdough Bread, 900g loaf');
+    expect(cart.cart?.lines.find((line) => line.productId === 'v_fresh_cagefree_001')?.title).toBe('Cage-Free Eggs, 12-pack');
+  });
+  it('gives Farm Eggs a self-contained canonical title and a correct dozen/carton quantity unit, not a bare "each"', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session-units');
+    const candidates = fresh.searchProducts('eggs').candidates;
+    const farmEggs = candidates.find((candidate) => candidate.productId === 'v_g_inv_002_1');
+    expect(farmEggs?.title).toBe('Farm Eggs, dozen');
+    expect(farmEggs?.quantityUnit).toBe('1 dozen');
+    const cageFree = candidates.find((candidate) => candidate.productId === 'v_fresh_cagefree_001');
+    expect(cageFree?.title).toBe('Cage-Free Eggs, 12-pack');
+    expect(cageFree?.quantityUnit).toBe('1 dozen');
+  });
+  it('gives the bread a correct weight-based quantity unit, not the eggs’ dozen unit', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session-units-bread');
+    const bread = fresh.searchProducts('sourdough').candidates.find((candidate) => candidate.productId === 'v_g_inv_001_1');
+    expect(bread?.title).toBe('Artisan Sourdough Bread, 900g loaf');
+    expect(bread?.quantityUnit).toBe('900g loaf');
   });
   it('rejects cross-storefront decisions and unverified delivery prose', () => {
     const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines); const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session');
@@ -40,6 +58,22 @@ describe('showcase gateway', () => {
     const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session');
     const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { requestedDeliveryWindow: 'before 9:15 p.m.' });
     expect(decision.status).toBe('BLOCKED'); expect(decision.code).toBe('DELIVERY_WINDOW_UNSUPPORTED');
+  });
+  it('reaches REPAIRABLE/STOCK_STALE for the visible native prompt with an explicit fulfillmentMode and no requested delivery deadline', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session-fm-1');
+    const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, fulfillmentMode: 'local_delivery', substitutionsAllowed: true });
+    expect(decision.status).toBe('REPAIRABLE'); expect(decision.code).toBe('STOCK_STALE');
+  });
+  it('rejects an invalid fulfillmentMode value with strict validation', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session-fm-2');
+    expect(() => fresh.evaluatePurchasePlan(freshLines, undefined, { fulfillmentMode: 'drone_delivery' })).toThrow(ShowcaseInputError);
+  });
+  it('reports a credible, deterministic stale-inventory age rather than an epoch-derived duration', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session-stale-age');
+    const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' } });
+    const staleReason = decision.reasons.find((reason) => reason.code === 'STOCK_STALE');
+    expect(staleReason?.message).toMatch(/fetched 300s ago, TTL 60s/);
+    expect(staleReason?.message).not.toMatch(/\d{6,}s ago/); // no six-plus-digit (epoch-scale) second count
   });
   it('requires shopper approval before a repair applies, and creates no cart on decline', () => {
     const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });

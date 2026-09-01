@@ -22,16 +22,18 @@ describe('WebMCP delivery documentation', () => {
     expect(agentsMd).not.toContain(retiredTransportPhrase);
   });
 
-  it('puts the challenge entry first and exposes each evidence link', () => {
+  it('puts the latest (submission-hardening) entry first and exposes each evidence link', () => {
     const latest = buildLog[0];
 
     expect(latest).toMatchObject({
-      id: 'webmcp-challenge-2026',
+      id: 'webmcp-submission-hardening-2026',
       current: true,
-      date: 'Aug 30–31, 2026',
+      date: 'Sep 1, 2026',
     });
-    expect(latest.evidence?.map(({ label }) => label)).toEqual(['92753e5', 'd094e12', 'e464bb8']);
+    expect(latest.evidence?.map(({ label }) => label)).toEqual(['92753e5', 'd094e12', 'e464bb8', 'd9a5eb5', '0228160']);
     expect(buildLog.find((entry) => entry.id === 'week-7')?.current).toBe(false);
+    // The original challenge-window entry stays in the log, just no longer marked current.
+    expect(buildLog.find((entry) => entry.id === 'webmcp-challenge-2026')).toMatchObject({ current: false, date: 'Aug 30–31, 2026' });
   });
 
   it('keeps browser WebMCP and a generalized remote MCP server as separate evidence rows', () => {

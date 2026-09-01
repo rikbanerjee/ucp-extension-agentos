@@ -22,7 +22,7 @@ export interface ReviseCartResult { status: 'REVISED' | 'WITHHELD' | 'REPAIR_REQ
 export interface RetailAgentGateway {
   getStorefrontCapabilities(options?: { signal?: AbortSignal }): Promise<JsonObject>;
   searchCatalog(input: { query: string; limit?: number }, options?: { signal?: AbortSignal }): Promise<JsonObject>;
-  evaluateShoppingPlan(input: { lines: PlanLine[]; budget?: { amount: number; currency: string }; requestedDeliveryWindow?: string; substitutionsAllowed?: boolean }, options?: { signal?: AbortSignal }): Promise<PlanDecision>;
+  evaluateShoppingPlan(input: { lines: PlanLine[]; budget?: { amount: number; currency: string }; fulfillmentMode?: string; requestedDeliveryWindow?: string; substitutionsAllowed?: boolean }, options?: { signal?: AbortSignal }): Promise<PlanDecision>;
   findValidAlternatives(input: { decisionId: string; lines: PlanLine[] }, options?: { signal?: AbortSignal }): Promise<{ alternatives: RepairProposal[]; decisionId: string; provenance?: DecisionProvenance }>;
   applyPlanRepair(input: { decisionId: string; repairId: string; lines: PlanLine[]; idempotencyKey: string }, options?: { signal?: AbortSignal }): Promise<{ status: 'APPLIED'; repair: RepairProposal; decision: PlanDecision; lines: PlanLine[] }>;
   prepareValidatedCart(input: { decisionId: string; lines: PlanLine[]; idempotencyKey: string }, options?: { signal?: AbortSignal }): Promise<CartResult>;

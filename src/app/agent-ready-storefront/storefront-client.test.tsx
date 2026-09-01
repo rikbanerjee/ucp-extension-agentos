@@ -96,7 +96,40 @@ describe('AgentReadyStorefront — fake modelContext integration harness', () =>
       );
     });
     await waitFor(() => expect(registered.has('apply_plan_repair')).toBe(true));
-    expect(screen.getAllByText(/Repair tools were registered/).length).toBeGreaterThan(0);
+    // The 2 raw per-tool registration events for the repair-tool pair are grouped into one
+    // business-readable Mission Control row rather than showing two identical lines.
+    expect(screen.getAllByText(/WebMCP exposed 2 repair capabilities/).length).toBeGreaterThan(0);
+    expect(screen.queryAllByText(/WebMCP exposed 2 repair capabilities/).length).toBe(1);
+  });
+
+  it('groups the 3 base-tool registration events into a single Mission Control row on mount', async () => {
+    installFakeModelContext();
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+    // 3 raw `registered` events fire for get_storefront_capabilities/search_catalog/evaluate_shopping_plan
+    // on mount; Mission Control must show exactly one grouped "WebMCP exposed 3 planning capabilities"
+    // row, not three duplicate rows.
+    expect(screen.getAllByText(/WebMCP exposed 3 planning capabilities/).length).toBe(1);
+  });
+
+  it('shows a completed "Approved by shopper" state, a real WebMCP-unlock step, and CART_PREPARED decision copy after approval', async () => {
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Watch guided WebMCP mission/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Approve$/ })).toBeInTheDocument(), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^Approve$/ }));
+    // The approval card must show a completed state, not just vanish.
+    await waitFor(() => expect(screen.getAllByText(/Approved by shopper/i).length).toBeGreaterThan(0), { timeout: 5000 });
+    // A real telemetry-driven transition — not the click itself — unlocks cart preparation.
+    await waitFor(() => expect(screen.getByText(/Cart preparation unlocked/i)).toBeInTheDocument(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getAllByText(/Validated cart prepared/i).length).toBeGreaterThan(0), { timeout: 5000 });
+    // The correct actor is attributed for the invocation that produced the cart — the guided replay,
+    // never labeled as a native browser-agent call.
+    expect(screen.getByText(/Guided replay invocation/i)).toBeInTheDocument();
+    // Decision Summary must show CART_PREPARED copy, not the stale "ready to prepare" ELIGIBLE text.
+    expect(screen.getByText('CART_PREPARED')).toBeInTheDocument();
+    expect(screen.queryByText(/Prepare a visible cart for shopper review\./i)).not.toBeInTheDocument();
   });
 
   it('guided mission works with no document.modelContext present', async () => {
