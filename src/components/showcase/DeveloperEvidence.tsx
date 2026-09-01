@@ -1,6 +1,7 @@
 'use client';
 
-import type { WebMcpTelemetryEvent, WebMcpToolName } from '../../../packages/webmcp/src';
+import type { ReviseCartResult, WebMcpTelemetryEvent, WebMcpToolName } from '../../../packages/webmcp/src';
+import { getWebMcpToolSchema } from '../../../packages/webmcp/src';
 
 interface DeveloperEvidenceProps {
   scenario: 'fresh' | 'custom';
@@ -12,10 +13,12 @@ interface DeveloperEvidenceProps {
   parity: string;
   events: WebMcpTelemetryEvent[];
   customHubDisclosure: boolean;
+  cartRevision?: ReviseCartResult | null;
 }
 
 /** Registry parity, provenance, schemas, and raw telemetry — progressively disclosed, never above the fold. */
-export function DeveloperEvidence({ scenario, storefrontId, storefrontSessionId, native, activeTools, browserTools, parity, events, customHubDisclosure }: DeveloperEvidenceProps) {
+export function DeveloperEvidence({ scenario, storefrontId, storefrontSessionId, native, activeTools, browserTools, parity, events, customHubDisclosure, cartRevision }: DeveloperEvidenceProps) {
+  const revisionEvents = events.filter((event) => event.tool === 'revise_validated_cart');
   return (
     <div className="mt-5 space-y-3">
       <details className="rounded-xl border border-slate-200 bg-white p-4">
@@ -39,6 +42,38 @@ export function DeveloperEvidence({ scenario, storefrontId, storefrontSessionId,
           <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words">{JSON.stringify(events, null, 2)}</pre>
         </details>
       </details>
+
+      {scenario === 'fresh' && (revisionEvents.length > 0 || cartRevision) && (
+        <details className="rounded-xl border border-slate-200 bg-white p-4">
+          <summary className="cursor-pointer font-semibold text-slate-900">
+            Optional extension evidence — revise_validated_cart
+          </summary>
+          <p className="mt-2 text-xs text-slate-500">
+            This is an optional post-cart revision extension, dynamically registered only after a
+            Fresh Corner cart exists — it is not one of the seven canonical Phase 1 tools.
+          </p>
+          <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+            <span>Registration event: {revisionEvents.some((event) => event.lifecycle === 'registered') ? 'observed (after cart)' : 'not yet registered'}</span>
+            <span>Invocation source: {revisionEvents.find((event) => event.lifecycle === 'invoked')?.source ?? 'not yet invoked'}</span>
+            <span>Previous cart reference: <code className="text-xs break-all">{cartRevision?.previousCartReference ?? 'n/a'}</code></span>
+            <span>Revised cart reference/revision: <code className="text-xs break-all">{cartRevision?.cart ? `${cartRevision.cart.reference} · rev ${cartRevision.cart.revision}` : 'n/a'}</code></span>
+            <span>checkoutAvailable: {String(cartRevision?.checkoutAvailable ?? false)}</span>
+            <span>checkoutStarted: {String(cartRevision?.checkoutStarted ?? false)}</span>
+            <span>orderPlaced: {String(cartRevision?.orderPlaced ?? false)}</span>
+            <span>paymentInitiated: {String(cartRevision?.paymentInitiated ?? false)}</span>
+          </div>
+          <details className="mt-3 text-xs text-slate-600">
+            <summary className="cursor-pointer font-semibold">Strict input schema (additionalProperties: false)</summary>
+            <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words">{JSON.stringify(getWebMcpToolSchema('revise_validated_cart'), null, 2)}</pre>
+          </details>
+          {cartRevision && (
+            <details className="mt-3 text-xs text-slate-600">
+              <summary className="cursor-pointer font-semibold">Structured result</summary>
+              <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words">{JSON.stringify(cartRevision, null, 2)}</pre>
+            </details>
+          )}
+        </details>
+      )}
 
       {scenario === 'custom' && customHubDisclosure && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">

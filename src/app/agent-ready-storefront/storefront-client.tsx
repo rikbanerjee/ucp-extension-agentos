@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshCw, ShoppingCart } from 'lucide-react';
-import { createRetailAgentWebMcp, type CartResult, type PlanDecision, type QuoteResult, type WebMcpRegistration, type WebMcpTelemetryEvent, type WebMcpToolName } from '../../../packages/webmcp/src';
+import { createRetailAgentWebMcp, type PlanDecision, type QuoteResult, type ReviseCartResult, type WebMcpRegistration, type WebMcpTelemetryEvent, type WebMcpToolName } from '../../../packages/webmcp/src';
 import { createShowcaseBrowserGateway } from '@/lib/showcase/browser-gateway';
 import type { ShowcaseStoreId } from '@/lib/showcase/gateway';
 import { ShowcaseHero } from '@/components/showcase/ShowcaseHero';
@@ -12,6 +12,7 @@ import { ShopperApprovalCard, type Approval } from '@/components/showcase/Shoppe
 import { MissionTimeline } from '@/components/showcase/MissionTimeline';
 import { DecisionSummary } from '@/components/showcase/DecisionSummary';
 import { DeveloperEvidence } from '@/components/showcase/DeveloperEvidence';
+import { CartRevisionPanel, type DisplayCart, type RevisionState } from '@/components/showcase/CartRevisionPanel';
 
 type Scenario = 'fresh' | 'custom';
 type MissionMode = 'idle' | 'native' | 'guided';
@@ -19,6 +20,7 @@ type MissionMode = 'idle' | 'native' | 'guided';
 const freshLines = [{ productId: 'v_g_inv_002_1', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 1 }];
 const customLines = [{ productId: 'v_customhub_quote_001', quantity: 25 }];
 const freshBudget = { amount: 25, currency: 'USD' } as const;
+const revisedFreshLines = [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }];
 const prompts = {
   fresh: `Build a dinner and tomorrow’s lunch cart under $${freshBudget.amount} using local delivery. If inventory cannot be trusted, show me a valid substitute and wait for my approval. Prepare a cart for review, but do not check out.`,
   custom: 'I need 25 customized robotics-team shirts in mixed adult sizes, delivered to Brooklyn by September 15, with a budget under $500. Use valid merchant pricing, but do not invent a fixed price or place an order if merchant review is required.',
@@ -30,7 +32,7 @@ export default function AgentReadyStorefront() {
   const [registering, setRegistering] = useState(true);
   const [registrationError, setRegistrationError] = useState(false);
   const [decision, setDecision] = useState<PlanDecision | null>(null);
-  const [cart, setCart] = useState<CartResult['cart']>(null);
+  const [cart, setCart] = useState<DisplayCart | null>(null);
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [events, setEvents] = useState<WebMcpTelemetryEvent[]>([]);
   const [approval, setApproval] = useState<Approval | null>(null);
@@ -39,8 +41,14 @@ export default function AgentReadyStorefront() {
   const [busy, setBusy] = useState(false);
   const [generation, setGeneration] = useState(0);
   const [browserTools, setBrowserTools] = useState<string[] | null>(null);
+  const [revisionState, setRevisionState] = useState<RevisionState>('idle');
+  const [revisionResult, setRevisionResult] = useState<ReviseCartResult | null>(null);
+  const [previousCart, setPreviousCart] = useState<DisplayCart | null>(null);
+  const [revisionBusy, setRevisionBusy] = useState(false);
   const registrationRef = useRef<WebMcpRegistration | null>(null);
   const executionRef = useRef<AbortController | null>(null);
+  const cartRef = useRef<DisplayCart | null>(null);
+  useEffect(() => { cartRef.current = cart; }, [cart]);
 
   const reset = useCallback(() => {
     executionRef.current?.abort();
@@ -48,6 +56,7 @@ export default function AgentReadyStorefront() {
     registrationRef.current?.dispose();
     setDecision(null); setCart(null); setQuote(null); setEvents([]); setApproval(null); setBrowserTools(null);
     setCurrentState('initial'); setMode('idle'); setBusy(false); setRegistering(true); setRegistrationError(false);
+    setRevisionState('idle'); setRevisionResult(null); setPreviousCart(null); setRevisionBusy(false);
     setGeneration((value) => value + 1);
   }, [approval]);
   const switchScenario = (next: Scenario) => { if (next === scenario) return; setScenario(next); reset(); };
@@ -58,16 +67,38 @@ export default function AgentReadyStorefront() {
     const storefrontSessionId = `${storefrontId}-${generation + 1}`;
     const sdk = createRetailAgentWebMcp({
       gateway: createShowcaseBrowserGateway(storefrontId, storefrontSessionId),
+      // The optional cart-revision extension is only ever enabled for the controlled Fresh Corner
+      // scenario — TheCustomHub remains quote-only and never registers `revise_validated_cart`.
+      enableCartRevision: scenario === 'fresh',
       storefront: {
         getBuyerContext: () => ({ marketRegion: 'US', fulfillmentMode: scenario === 'fresh' ? 'local_delivery' : 'shipping', contextSource: 'controlled_fixture' }),
         onDecision: (value) => { if (!disposed) setDecision(value); },
-        onCart: (result) => { if (!disposed) setCart(result.cart); },
+        onCart: (result) => { if (!disposed) setCart(result.cart as DisplayCart | null); },
         onQuote: (result) => { if (!disposed) setQuote(result); },
+        onCartRevision: (result) => {
+          if (disposed) return;
+          setRevisionResult(result);
+          if (result.status === 'REVISED' && result.cart) {
+            setPreviousCart(cartRef.current);
+            setCart(result.cart as DisplayCart);
+            setRevisionState('revised');
+          } else if (result.status === 'REPAIR_REQUIRED') {
+            setRevisionState('requires_approval');
+          } else {
+            setRevisionState('withheld');
+          }
+        },
         onLifecycle: (event) => {
           if (disposed) return;
           setEvents((items) => [...items.slice(-39), event]);
           if (event.nextState) setCurrentState(event.nextState);
           if (event.lifecycle === 'invoked') setMode(event.source === 'native' ? 'native' : 'guided');
+          if (event.tool === 'revise_validated_cart') {
+            if (event.lifecycle === 'registered') setRevisionState('available');
+            if (event.lifecycle === 'unregistered') setRevisionState('idle');
+            if (event.lifecycle === 'invoked') setRevisionState('revising');
+            if (event.lifecycle === 'failed' || event.lifecycle === 'cancelled') setRevisionState('error');
+          }
           if (event.lifecycle === 'registered' || event.lifecycle === 'unregistered') {
             void registrationRef.current?.getNativeToolNames?.().then((observed) => { if (!disposed) setBrowserTools(observed); });
           }
@@ -97,6 +128,7 @@ export default function AgentReadyStorefront() {
     const current = registrationRef.current;
     if (!current) return;
     setBusy(true); setDecision(null); setCart(null); setQuote(null);
+    setRevisionState('idle'); setRevisionResult(null); setPreviousCart(null);
     const controller = new AbortController(); executionRef.current = controller;
     try {
       await current.invoke('get_storefront_capabilities', {}, controller.signal);
@@ -119,6 +151,19 @@ export default function AgentReadyStorefront() {
         }
       }
     } finally { setBusy(false); executionRef.current = null; }
+  }
+
+  /** Guided replay of the optional cart-revision extension: same descriptor, same gateway handler,
+   * `registration.invoke()` always tags the call `source: 'replay'`. Never runs automatically — it
+   * is only ever triggered by an explicit click on "Watch guided cart revision". */
+  async function runGuidedCartRevision() {
+    const current = registrationRef.current; const activeCart = cartRef.current;
+    if (!current || scenario !== 'fresh' || !activeCart) return;
+    setRevisionBusy(true);
+    const controller = new AbortController(); executionRef.current = controller;
+    try {
+      await current.invoke('revise_validated_cart', { cartReference: activeCart.reference, expectedRevision: activeCart.revision ?? 1, lines: revisedFreshLines, idempotencyKey: `fresh-revise-${generation + 1}-${Date.now()}` }, controller.signal);
+    } finally { setRevisionBusy(false); executionRef.current = null; }
   }
 
   const native = Boolean(registration?.supported);
@@ -166,12 +211,26 @@ export default function AgentReadyStorefront() {
             </div>
             <ShopperApprovalCard approval={approval} />
             {cart && (
-              <div aria-live="polite" className="mt-4 rounded-lg bg-emerald-50 p-3">
+              <div aria-live="polite" data-cart-reference={cart.reference} data-cart-revision={cart.revision ?? 1} className="mt-4 rounded-lg bg-emerald-50 p-3">
                 <b className="flex items-center gap-1 text-emerald-900"><ShoppingCart size={16} /> Validated cart prepared</b>
-                {cart.lines.map((line) => <p key={line.productId} className="mt-1 text-sm text-emerald-900">{line.quantity} × {line.title} · ${line.price?.toFixed(2)}</p>)}
+                {cart.lines.map((line) => <p key={line.productId} className="mt-1 text-sm text-emerald-900">{line.quantity} × {line.title} · ${(line.price ?? line.unitPrice)?.toFixed(2)}</p>)}
                 <p className="mt-2 text-sm font-semibold text-emerald-900">Total: ${cart.total?.toFixed(2)} {cart.currency}</p>
                 <p className="mt-1 text-xs text-emerald-800">Checkout is unavailable.</p>
               </div>
+            )}
+            {scenario === 'fresh' && cart && (
+              <CartRevisionPanel
+                visible
+                native={native}
+                registering={registering}
+                revisionState={revisionState}
+                revisionGuidedActive={mode === 'guided' && (revisionBusy || revisionState === 'revised' || revisionState === 'withheld' || revisionState === 'requires_approval')}
+                revisionBusy={revisionBusy}
+                cart={cart}
+                previousCart={previousCart}
+                withheldReason={revisionResult && revisionResult.status !== 'REVISED' ? revisionResult.nextAction : null}
+                onRunGuidedRevision={runGuidedCartRevision}
+              />
             )}
             {quote && (
               <div aria-live="polite" className="mt-4 rounded-lg bg-slate-950 p-3 text-white">
@@ -208,6 +267,7 @@ export default function AgentReadyStorefront() {
           parity={parity}
           events={events}
           customHubDisclosure
+          cartRevision={revisionResult}
         />
       </section>
     </main>

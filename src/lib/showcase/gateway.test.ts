@@ -51,4 +51,92 @@ describe('showcase gateway', () => {
     const cart = fresh.prepareCart(freshLines, 'cart-key-decline-1', decision.decisionId);
     expect(cart.cart).toBeNull(); expect(cart.cartCreated).toBe(false);
   });
+
+  describe('reviseCart — optional post-cart revision extension', () => {
+    function prepareRevisableCart(sessionId = 'fresh-session') {
+      const fresh = createShowcaseGateway(now, 'fresh-corner', sessionId);
+      const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });
+      const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', `repair-key-${sessionId}`, decision.decisionId);
+      const cart = fresh.prepareCart(repaired.lines, `cart-key-${sessionId}`, repaired.decision.decisionId);
+      return { fresh, cart };
+    }
+
+    it('starts a prepared cart at revision 1', () => {
+      const { cart } = prepareRevisableCart('rev-session-1');
+      expect(cart.cart?.revision).toBe(1);
+    });
+
+    it('revises bread quantity to two, keeps the eggs, and lands on $24.49 with $0.51 remaining under the $25 budget, preserving local delivery', () => {
+      const { fresh, cart } = prepareRevisableCart('rev-session-2');
+      const revised = fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-1');
+      expect(revised.status).toBe('REVISED'); expect(revised.code).toBe('CART_REVISED');
+      expect(revised.cart?.revision).toBe(2);
+      expect(revised.cart?.lines.find((line) => line.productId === 'v_fresh_cagefree_001')?.quantity).toBe(1);
+      expect(revised.cart?.lines.find((line) => line.productId === 'v_g_inv_001_1')?.quantity).toBe(2);
+      expect(revised.cart?.total).toBe(24.49);
+      expect(revised.cart?.remainingBudget).toBe(0.51);
+      expect(revised.cart?.fulfillment).toBe('LOCAL_DELIVERY');
+      expect(revised.checkoutAvailable).toBe(false); expect(revised.checkoutStarted).toBe(false);
+      expect(revised.orderPlaced).toBe(false); expect(revised.paymentInitiated).toBe(false);
+      expect(revised.cartCreated).toBe(true); expect(revised.cartRevised).toBe(true);
+    });
+
+    it('is idempotent: retrying the same idempotency key returns the identical result without double-incrementing the revision', () => {
+      const { fresh, cart } = prepareRevisableCart('rev-session-3');
+      const lines = [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }];
+      const first = fresh.reviseCart(cart.cart!.reference, 1, lines, 'revise-key-idem');
+      const second = fresh.reviseCart(cart.cart!.reference, 1, lines, 'revise-key-idem');
+      expect(second).toEqual(first);
+    });
+
+    it('rejects the same idempotency key reused for a different revision request', () => {
+      const { fresh, cart } = prepareRevisableCart('rev-session-4');
+      fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-reused');
+      expect(() => fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_fresh_cagefree_001', quantity: 2 }, { productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-reused')).toThrow(ShowcaseInputError);
+    });
+
+    it('rejects an unknown cart reference', () => {
+      const fresh = createShowcaseGateway(now, 'fresh-corner', 'rev-session-5');
+      expect(() => fresh.reviseCart('demo-cart-does-not-exist', 1, [{ productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-unknown')).toThrow(ShowcaseInputError);
+    });
+
+    it('rejects a storefront mismatch', () => {
+      const { cart } = prepareRevisableCart('rev-session-6');
+      const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session-6');
+      expect(() => custom.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-mismatch')).toThrow(ShowcaseInputError);
+    });
+
+    it('rejects a storefront-session mismatch', () => {
+      const { cart } = prepareRevisableCart('rev-session-7');
+      const otherSession = createShowcaseGateway(now, 'fresh-corner', 'rev-session-other');
+      expect(() => otherSession.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-session-mismatch')).toThrow(ShowcaseInputError);
+    });
+
+    it('rejects an expected-revision conflict and never replaces the valid existing cart', () => {
+      const { fresh, cart } = prepareRevisableCart('rev-session-8');
+      expect(() => fresh.reviseCart(cart.cart!.reference, 5, [{ productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-conflict')).toThrow(ShowcaseInputError);
+    });
+
+    it('withholds an over-budget revision without replacing the existing valid cart', () => {
+      const { fresh, cart } = prepareRevisableCart('rev-session-9');
+      const revised = fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 4 }], 'revise-key-over-budget');
+      expect(revised.status).toBe('WITHHELD'); expect(revised.code).toBe('BUDGET_EXCEEDED');
+      expect(revised.cart).toBeNull(); expect(revised.cartRevised).toBe(false);
+      const stillCurrent = fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-after-withheld');
+      expect(stillCurrent.status).toBe('REVISED');
+    });
+
+    it('rejects the schema-level invalid inputs: missing cart reference, nonpositive expected revision, and invalid quantities', () => {
+      const { fresh, cart } = prepareRevisableCart('rev-session-10');
+      expect(() => fresh.reviseCart('', 1, [{ productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-a')).toThrow(ShowcaseInputError);
+      expect(() => fresh.reviseCart(cart.cart!.reference, 0, [{ productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-b')).toThrow(ShowcaseInputError);
+      expect(() => fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_g_inv_001_1', quantity: 0 }], 'revise-key-c')).toThrow(ShowcaseInputError);
+    });
+
+    it('never creates a checkout, order, or payment capability on a successful revision', () => {
+      const { fresh, cart } = prepareRevisableCart('rev-session-11');
+      const revised = fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-11');
+      expect(revised).toMatchObject({ checkoutAvailable: false, checkoutStarted: false, orderPlaced: false, paymentInitiated: false });
+    });
+  });
 });

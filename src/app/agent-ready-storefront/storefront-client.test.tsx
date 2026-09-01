@@ -10,6 +10,7 @@ import { POST as evaluateRoute } from '../api/showcase/plans/evaluate/route';
 import { POST as alternativesRoute } from '../api/showcase/plans/alternatives/route';
 import { POST as repairsRoute } from '../api/showcase/plans/repairs/route';
 import { POST as cartsRoute } from '../api/showcase/carts/prepare/route';
+import { POST as reviseRoute } from '../api/showcase/carts/revise/route';
 import { POST as quotesRoute } from '../api/showcase/quotes/request/route';
 
 /**
@@ -25,6 +26,7 @@ const routes: Record<string, (request: Request) => Promise<Response>> = {
   '/api/showcase/plans/alternatives': alternativesRoute,
   '/api/showcase/plans/repairs': repairsRoute,
   '/api/showcase/carts/prepare': cartsRoute,
+  '/api/showcase/carts/revise': reviseRoute,
   '/api/showcase/quotes/request': quotesRoute,
 };
 
@@ -171,6 +173,74 @@ describe('AgentReadyStorefront — fake modelContext integration harness', () =>
     expect(registered.size).toBeGreaterThan(0);
     unmount();
     expect(registered.size).toBe(0);
+  });
+
+  it('the optional cart-revision extension registers only after a Fresh Corner cart exists, a native call revises it to $24.49, and reset tears it down', async () => {
+    const { registered } = installFakeModelContext();
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+    expect(registered.has('revise_validated_cart')).toBe(false);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Watch guided WebMCP mission/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Approve$/ })).toBeInTheDocument(), { timeout: 5000 });
+    // Approval is still pending — the extension must not be registered yet.
+    expect(registered.has('revise_validated_cart')).toBe(false);
+    await user.click(screen.getByRole('button', { name: /^Approve$/ }));
+    await waitFor(() => expect(screen.getAllByText(/Validated cart prepared/i).length).toBeGreaterThan(0), { timeout: 5000 });
+    expect(registered.has('prepare_validated_cart')).toBe(false);
+    await waitFor(() => expect(registered.has('revise_validated_cart')).toBe(true));
+    expect(registered.has('request_quote')).toBe(false);
+
+    const cartBox = document.querySelector('[data-cart-reference]')!;
+    const cartReference = cartBox.getAttribute('data-cart-reference')!;
+    const cartRevision = Number(cartBox.getAttribute('data-cart-revision'));
+    expect(cartRevision).toBe(1);
+
+    await act(async () => {
+      await registered.get('revise_validated_cart')!.execute(
+        { cartReference, expectedRevision: cartRevision, lines: [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }], idempotencyKey: 'native-revision-test-key' },
+        { signal: new AbortController().signal },
+      );
+    });
+
+    await waitFor(() => expect(screen.getByText(/RetailAgentOS approved this revision/i)).toBeInTheDocument());
+    expect(screen.getAllByText(/\$24\.49/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Invocation source: native/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^checkout$/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Reset/i }));
+    await waitForRegistration();
+    expect(registered.has('revise_validated_cart')).toBe(false);
+  });
+
+  it('the optional cart-revision extension is never registered for TheCustomHub', async () => {
+    const { registered } = installFakeModelContext();
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /TheCustomHub/i }));
+    await waitForRegistration();
+    await user.click(screen.getByRole('button', { name: /Watch guided WebMCP mission/i }));
+    await waitFor(() => expect(screen.getByText(/Merchant quote requested/i)).toBeInTheDocument(), { timeout: 5000 });
+    expect(registered.has('revise_validated_cart')).toBe(false);
+    expect(screen.queryByText(/Optional: See RetailAgentOS govern a cart revision/i)).not.toBeInTheDocument();
+  });
+
+  it('guided cart revision is reachable by keyboard-accessible controls, labeled guided, and never shows a checkout action', async () => {
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Watch guided WebMCP mission/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Approve$/ })).toBeInTheDocument(), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^Approve$/ }));
+    await waitFor(() => expect(screen.getAllByText(/Validated cart prepared/i).length).toBeGreaterThan(0), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByRole('button', { name: /Watch guided cart revision/i })).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /Watch guided cart revision/i }));
+    await waitFor(() => expect(screen.getAllByText(/Guided replay · Same RetailAgentOS handlers · No external agent/).length).toBeGreaterThan(0), { timeout: 5000 });
+    // The default guided-revision request (two loaves, keep the eggs) stays under budget and succeeds;
+    // this asserts the withheld path never corrupts the already-visible valid cart on any outcome.
+    expect(screen.getAllByText(/Validated cart prepared/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /^checkout$/i })).not.toBeInTheDocument();
   });
 
   it('repeat reset/run cycles do not duplicate registrations', async () => {

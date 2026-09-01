@@ -15,6 +15,6 @@ export const STOREFRONTS: Record<ShowcaseStoreId, ShowcaseStorefront> = {
   thecustomhub: { id: 'thecustomhub', displayName: 'TheCustomHub', fixtureClassification: 'authorized controlled quote fixture', merchant: customMerchant, variants: [customVariant], catalogVersion: 'thecustomhub-catalog-v1', policyVersion: 'thecustomhub-policy-v1', fulfillmentModes: ['shipping'], substitutionsSupported: false, quoteSupported: true, memberPricingSupported: false, shopperContext: { marketRegion: 'US', fulfillmentMode: 'shipping', contextSource: 'controlled_fixture' }, scenarioExplanation: 'A controlled custom-merchandise request must go to merchant review; no fixed price, cart, order, payment, or checkout is exposed.' },
 };
 
-const stores: ShowcaseStores = { carts: new Map(), repairs: new Map(), quotes: new Map(), decisions: new Map() };
+const stores: ShowcaseStores = { carts: new Map(), repairs: new Map(), quotes: new Map(), decisions: new Map(), cartsByReference: new Map(), revisions: new Map() };
 export function isStorefrontId(value: string | null | undefined): value is ShowcaseStoreId { return value === 'fresh-corner' || value === 'thecustomhub'; }
 export function createShowcaseGateway(now: number, storefrontId: ShowcaseStoreId = 'fresh-corner', storefrontSessionId = 'server-fixture') { const base = STOREFRONTS[storefrontId]; const storefront = storefrontId === 'fresh-corner' ? { ...base, variants: [byId('v_g_inv_002_1'), cageFreeEggs(now), byId('v_g_inv_001_1')] } : base; return new ShowcaseGateway({ storefront, storefrontSessionId, now }, stores); }

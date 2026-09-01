@@ -9,6 +9,7 @@ export function toolLabel(tool: WebMcpToolName | 'checkout'): string {
     case 'apply_plan_repair': return 'Apply plan repair';
     case 'prepare_validated_cart': return 'Prepare validated cart';
     case 'request_quote': return 'Request quote';
+    case 'revise_validated_cart': return 'Revise validated cart';
     default: return 'Checkout';
   }
 }

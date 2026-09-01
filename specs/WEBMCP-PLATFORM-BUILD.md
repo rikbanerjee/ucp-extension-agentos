@@ -145,3 +145,75 @@ DevTools, while preserving every invariant above.
 ## Last verified results
 
 2026-08-31 — The package workspace is explicitly installed and `@retailagentos/webmcp` emits ESM, CommonJS, and declaration artifacts. Its SDK normalizes omitted browser execution options and combines browser cancellation with an independent storefront-session lifecycle signal. Controlled Fresh Corner and TheCustomHub fixtures are server-bound, have separate catalogs, versions, policies, sessions, decisions, and idempotency namespaces. The page renders actual native registrations only after registration succeeds and shows browser-observed parity when `getTools()` is available. Native-vs-replay telemetry now carries an explicit per-invocation source instead of a capability-inferred flag, and TheCustomHub's requested-delivery-date line reaches `QUOTE_REQUIRED` instead of an unsupported-window dead end. Focused SDK, gateway, and component-integration tests pass (520/520 full suite); `tsc --noEmit`, lint, the package build, and `next build` all complete successfully. Native ChatGPT/Codex and deployed Chrome verification remain external browser checks, not claims made by this record.
+
+## Optional post-cart revision extension (2026-08-31)
+
+RetailAgentOS ships an optional, additive extension after the primary approval-to-$15.99-cart judge
+journey: `revise_validated_cart`. It is documented and implemented as an extension **added after**
+Phase 1, never as an eighth canonical tool — `packages/webmcp/src/index.ts` now exports
+`CANONICAL_PHASE_1_TOOLS` (the historical seven, unchanged), `OPTIONAL_CART_REVISION_TOOLS`
+(`['revise_validated_cart']`), and `ALL_WEBMCP_TOOLS` (their union). `CANONICAL_TOOLS` is kept as a
+back-compat alias of `CANONICAL_PHASE_1_TOOLS` so existing imports keep working unchanged.
+
+- **Registration lifecycle.** The SDK accepts `enableCartRevision` at construction. When true (and
+  only when the injected gateway implements `reviseValidatedCart`), entering the `cart_prepared`
+  phase registers `revise_validated_cart` in the same pass that withdraws `prepare_validated_cart`;
+  leaving `cart_prepared` (reset, scenario switch, unmount, or a fresh registration cycle)
+  unregisters it through the same `AbortController`-based lifecycle as every other phase tool. It is
+  never registered before a cart exists, during the repair/approval gate, or for TheCustomHub — the
+  showcase only ever passes `enableCartRevision: scenario === 'fresh'`, and the browser gateway only
+  attaches `reviseValidatedCart` for the `fresh-corner` storefront id, so TheCustomHub's gateway
+  object never carries the method even if a future change flipped the flag.
+- **Deterministic pipeline.** `src/lib/showcase/gateway.ts#reviseCart` never edits a cart directly.
+  It verifies the cart reference, storefront, storefront session, `expectedRevision`, and expiry
+  against trusted server-side stored state (`ShowcaseStores.cartsByReference`), recovers the original
+  shopper constraints (budget, substitutions, delivery window, buyer context), re-evaluates the
+  proposed final line set through the same `evaluatePurchasePlan` used everywhere else, and only then
+  prepares a replacement cart at `revision + 1`. Idempotency keys are namespaced per revision request
+  and a reused key with different input is rejected (`IDEMPOTENCY_KEY_REUSED`); a reused key with
+  identical input returns the identical prior result. Structured failures — `CART_NOT_FOUND`,
+  `CART_EXPIRED`, `STOREFRONT_MISMATCH`, `CONTEXT_MISMATCH`, `CART_REVISION_CONFLICT` — never replace
+  the currently visible valid cart.
+- **Route.** `POST /api/showcase/carts/revise` (`src/app/api/showcase/carts/revise/route.ts`) mirrors
+  the existing cart-prepare route: it parses bounded JSON, resolves the storefront/session from
+  request headers, calls the gateway, and returns structured RetailAgentOS results with no internal
+  stack traces. No decision logic lives in the route.
+- **Judge-facing UX.** `src/components/showcase/CartRevisionPanel.tsx` renders a visually secondary,
+  dashed-border panel below the primary $15.99 cart: "Optional: See RetailAgentOS govern a cart
+  revision," the exact native-agent prompt with a copy button, and a "Watch guided cart revision"
+  button always labelled "Guided replay · Same RetailAgentOS handlers · No external agent" when a
+  guided invocation is in flight or has completed — never claiming a guided call is native. Nothing
+  runs automatically. On success the primary cart panel transitions to the revised line set/total and
+  the panel shows previous vs. revised totals, remaining budget, fulfillment, and cart revision
+  number; on a withheld/repair-required/quote-required outcome the previously valid cart is left
+  untouched and the panel explains why. `src/components/showcase/DeveloperEvidence.tsx` gained a
+  progressively-disclosed "Optional extension evidence" block (schema, registration/invocation
+  observed, previous/revised cart reference+revision, and the four false checkout/order/payment
+  flags) that only appears once the extension has actually been registered or invoked.
+- **Verified controlled result.** Revising the $15.99 Fresh Corner cart to keep 1× Cage-Free Eggs and
+  raise Artisan Sourdough Bread to 2× lands on total $24.49, remaining budget $0.51 (of $25.00),
+  `fulfillment: LOCAL_DELIVERY`, cart revision 2, and `checkoutAvailable`/`checkoutStarted`/
+  `orderPlaced`/`paymentInitiated` all `false` — confirmed both via a direct `/api/showcase/carts/revise`
+  curl round trip through the running dev server and via a live Chrome walkthrough of the guided path
+  (approve substitute → $15.99 cart → optional panel → guided cart revision → $24.49 revised cart).
+- **Tests added.** `src/lib/showcase/gateway.test.ts` (revision-1 start, successful revision math,
+  idempotent retry, reused-key-different-input rejection, unknown/mismatched/expired/stale-revision
+  rejections, over-budget withholding without cart replacement, schema-level rejections, no
+  checkout/order/payment on success); `packages/webmcp/src/index.test.ts` (historical seven unchanged,
+  extension absent pre-cart/pre-approval/when disabled/when the gateway lacks the method, registers
+  only after cart preparation and withdraws `prepare_validated_cart`, native vs. guided labeling under
+  concurrency, schema `additionalProperties: false`, reset aborts the registration); a new
+  `storefront-client.test.tsx` fake-`document.modelContext` suite (extension registers only after cart
+  exists and never for TheCustomHub, a genuine native call against the registered callback reaches
+  $24.49 and shows `Invocation source: native` in developer evidence, reset tears the registration
+  down, guided cart revision is reachable via the same button/label contract). Full suite: 545/545
+  passing (up from the 520 baseline). `tsc --noEmit`, ESLint on every changed file, the
+  `@retailagentos/webmcp` `tsup` build, and `next build` (Turbopack, all 40 routes including the new
+  `/api/showcase/carts/revise`) all complete cleanly as of this pass.
+
+## Exact next action for a future agent (cart-revision extension)
+
+Extend the native/deployed Chrome acceptance pass already tracked above
+(`WEBMCP-CHROME-VERIFICATION.md`) to include a real WebMCP-capable browser agent driving
+`revise_validated_cart` end-to-end on the deployed origin, and capture that alongside the existing
+Fresh Corner approval/decline and TheCustomHub quote checks.

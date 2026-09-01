@@ -1,6 +1,6 @@
 'use client';
 
-import type { CartResult, JsonObject, PlanDecision, QuoteResult, RetailAgentGateway } from '../../../packages/webmcp/src';
+import type { CartResult, JsonObject, PlanDecision, QuoteResult, ReviseCartResult, RetailAgentGateway } from '../../../packages/webmcp/src';
 import type { ShowcaseStoreId } from './gateway';
 
 async function post<T>(url: string, body: unknown, storefrontId: ShowcaseStoreId, storefrontSessionId: string, signal?: AbortSignal): Promise<T> {
@@ -20,5 +20,8 @@ export function createShowcaseBrowserGateway(storefrontId: ShowcaseStoreId, stor
     applyPlanRepair: (input, { signal } = {}) => post('/api/showcase/plans/repairs', input, storefrontId, storefrontSessionId, signal),
     prepareValidatedCart: (input, { signal } = {}) => post<CartResult>('/api/showcase/carts/prepare', input, storefrontId, storefrontSessionId, signal),
     requestQuote: (input, { signal } = {}) => post<QuoteResult>('/api/showcase/quotes/request', input, storefrontId, storefrontSessionId, signal),
+    // The optional cart-revision extension only exists for the controlled Fresh Corner showcase —
+    // TheCustomHub never receives this method, so it can never be registered as a WebMCP tool for it.
+    ...(storefrontId === 'fresh-corner' ? { reviseValidatedCart: (input: Parameters<NonNullable<RetailAgentGateway['reviseValidatedCart']>>[0], { signal }: { signal?: AbortSignal } = {}) => post<ReviseCartResult>('/api/showcase/carts/revise', input, storefrontId, storefrontSessionId, signal) } : {}),
   };
 }

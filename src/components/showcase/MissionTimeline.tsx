@@ -111,6 +111,7 @@ function describeMissionEvent(event: WebMcpTelemetryEvent): string {
     if (tool === 'find_valid_alternatives' || tool === 'apply_plan_repair') return 'Repair tools were registered';
     if (tool === 'prepare_validated_cart') return 'Cart preparation became available';
     if (tool === 'request_quote') return 'Merchant quote tool became available';
+    if (tool === 'revise_validated_cart') return 'Cart revision capability registered';
     return `${toolLabel(tool)} became available`;
   }
   if (lifecycle === 'unregistered') {
@@ -127,6 +128,7 @@ function describeMissionEvent(event: WebMcpTelemetryEvent): string {
       case 'apply_plan_repair': return 'Agent proposed a substitute';
       case 'prepare_validated_cart': return 'Agent asked to prepare the validated cart';
       case 'request_quote': return 'Agent submitted requirements for a merchant quote';
+      case 'revise_validated_cart': return 'Browser agent requested a cart revision';
       default: return `${toolLabel(tool)} invoked`;
     }
   }
@@ -145,6 +147,13 @@ function describeMissionEvent(event: WebMcpTelemetryEvent): string {
     if (tool === 'request_quote') return 'Quote request sent for merchant review — no price, cart, or order created';
     if (tool === 'get_storefront_capabilities') return 'Storefront capabilities confirmed';
     if (tool === 'search_catalog') return 'Catalog search complete';
+    if (tool === 'revise_validated_cart') {
+      if (event.decisionCode === 'CART_REVISED') return 'RetailAgentOS reevaluated the proposed lines — revised cart prepared for review';
+      if (event.decisionCode === 'BUDGET_EXCEEDED') return 'The revision exceeded the $25 budget — revision withheld, existing cart kept';
+      if (event.decisionCode === 'STOCK_STALE') return 'The revision hit stale inventory — a new repair requires shopper approval';
+      if (event.decisionCode === 'QUOTE_REQUIRED') return 'The revision requires a merchant quote — existing cart kept';
+      return 'RetailAgentOS reevaluated the proposed cart revision';
+    }
   }
   if (lifecycle === 'failed') return `${toolLabel(tool)} failed${event.error ? ` · ${event.error}` : ''}`;
   if (lifecycle === 'cancelled') return `${toolLabel(tool)} was cancelled`;
