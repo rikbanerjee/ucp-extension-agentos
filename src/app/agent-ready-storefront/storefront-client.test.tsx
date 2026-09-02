@@ -122,11 +122,11 @@ describe('AgentReadyStorefront — fake modelContext integration harness', () =>
     // The approval card must show a completed state, not just vanish.
     await waitFor(() => expect(screen.getAllByText(/Approved by shopper/i).length).toBeGreaterThan(0), { timeout: 5000 });
     // A real telemetry-driven transition — not the click itself — unlocks cart preparation.
-    await waitFor(() => expect(screen.getByText(/Cart preparation unlocked/i)).toBeInTheDocument(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByText(/Cart preparation registered/i)).toBeInTheDocument(), { timeout: 5000 });
     await waitFor(() => expect(screen.getAllByText(/Validated cart prepared/i).length).toBeGreaterThan(0), { timeout: 5000 });
     // The correct actor is attributed for the invocation that produced the cart — the guided replay,
     // never labeled as a native browser-agent call.
-    expect(screen.getByText(/Guided replay invocation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Invoked by guided replay/i)).toBeInTheDocument();
     // Decision Summary must show CART_PREPARED copy, not the stale "ready to prepare" ELIGIBLE text.
     expect(screen.getByText('CART_PREPARED')).toBeInTheDocument();
     expect(screen.queryByText(/Prepare a visible cart for shopper review\./i)).not.toBeInTheDocument();
@@ -291,4 +291,70 @@ describe('AgentReadyStorefront — fake modelContext integration harness', () =>
     expect([...registered.keys()]).toEqual(['get_storefront_capabilities', 'search_catalog', 'evaluate_shopping_plan']);
     expect(registerTool).toHaveBeenCalledTimes(9);
   });
+
+  it('a failed guided-fallback cart preparation releases the single-flight lock, shows a truthful error, and permits an explicit retry that then succeeds — never automatically', async () => {
+    // The first /api/showcase/carts/prepare call simulates a transient failure (e.g. a network
+    // error); every subsequent call goes through the real route handler.
+    let prepareAttempts = 0;
+    vi.stubGlobal('fetch', async (input: string | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/showcase/carts/prepare') {
+        prepareAttempts += 1;
+        if (prepareAttempts === 1) throw new Error('Simulated transient network failure');
+        return cartsRoute(new Request(`http://localhost${url}`, init));
+      }
+      const handler = routes[url];
+      if (!handler) throw new Error(`No fake route registered for ${url}`);
+      return handler(new Request(`http://localhost${url}`, init));
+    });
+
+    const { registered } = installFakeModelContext();
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+    const user = userEvent.setup();
+
+    // Drive REPAIRABLE -> approved apply_plan_repair through real native tool calls (not the
+    // "Watch guided WebMCP mission" button, whose own script would invoke prepare_validated_cart
+    // itself) — simulating a native browser agent that paused right after approval and never
+    // invoked prepare_validated_cart, which is exactly what the recovery banner exists for.
+    const freshLinesForTest = [{ productId: 'v_g_inv_002_1', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 1 }];
+    const evaluated = await act(async () => registered.get('evaluate_shopping_plan')!.execute(
+      { lines: freshLinesForTest, budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true },
+      { signal: new AbortController().signal },
+    )) as { decisionId: string; alternatives: Array<{ repairId: string }> };
+    await waitFor(() => expect(registered.has('apply_plan_repair')).toBe(true));
+
+    let repairPromise!: Promise<unknown>;
+    act(() => {
+      repairPromise = registered.get('apply_plan_repair')!.execute(
+        { decisionId: evaluated.decisionId, repairId: evaluated.alternatives[0].repairId, lines: freshLinesForTest, idempotencyKey: 'native-recovery-test-key' },
+        { signal: new AbortController().signal },
+      );
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Approve$/ })).toBeInTheDocument(), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^Approve$/ }));
+    await act(async () => { await repairPromise; });
+
+    // prepare_validated_cart is now registered natively, but nothing has invoked it — the
+    // "waiting" then "timeout" recovery banner appears once the ~5s grace window elapses (real
+    // time — the component's recovery timer is a plain setTimeout(5000), not mocked here).
+    await waitFor(() => expect(screen.getByText(/Cart preparation registered/i)).toBeInTheDocument());
+    const fallbackButton = await screen.findByRole('button', { name: /Guided fallback/i }, { timeout: 7000 });
+    expect(fallbackButton).toBeEnabled();
+
+    // First explicit click: the stubbed network failure surfaces a truthful error, the button is
+    // never auto-retried, and it becomes clickable again (not permanently disabled).
+    await user.click(fallbackButton);
+    await waitFor(() => expect(screen.getByText(/Cart preparation failed/i)).toBeInTheDocument());
+    expect(screen.queryByText(/Validated cart prepared/i)).not.toBeInTheDocument();
+    const retryButton = screen.getByRole('button', { name: /Retry guided cart preparation/i });
+    await waitFor(() => expect(retryButton).toBeEnabled());
+    expect(prepareAttempts).toBe(1); // nothing retried on its own
+
+    // Second explicit click: the same canonical descriptor/gateway handler now succeeds.
+    await user.click(retryButton);
+    await waitFor(() => expect(screen.getAllByText(/Validated cart prepared/i).length).toBeGreaterThan(0));
+    expect(prepareAttempts).toBe(2);
+    expect(screen.queryByText(/Cart preparation failed/i)).not.toBeInTheDocument();
+  }, 15000);
 });

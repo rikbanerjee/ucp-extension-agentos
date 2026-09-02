@@ -57,9 +57,40 @@ export default function AgentReadyStorefront() {
   const [revisionResult, setRevisionResult] = useState<ReviseCartResult | null>(null);
   const [previousCart, setPreviousCart] = useState<DisplayCart | null>(null);
   const [revisionBusy, setRevisionBusy] = useState(false);
+  /** True once a real `prepare_validated_cart` `registered` lifecycle event has fired — the
+   * telemetry-driven signal for the "WebMCP capability" step, distinct from (and more truthful
+   * than) `decision?.status === 'ELIGIBLE'`, which can arrive slightly before registration actually
+   * completes. Sticky for the run once true, cleared only by reset()/scenario switch. */
+  const [prepareCartRegistered, setPrepareCartRegistered] = useState(false);
+  /** Set only from the recovery timer's callback (never synchronously in the effect body) once
+   * ~5s have elapsed with the capability registered but no invocation/cart. Combined below with the
+   * derived "waiting" condition to produce the recovery phase shown to the shopper. */
+  const [recoveryTimedOut, setRecoveryTimedOut] = useState(false);
+  const [fallbackBusy, setFallbackBusy] = useState(false);
+  /**
+   * Cart-preparation state, distinct from mere invocation attribution (`cartInvocationSource`,
+   * which fires on the telemetry `invoked` event — before the outcome is known). `'invoking'` opens
+   * as soon as a `prepare_validated_cart` invocation begins (native or guided, whichever comes
+   * first); it resolves to `'prepared'` only once a real cart exists (`onCart` with a non-null
+   * cart), or to `'failed'` when the attempt ends with no cart — a thrown/cancelled invocation
+   * (telemetry `failed`/`cancelled`) or one that completed without error but the revalidated
+   * decision was no longer eligible (`onCart` with a null cart). `'failed'` always releases the
+   * single-flight lock below so an explicit guided retry is possible — this state, and the lock
+   * release, are the only things this pass adds; nothing here ever retries automatically.
+   */
+  const [cartPreparationState, setCartPreparationState] = useState<'idle' | 'invoking' | 'failed' | 'prepared'>('idle');
+  /** Truthful, bounded error surfaced from the failed attempt's own RetailAgentOS `code`/`nextAction`
+   * (from the gateway response, or the WebMCP telemetry event's `error` for a thrown/cancelled
+   * attempt) — never invented copy. Cleared on a new attempt or once a cart is prepared. */
+  const [fallbackError, setFallbackError] = useState<{ code: string; nextAction: string } | null>(null);
   const registrationRef = useRef<WebMcpRegistration | null>(null);
   const executionRef = useRef<AbortController | null>(null);
   const cartRef = useRef<DisplayCart | null>(null);
+  // Single-flight guard for prepare_validated_cart: prevents the guided fallback and a resuming
+  // native browser agent from both preparing a cart. Not Date.now()-based — a plain in-memory lock
+  // scoped to this mission's registration/generation, cleared on reset/scenario change, and released
+  // on a failed/cancelled attempt that produced no cart so an explicit retry is possible.
+  const cartPreparationInFlightRef = useRef(false);
   useEffect(() => { cartRef.current = cart; }, [cart]);
 
   const reset = useCallback(() => {
@@ -70,6 +101,9 @@ export default function AgentReadyStorefront() {
     setCurrentState('initial'); setMode('idle'); setBusy(false); setRegistering(true); setRegistrationError(false);
     setRevisionState('idle'); setRevisionResult(null); setPreviousCart(null); setRevisionBusy(false);
     setApprovedProposal(null); setCartInvocationSource(null); setCartOutcome(null);
+    setPrepareCartRegistered(false); setRecoveryTimedOut(false); setFallbackBusy(false);
+    setCartPreparationState('idle'); setFallbackError(null);
+    cartPreparationInFlightRef.current = false;
     setGeneration((value) => value + 1);
   }, [approval]);
   const switchScenario = (next: Scenario) => { if (next === scenario) return; setScenario(next); reset(); };
@@ -92,7 +126,18 @@ export default function AgentReadyStorefront() {
           // Authoritative status text straight from the RetailAgentOS gateway response — never
           // recomputed in React. Only overwrite it once a cart actually exists (`CART_PREPARED`);
           // an unsuccessful preparation keeps whatever decision-driven summary was already showing.
-          if (result.cart) setCartOutcome({ code: result.code, nextAction: result.nextAction });
+          if (result.cart) {
+            setCartOutcome({ code: result.code, nextAction: result.nextAction });
+            setCartPreparationState('prepared'); setFallbackError(null);
+            cartPreparationInFlightRef.current = true; // a cart now exists — permanently locked
+          } else {
+            // A completed (non-throwing) attempt that still produced no cart — e.g. the decision was
+            // no longer ELIGIBLE by the time RetailAgentOS revalidated it. No cart exists, so release
+            // the single-flight lock and surface the gateway's own truthful code/nextAction; only an
+            // explicit retry click can try again.
+            setCartPreparationState('failed'); setFallbackError({ code: result.code, nextAction: result.nextAction });
+            cartPreparationInFlightRef.current = false;
+          }
         },
         onQuote: (result) => { if (!disposed) setQuote(result); },
         onCartRevision: (result) => {
@@ -126,7 +171,24 @@ export default function AgentReadyStorefront() {
           // exists — see packages/webmcp/src/index.ts's `transition()` — so this deliberately keys off
           // `invoked`, the one prepare_validated_cart telemetry event guaranteed in both native and
           // guided-replay paths.)
-          if (event.tool === 'prepare_validated_cart' && event.lifecycle === 'invoked') setCartInvocationSource(event.source);
+          if (event.tool === 'prepare_validated_cart' && event.lifecycle === 'invoked') {
+            setCartInvocationSource(event.source);
+            setCartPreparationState('invoking'); setFallbackError(null);
+            cartPreparationInFlightRef.current = true;
+          }
+          // A thrown or cancelled prepare_validated_cart attempt never reaches `onCart` — no cart
+          // exists — so release the single-flight lock here and show a truthful, bounded error.
+          // Never retried automatically; only an explicit guided-retry click invokes it again.
+          if (event.tool === 'prepare_validated_cart' && (event.lifecycle === 'failed' || event.lifecycle === 'cancelled')) {
+            setCartPreparationState('failed');
+            setFallbackError({ code: event.error ?? (event.lifecycle === 'cancelled' ? 'CANCELLED' : 'PREPARE_CART_FAILED'), nextAction: event.lifecycle === 'cancelled' ? 'The request was cancelled.' : 'Review the request and try again.' });
+            cartPreparationInFlightRef.current = false;
+          }
+          // The true "WebMCP capability" signal (see ShopperApprovalCard step 2): a real registered
+          // lifecycle event for prepare_validated_cart, which — with the registration-before-return
+          // fix in packages/webmcp/src/index.ts — is guaranteed to have already fired by the time a
+          // native browser agent observes apply_plan_repair's result.
+          if (event.tool === 'prepare_validated_cart' && event.lifecycle === 'registered') setPrepareCartRegistered(true);
           if (event.lifecycle === 'registered' || event.lifecycle === 'unregistered') {
             void registrationRef.current?.getNativeToolNames?.().then((observed) => { if (!disposed) setBrowserTools(observed); });
           }
@@ -149,6 +211,46 @@ export default function AgentReadyStorefront() {
       .finally(() => { if (!disposed) setRegistering(false); });
     return () => { disposed = true; executionRef.current?.abort(); registrationRef.current?.dispose(); registrationRef.current = null; };
   }, [scenario, generation]);
+
+  /** Cross-agent recovery timer (spec item E): once prepare_validated_cart is genuinely registered
+   * and neither invocation nor a cart has happened yet, show a "waiting" message, then a "paused"
+   * recovery message with a guided fallback after ~5s. Cancelled the instant an invocation begins
+   * (native or guided), a cart already exists, or the run resets/switches scenario — the effect
+   * cleanup (on any dependency change, including the reset triggered by a new `generation`) clears
+   * the pending timer so it can never fire against a stale mission. */
+  const recoveryWaiting = prepareCartRegistered && !cartInvocationSource && !cart;
+  useEffect(() => {
+    if (!recoveryWaiting) return;
+    const timer = setTimeout(() => setRecoveryTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [recoveryWaiting, generation]);
+  const recoveryPhase: 'none' | 'waiting' | 'timeout' = !recoveryWaiting ? 'none' : recoveryTimedOut ? 'timeout' : 'waiting';
+
+  const copyContinuationPrompt = useCallback(() => {
+    const text = 'Continue the approved mission. Discover the newly registered WebMCP tools and invoke prepare_validated_cart using the eligible decision and approved lines. Prepare the cart for review, but do not check out.';
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) void navigator.clipboard.writeText(text).catch(() => {});
+  }, []);
+
+  /** Guided fallback (spec item E/F): invokes prepare_validated_cart through registration.invoke()
+   * — the same canonical descriptor and gateway handler as every other guided path, always tagged
+   * source: 'replay'. Requires an explicit shopper click; never runs automatically. Single-flight
+   * guarded so a native browser agent resuming at the same moment cannot produce a second cart —
+   * the guard is the lock/`cart` themselves, never `cartInvocationSource` alone, so a *failed* prior
+   * attempt (which releases the lock in the `onCart`/`onLifecycle` handlers above) can be retried
+   * explicitly even though an earlier invocation was genuinely attempted and attributed. */
+  const runGuidedFallback = useCallback(async () => {
+    const current = registrationRef.current;
+    if (!current || cartPreparationInFlightRef.current || cartRef.current || !decision || !approvedProposal) return;
+    if (decision.status !== 'ELIGIBLE') return;
+    cartPreparationInFlightRef.current = true;
+    setFallbackBusy(true);
+    const controller = new AbortController(); executionRef.current = controller;
+    try {
+      await current.invoke('prepare_validated_cart', { decisionId: decision.decisionId, lines: decision.lines, idempotencyKey: `recovery-fallback-${decision.decisionId}` }, controller.signal);
+      // Outcome (prepared vs failed) and lock release-on-failure are handled by the telemetry/onCart
+      // handlers above — the single source of truth for cart-preparation state.
+    } finally { setFallbackBusy(false); executionRef.current = null; }
+  }, [approvedProposal, decision]);
 
   /** Guided replay: invokes the exact canonical descriptors through registration.invoke(), which
    * always tags the call `source: 'replay'` — available whether or not a native agent is connected. */
@@ -206,7 +308,11 @@ export default function AgentReadyStorefront() {
   // decision status instead of the event keeps it accurate for guided replay too, and — unlike
   // `activeTools` membership, which moves on again once the cart is prepared — it stays a true,
   // permanent record of that step once reached.
-  const cartCapabilityUnlocked = Boolean(cart) || decision?.status === 'ELIGIBLE';
+  // Native sessions use the truthful, telemetry-driven `prepareCartRegistered` signal (a real
+  // `registered` lifecycle event for prepare_validated_cart). Guided-only sessions never emit
+  // registration lifecycle events (no `document.modelContext`), so they fall back to the
+  // decision-authority signal that always accompanied guided execution before this pass.
+  const cartCapabilityUnlocked = prepareCartRegistered || (!native && (Boolean(cart) || decision?.status === 'ELIGIBLE'));
   const parity = browserTools === null ? 'Browser observation unavailable' : browserTools.length === activeTools.length && browserTools.every((tool) => activeTools.includes(tool as WebMcpToolName)) ? 'Parity verified' : 'Registry mismatch';
   const withheld: (WebMcpToolName | 'checkout')[] = scenario === 'custom' ? ['prepare_validated_cart', 'checkout'] : decision?.status === 'REPAIRABLE' ? ['prepare_validated_cart', 'checkout'] : ['checkout'];
   const storefrontId = scenario === 'fresh' ? 'fresh-corner' : 'thecustomhub';
@@ -253,6 +359,12 @@ export default function AgentReadyStorefront() {
               cartCapabilityUnlocked={cartCapabilityUnlocked}
               cartPrepared={Boolean(cart)}
               invocationSource={cartInvocationSource}
+              recoveryPhase={recoveryPhase}
+              onCopyContinuationPrompt={copyContinuationPrompt}
+              onGuidedFallback={runGuidedFallback}
+              guidedFallbackDisabled={fallbackBusy || cartPreparationState === 'invoking' || Boolean(cart)}
+              cartPreparationState={cartPreparationState}
+              fallbackError={fallbackError}
             />
             {cart && (
               <div aria-live="polite" data-cart-reference={cart.reference} data-cart-revision={cart.revision ?? 1} className="mt-4 rounded-lg bg-emerald-50 p-3">

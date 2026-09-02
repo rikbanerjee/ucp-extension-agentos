@@ -20,10 +20,59 @@ export interface BuildLogEntry {
 
 export const buildLog: BuildLogEntry[] = [
   {
-    id: 'webmcp-submission-hardening-2026',
+    id: 'webmcp-correctness-gap-closure-2026',
     week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
     date: 'Sep 1, 2026',
     current: true,
+    title: 'Server-side cart-idempotency, dispose-during-cleanup, and recoverable fallback failure',
+    shipped: 'A second, decision-scoped server-side idempotency layer for cart preparation, dispose() that always aborts every controller (even a still-pending superseded one), a replaced stale-cleanup test against a real REPAIRABLE→ELIGIBLE→REPAIRABLE transition, and an explicit, never-automatic retry path for a failed guided-fallback cart preparation',
+    narrative:
+      'The prior native-handoff-hardening pass\'s own report flagged four items as incomplete: its cross-agent recovery lock was client-side single-flight only, not a true server-side idempotency/conflict boundary; its "stale cleanup" test drove a same-state no-op transition that never actually exercised cleanup; dispose-during-pending-cleanup was uncovered; and a failed fallback attempt had no recovery path. This pass closes all four without changing the successful registration-before-return architecture. ShowcaseGateway.prepareCart (src/lib/showcase/gateway.ts) now has a second idempotency layer, cartsByDecision, keyed by storefrontId+storefrontSessionId+eligible decisionId with a stored canonical line fingerprint — independent of the caller-supplied idempotency key, which stays a first, unchanged layer. A native call and a guided-fallback replay racing to prepare a cart for the identical decision and lines, each minting its own idempotency key, now converge on the exact same stored cart reference (before this pass they would have produced two different cart references, since the reference was derived from the caller\'s own key). packages/webmcp/src/index.ts now routes every phase-generation cleanup — the normal deferred tick, dispose(), and a new proactive same-name-collision path — through one function, performCleanup(), which always aborts its controller first, unconditionally, before any telemetry/state-mutation suppression; dispose() now also aborts any generation still pending its deferred tick and clears tool-generation bookkeeping. The proactive path is itself a real fix: a rapid REPAIRABLE → approved apply_plan_repair → ELIGIBLE → immediate re-evaluate back to REPAIRABLE (before the first transition\'s cleanup tick fires) would otherwise attempt to register a tool name a real strict WebMCP host still considers registered; the replaced test proves this against a fake registry that throws on a duplicate name. Finally, storefront-client.tsx now tracks cart-preparation state (idle/invoking/failed/prepared) distinct from mere invocation attribution, so a failed or cancelled attempt that produced no cart releases the single-flight lock and shows a truthful, bounded error with an explicit "Retry guided cart preparation" button — never retried automatically — instead of permanently disabling the recovery button after one failure.',
+    bullets: [
+      'src/lib/showcase/gateway.ts: ShowcaseGateway.prepareCart gains a second idempotency layer, cartsByDecision (keyed by storefrontId+storefrontSessionId+decisionId, storing a canonical order-independent line fingerprint and the resulting CartResponse), alongside the unchanged pre-existing caller-idempotency-key cache — native and guided-fallback preparation for the same decision+lines now converge on one cart; no checkout/order/payment behavior changes.',
+      'packages/webmcp/src/index.ts: every superseded phase generation is tracked in pendingCleanups and torn down through one performCleanup() function that always aborts its controller unconditionally first — called from the normal deferred setTimeout(0) tick, from dispose() (for every still-pending generation, even mid-cleanup), and proactively/synchronously from activatePhase() right before registering a tool name that collides with a still-pending stale generation.',
+      'packages/webmcp/src/index.test.ts: the old repairable→repairable no-op "stale cleanup" test (which never actually exercised cleanup) is replaced with a real REPAIRABLE → approved apply_plan_repair → ELIGIBLE → immediate re-evaluate back to REPAIRABLE transition against a fake ModelContext that throws on a duplicate tool-name registration, plus a new dispose-immediately-after-registration test asserting the fake native registry becomes completely empty.',
+      'src/app/agent-ready-storefront/storefront-client.tsx and ShopperApprovalCard.tsx: a new cartPreparationState (idle/invoking/failed/prepared), distinct from invocation attribution, releases the single-flight lock and shows a truthful, bounded "Cart preparation failed" banner with an explicit "Retry guided cart preparation" button on a failed/cancelled attempt with no cart — verified end to end with a stubbed first-call network failure followed by a successful explicit retry.',
+    ],
+    proves:
+      'Cart preparation is idempotent and conflict-safe at the trusted server boundary (not just a client-side lock), every WebMCP registration controller is guaranteed aborted even when dispose races a pending cleanup tick, the registration-before-return handoff cannot present a real host with a duplicate tool-name registration during a rapid re-transition, and a shopper is never left staring at a permanently broken recovery button after one transient failure.',
+    next:
+      'Independent verification of the idempotency-convergence and fallback-retry UX against a real Codex Browser or ChatGPT in-app browser session remains outstanding — this pass verified them at the unit/integration-test level only. This pass is uncommitted on the webmcp-native-handoff-hardening branch as of Sep 1, 2026, on top of the also-uncommitted native-handoff-hardening pass below.',
+    evidence: [
+      { label: '5b1603e', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/5b1603e', description: 'WebMCP Challenge submission hardening pass (merged to main).' },
+    ],
+  },
+  {
+    id: 'webmcp-native-handoff-hardening-2026',
+    week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
+    date: 'Sep 1, 2026',
+    current: false,
+    title: 'Deterministic post-approval native handoff, cross-agent recovery, and two build fixes',
+    shipped: 'Registration-before-return in the WebMCP SDK, an enriched apply_plan_repair continuation contract, corrected approval-card chronology, an explicit cross-agent recovery state, a fixed platform-contracts declaration build, and a tablet nav-overflow fix',
+    narrative:
+      'A cross-agent run (a ChatGPT browser agent, distinct from the Codex Browser run that completed the native flow) stopped right after the shopper clicked Approve, with prepare_validated_cart never invoked even though RetailAgentOS had already reached an eligible decision. The root cause was a registration race in packages/webmcp/src/index.ts: apply_plan_repair\'s successful result was returned to the calling browser agent via a deferred (setTimeout(0)) state transition, so prepare_validated_cart\'s registerTool() call — and the browser\'s own tool-change notification for it — could still be outstanding at the moment the agent received the repair result. Some agent hosts rediscover a newly registered tool on their own; this one apparently did not continue automatically. This pass restructures phase activation so every next-phase tool is registered and awaited *before* the triggering tool\'s execute() call returns, while only the previous phase\'s cleanup (including the currently-executing tool\'s own registration) is deferred — using per-tool generation tokens so a late cleanup can never remove a same-named tool a newer transition already re-registered. Native and guided (registration.invoke()) execution still call the identical descriptor/gateway handlers, and the source: \'native\'/\'replay\' telemetry attribution is unchanged. apply_plan_repair\'s result now also carries a concise top-level continuation (decisionId, lines, allowedNextActions, nextAction) alongside the preserved nested decision/repair objects. The approval card\'s sequence is reordered to the true chronology (approval → capability registration → prepare_validated_cart invocation → RetailAgentOS validation), and a new explicit, truthfully-labelled recovery path appears if ~5s pass after registration with no invocation: a copyable continuation prompt, and a "Guided fallback · Same RetailAgentOS handler · External browser agent paused" button that only a shopper click can trigger, tagged source: \'replay\' like every other guided call. Separately, packages/platform-contracts\'s tsup build was silently inheriting the root tsconfig\'s incremental: true and failing its declaration build; it now builds from its own tsconfig.build.json. The desktop nav in src/components/layout/NavBar.tsx switched its breakpoint from md (768px) to lg so a 768px tablet viewport gets the hamburger drawer instead of a too-narrow desktop nav row.',
+    bullets: [
+      'packages/webmcp/src/index.ts: next-phase tool registrations are fully awaited before an executing phase tool\'s execute() call returns (activatePhase); only the superseded phase\'s cleanup is deferred to a following tick, and per-tool generation tokens (toolGeneration) stop a late cleanup from ever removing a newer same-named registration.',
+      'apply_plan_repair\'s successful result now includes a top-level continuation contract — status, code: REPAIR_APPLIED, decisionId, allowedNextActions: [\'prepare_validated_cart\'], nextAction, and cartCreated/checkoutAvailable/checkoutStarted/orderPlaced: false — alongside the preserved nested decision/repair/lines fields.',
+      'ShopperApprovalCard\'s completed sequence is reordered to the true chronology — human approval, then "WebMCP capability: Cart preparation registered", then the "prepare_validated_cart invocation" step (native/guided/waiting), then "RetailAgentOS validation" — and the third step is never marked done by the approval click itself.',
+      'A new cross-agent recovery state appears only after the capability is genuinely registered, no invocation or cart exists, and ~5s have elapsed: a "waiting" message, then a "paused" message with a copyable continuation prompt and an explicit-click-only "Guided fallback · Same RetailAgentOS handler · External browser agent paused" button (source: \'replay\'), single-flight guarded against a native agent resuming at the same moment.',
+      'A native registration-timing test (packages/webmcp/src/index.test.ts) drives apply_plan_repair through approval with prepare_validated_cart\'s registration held pending via a controllable fake ModelContext, and asserts apply_plan_repair does not resolve until that registration settles, and that prepare_validated_cart is immediately invocable afterward with no settleRegistry() call — plus generation-token, registration-failure, decline, reset-during-approval, and guided-parity coverage.',
+      'packages/platform-contracts/tsup.config.ts now builds against its own tsconfig.build.json (incremental: false, composite: false) instead of silently inheriting the root Next.js tsconfig, fixing a previously-failing standalone declaration build.',
+      'src/components/layout/NavBar.tsx keeps the hamburger/drawer navigation active through tablet widths and switches to the full desktop nav + CTA only at the lg breakpoint, fixing overflow around a 768px viewport with no two simultaneously visible navigation systems.',
+    ],
+    proves:
+      'A registration-before-return handoff, verified by a controllable-timing unit test, makes the native post-approval journey deterministic for any compliant browser agent — without weakening RetailAgentOS policy enforcement, the human approval gate, or native/guided attribution truthfulness, and while fixing two unrelated build/layout defects surfaced during the same pass.',
+    next:
+      'Independent verification against a real Codex Browser or ChatGPT in-app browser session (only claude-in-chrome-based testing was available in this environment), and deployment to the live origin, remain outstanding — see specs/WEBMCP-PLATFORM-BUILD.md for exact status. This pass is uncommitted on the webmcp-native-handoff-hardening branch as of Sep 1, 2026; it builds on the already-merged 5b1603e submission-hardening pass below.',
+    evidence: [
+      { label: '5b1603e', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/5b1603e', description: 'WebMCP Challenge submission hardening pass (merged to main).' },
+    ],
+  },
+  {
+    id: 'webmcp-submission-hardening-2026',
+    week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
+    date: 'Sep 1, 2026',
+    current: false,
     title: 'Submission-hardening pass: grouped telemetry, a real approval sequence, and a truthful decision summary',
     shipped: 'Mission Control grouping, completed-approval sequence, cart-state-aware decision copy, canonical Farm Eggs fixture, unit×line-total display, and a 320px layout fix',
     narrative:
@@ -37,9 +86,8 @@ export const buildLog: BuildLogEntry[] = [
       'Fixed a 320px horizontal-overflow bug in the site footer (an un-wrapped developer-links row).',
       'Verified live against a real native document.modelContext in Chrome: the full Fresh Corner approve → CART_PREPARED → CART_REVISED journey, with Mission Control grouping and Decision Summary copy confirmed correct throughout.',
     ],
-    // Evidence below lists the commits this pass builds on; this pass's own changes are recorded
-    // in git history as of whenever they are committed (see specs/WEBMCP-PLATFORM-BUILD.md's
-    // "Current submission status" for the exact commit list once available).
+    // Evidence below lists the commits this pass builds on. This pass's own changes are committed
+    // as 5b1603e on main (see specs/WEBMCP-PLATFORM-BUILD.md's "Current submission status").
     proves:
       'A truthfulness- and UX-focused review pass can close real correctness and polish gaps in a shipped WebMCP surface without touching the deterministic engine or reintroducing any of the native/guided or approval-attribution invariants the earlier passes established.',
     next:

@@ -75,6 +75,221 @@ describe('RetailAgentOS WebMCP descriptors', () => {
   });
 });
 
+describe('native registration-before-return handoff (post-approval determinism)', () => {
+  /** A fake ModelContext whose `registerTool` can be held pending on demand — lets a test observe the
+   * exact moment `prepare_validated_cart`'s registration completes relative to `apply_plan_repair`'s
+   * `execute()` promise resolving. */
+  function controllableContext() {
+    const descriptors: WebMcpToolDescriptor[] = [];
+    const pending = new Map<string, { resolve: () => void }>();
+    const holds = new Set<string>();
+    const registerCalls: string[] = [];
+    const context = {
+      registerTool: vi.fn((tool: WebMcpToolDescriptor) => {
+        descriptors.push(tool);
+        registerCalls.push(tool.name);
+        if (holds.has(tool.name)) {
+          return new Promise<void>((resolve) => { pending.set(tool.name, { resolve }); });
+        }
+        return undefined;
+      }),
+      getTools: () => descriptors.map((tool) => tool.name),
+    };
+    return {
+      context, descriptors, registerCalls,
+      hold: (name: string) => holds.add(name),
+      release: (name: string) => { pending.get(name)?.resolve(); pending.delete(name); },
+    };
+  }
+
+  it('does not resolve apply_plan_repair until the pending prepare_validated_cart registration completes, and prepare_validated_cart is invocable immediately afterward without settleRegistry()', async () => {
+    const fake = controllableContext();
+    let approvalResolve: ((value: 'approved' | 'declined') => void) | undefined;
+    const sdk = createRetailAgentWebMcp({
+      gateway: gateway(),
+      storefront: { getBuyerContext: () => ({}), requestRepairApproval: async () => new Promise((resolve) => { approvalResolve = resolve; }) },
+      adapter: { getModelContext: () => fake.context },
+      clock: () => 1,
+    });
+    const registration = await sdk.register();
+    await fake.descriptors.find((tool) => tool.name === 'evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] });
+
+    fake.hold('prepare_validated_cart');
+    const repair = fake.descriptors.find((tool) => tool.name === 'apply_plan_repair')!;
+    let repairResolved = false;
+    const repairPromise = repair.execute({ decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' }).then((result) => { repairResolved = true; return result; });
+
+    // Let the mission pause for shopper approval, then approve it.
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(approvalResolve).toBeDefined();
+    approvalResolve!('approved');
+
+    // The registration for prepare_validated_cart is being awaited and is being held pending —
+    // apply_plan_repair's execute() must not resolve while that registration is outstanding.
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(repairResolved).toBe(false);
+    expect(registration.registeredTools).not.toContain('prepare_validated_cart');
+
+    // Resolve the held registration promise.
+    fake.release('prepare_validated_cart');
+    const repairResult = await repairPromise;
+
+    // apply_plan_repair has now resolved, and prepare_validated_cart is *already* observable — no
+    // settleRegistry() call was made.
+    expect(repairResult).toMatchObject({ status: 'APPLIED', code: 'REPAIR_APPLIED', decisionId: 'plan-1', allowedNextActions: ['prepare_validated_cart'], cartCreated: false, checkoutAvailable: false, checkoutStarted: false, orderPlaced: false });
+    expect(registration.registeredTools).toContain('prepare_validated_cart');
+    // The still-executing apply_plan_repair registration must not have been aborted before its own
+    // result resolved — it remains observable until the deferred cleanup tick runs.
+    expect(registration.registeredTools).toContain('apply_plan_repair');
+
+    // Invoke prepare_validated_cart immediately, with no settleRegistry() call in between.
+    const prepare = fake.descriptors.find((tool) => tool.name === 'prepare_validated_cart')!;
+    const prepareResult = await prepare.execute({ decisionId: 'plan-1', lines: [{ productId: 'fresh-eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' });
+    expect(prepareResult).toMatchObject({ code: 'CART_PREPARED' });
+    expect((prepareResult as { cart?: unknown }).cart).toBeTruthy();
+    expect((prepareResult as { checkoutAvailable?: boolean }).checkoutAvailable).toBe(false);
+    expect((prepareResult as { orderPlaced?: boolean }).orderPlaced).toBeFalsy();
+
+    // Old repair tools are eventually removed, and no duplicate registrations occurred.
+    await registration.settleRegistry();
+    expect(registration.registeredTools).not.toContain('apply_plan_repair');
+    expect(registration.registeredTools).not.toContain('find_valid_alternatives');
+    const prepareCallCount = fake.registerCalls.filter((name) => name === 'prepare_validated_cart').length;
+    expect(prepareCallCount).toBe(1);
+  });
+
+  it('a real REPAIRABLE -> approved apply_plan_repair -> ELIGIBLE -> immediate evaluate back to REPAIRABLE (before the old cleanup tick fires) never double-registers a name, keeps only the newest repair registrations, and removes prepare_validated_cart', async () => {
+    // A fake native registry that behaves the way a real strict WebMCP host would: it rejects
+    // `registerTool` for a name that is already registered, and only frees a name once the
+    // registration's AbortSignal actually fires. This is what makes the test meaningful — if
+    // `activatePhase` ever tried to register a still-registered name (a stale, not-yet-cleaned-up
+    // generation), this fake would throw instead of silently tolerating it.
+    const activeNames = new Set<string>();
+    const byName = new Map<string, WebMcpToolDescriptor>();
+    const context = {
+      registerTool: vi.fn((tool: WebMcpToolDescriptor, opts?: { signal?: AbortSignal }) => {
+        if (activeNames.has(tool.name)) throw new Error(`DUPLICATE_REGISTRATION:${tool.name}`);
+        activeNames.add(tool.name); byName.set(tool.name, tool);
+        opts?.signal?.addEventListener('abort', () => { activeNames.delete(tool.name); }, { once: true });
+      }),
+      getTools: () => [...activeNames],
+    };
+    const sdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}), requestRepairApproval: async () => 'approved' }, adapter: { getModelContext: () => context }, clock: () => 1 });
+    const registration = await sdk.register();
+
+    // REPAIRABLE: registers find_valid_alternatives + apply_plan_repair.
+    await byName.get('evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] });
+    expect(registration.registeredTools).toEqual(expect.arrayContaining(['find_valid_alternatives', 'apply_plan_repair']));
+
+    // approved apply_plan_repair -> ELIGIBLE: prepare_validated_cart is registered and visible
+    // before execute() resolves (registration-before-return); find_valid_alternatives/
+    // apply_plan_repair's cleanup is scheduled but deliberately not yet ticked.
+    await byName.get('apply_plan_repair')!.execute({ decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' });
+    expect(registration.registeredTools).toContain('prepare_validated_cart');
+    expect(registration.registeredTools).toContain('apply_plan_repair'); // still present — cleanup deferred, not yet ticked
+
+    // Immediately (no macrotask elapses — no setTimeout(0) tick) evaluate again, landing back on
+    // REPAIRABLE. This re-registers find_valid_alternatives/apply_plan_repair while their prior
+    // (stale, not-yet-cleaned-up) generation is technically still active in the fake registry — the
+    // exact race this test targets. No DUPLICATE_REGISTRATION error must be thrown.
+    await byName.get('evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] });
+
+    await registration.settleRegistry();
+
+    // Newest repair registrations survive.
+    expect(registration.registeredTools).toContain('apply_plan_repair');
+    expect(registration.registeredTools).toContain('find_valid_alternatives');
+    // Stale cleanup removed only the superseded prepare_validated_cart registration.
+    expect(registration.registeredTools).not.toContain('prepare_validated_cart');
+    // registeredTools and the fake native registry agree.
+    expect(new Set(registration.registeredTools)).toEqual(activeNames);
+    expect(new Set(await registration.getNativeToolNames!())).toEqual(new Set(registration.registeredTools));
+  });
+
+  it('disposing immediately after a next-phase registration, before its deferred cleanup tick fires, still aborts the superseded controller and leaves the fake native registry completely empty', async () => {
+    const activeNames = new Set<string>();
+    const byName = new Map<string, WebMcpToolDescriptor>();
+    const context = {
+      registerTool: vi.fn((tool: WebMcpToolDescriptor, opts?: { signal?: AbortSignal }) => {
+        activeNames.add(tool.name); byName.set(tool.name, tool);
+        opts?.signal?.addEventListener('abort', () => { activeNames.delete(tool.name); }, { once: true });
+      }),
+      getTools: () => [...activeNames],
+    };
+    const sdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}), requestRepairApproval: async () => 'approved' }, adapter: { getModelContext: () => context }, clock: () => 1 });
+    const registration = await sdk.register();
+    await byName.get('evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] });
+    // approved apply_plan_repair -> ELIGIBLE: prepare_validated_cart registered; apply_plan_repair/
+    // find_valid_alternatives cleanup scheduled but not yet ticked.
+    await byName.get('apply_plan_repair')!.execute({ decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' });
+    expect(activeNames.size).toBeGreaterThan(0);
+
+    // Dispose right now — strictly before the deferred cleanup's setTimeout(0) tick.
+    registration.dispose();
+
+    expect(registration.registeredTools).toEqual([]);
+    // The fake native registry itself — not just this SDK's bookkeeping — is completely empty: the
+    // superseded phase controller was aborted by dispose(), not left dangling for a tick that will
+    // never meaningfully run.
+    expect(activeNames.size).toBe(0);
+
+    // Letting any pending timers/microtasks settle afterward must not resurrect or duplicate anything.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(activeNames.size).toBe(0);
+    expect(registration.registeredTools).toEqual([]);
+  });
+
+  it('registration failure for the next phase does not display an unlocked capability and preserves the previous valid state', async () => {
+    const context = { registerTool: vi.fn((tool: WebMcpToolDescriptor) => { if (tool.name === 'prepare_validated_cart') throw new Error('nope'); }), getTools: () => [] };
+    const sdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}), requestRepairApproval: async () => 'approved' }, adapter: { getModelContext: () => context }, clock: () => 1 });
+    const registration = await sdk.register();
+    const evaluate = (sdk.getDescriptors()).evaluate_shopping_plan;
+    await evaluate.execute({ lines: [{ productId: 'eggs', quantity: 1 }] });
+    const repair = sdk.getDescriptors().apply_plan_repair;
+    await expect(repair.execute({ decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' })).resolves.toMatchObject({ code: 'REGISTRATION_FAILED' });
+    // Nothing from the failed attempt is left registered as "unlocked", and the previous valid
+    // registration (apply_plan_repair) is preserved rather than torn down.
+    expect(registration.registeredTools).not.toContain('prepare_validated_cart');
+    expect(registration.registeredTools).toContain('apply_plan_repair');
+  });
+
+  it('declined approval never exposes prepare_validated_cart', async () => {
+    const declineDescriptors: WebMcpToolDescriptor[] = []; const context = { registerTool: vi.fn((tool: WebMcpToolDescriptor) => { declineDescriptors.push(tool); }), getTools: () => declineDescriptors.map((tool) => tool.name) };
+    const declineSdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}), requestRepairApproval: async () => 'declined' }, adapter: { getModelContext: () => context }, clock: () => 1 });
+    const registration = await declineSdk.register();
+    await declineDescriptors.find((tool) => tool.name === 'evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] });
+    const repair = declineDescriptors.find((tool) => tool.name === 'apply_plan_repair')!;
+    const result = await repair.execute({ decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' });
+    expect(result).toMatchObject({ status: 'DECLINED' });
+    await registration.settleRegistry();
+    expect(registration.registeredTools).not.toContain('prepare_validated_cart');
+  });
+
+  it('reset (dispose) during a pending approval cancels safely and clears the registry', async () => {
+    const { sdk, descriptors } = setup(true);
+    const registration = await sdk.register();
+    await descriptors.find((tool) => tool.name === 'evaluate_shopping_plan')!.execute({ lines: [{ productId: 'eggs', quantity: 1 }] });
+    const repair = descriptors.find((tool) => tool.name === 'apply_plan_repair')!;
+    const promise = repair.execute({ decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' });
+    registration.dispose();
+    const result = await promise;
+    expect(result).toMatchObject({ code: 'CANCELLED' });
+    expect(registration.registeredTools).toEqual([]);
+  });
+
+  it('guided replay still completes end to end and is always tagged source: replay, even for prepare_validated_cart', async () => {
+    const events: string[] = [];
+    const descriptors: WebMcpToolDescriptor[] = []; const context = { registerTool: vi.fn((tool: WebMcpToolDescriptor) => { descriptors.push(tool); }), getTools: () => descriptors.map((tool) => tool.name) };
+    const sdk = createRetailAgentWebMcp({ gateway: gateway(), storefront: { getBuyerContext: () => ({}), requestRepairApproval: async () => 'approved', onLifecycle: (event) => events.push(`${event.tool}:${event.lifecycle}:${event.source}`) }, adapter: { getModelContext: () => context }, clock: () => 1 });
+    const registration = await sdk.register();
+    await registration.invoke('evaluate_shopping_plan', { lines: [{ productId: 'eggs', quantity: 1 }] });
+    const applied = await registration.invoke('apply_plan_repair', { decisionId: 'plan-1', repairId: 'repair-1', lines: [{ productId: 'eggs', quantity: 1 }], idempotencyKey: 'abcdefgh' }) as { decisionId?: string; lines?: Array<{ productId: string; quantity: number }> };
+    const prepared = await registration.invoke('prepare_validated_cart', { decisionId: applied.decisionId, lines: applied.lines, idempotencyKey: 'abcdefgh' });
+    expect(prepared).toMatchObject({ code: 'CART_PREPARED' });
+    expect(events.filter((entry) => entry.includes('prepare_validated_cart:invoked'))).toEqual(['prepare_validated_cart:invoked:replay']);
+  });
+});
+
 describe('optional post-cart revision extension (revise_validated_cart)', () => {
   it('keeps the historical seven-tool Phase 1 catalog unchanged and documents the extension separately', () => {
     expect(CANONICAL_PHASE_1_TOOLS).toHaveLength(7);

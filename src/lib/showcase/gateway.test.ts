@@ -86,6 +86,69 @@ describe('showcase gateway', () => {
     expect(cart.cart).toBeNull(); expect(cart.cartCreated).toBe(false);
   });
 
+  describe('prepareCart — decision-scoped idempotency (native/guided-fallback convergence)', () => {
+    it('converges native and guided-fallback preparation for the same decision and lines onto exactly one cart, regardless of differing caller-supplied idempotency keys', () => {
+      const fresh = createShowcaseGateway(now, 'fresh-corner', 'concurrency-session-1');
+      const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });
+      const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', 'repair-key-conc-1', decision.decisionId);
+      // Simulate a native WebMCP call and a guided-fallback replay call racing to prepare a cart
+      // for the identical ELIGIBLE decision and canonical lines, each minting its own idempotency
+      // key the way two independent invocation paths naturally would.
+      const nativeCart = fresh.prepareCart(repaired.lines, 'native-cart-key-conc-1', repaired.decision.decisionId);
+      const guidedFallbackCart = fresh.prepareCart(repaired.lines, 'guided-fallback-cart-key-conc-1', repaired.decision.decisionId);
+      expect(nativeCart.cartCreated).toBe(true);
+      expect(guidedFallbackCart.cart?.reference).toBe(nativeCart.cart?.reference);
+      expect(guidedFallbackCart).toEqual(nativeCart);
+      // A third caller retrying with yet another key still converges on the same single cart —
+      // proof only one cart was ever stored server-side for this decision.
+      const thirdCart = fresh.prepareCart(repaired.lines, 'third-cart-key-conc-1', repaired.decision.decisionId);
+      expect(thirdCart.cart?.reference).toBe(nativeCart.cart?.reference);
+    });
+
+    it('rejects a concurrent request for the same decisionId with different lines as a bounded, pre-existing DECISION_MISMATCH, leaving the original valid cart unchanged', () => {
+      // decisionId already embeds the full evaluated line set (see `decision()`'s decisionId
+      // construction), and `requireDecision` compares the caller's `lines` against the exact lines
+      // stored for that decisionId. So a caller that reuses a decisionId with mutated lines is
+      // already rejected by that pre-existing guard, before ever reaching the new decision-scoped
+      // cart layer below — DECISION_MISMATCH is exactly the bounded "CART_PREPARATION_CONFLICT/
+      // DECISION_MISMATCH" outcome this pass requires for this path, and it fires here.
+      const fresh = createShowcaseGateway(now, 'fresh-corner', 'concurrency-session-2');
+      const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });
+      const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', 'repair-key-conc-2', decision.decisionId);
+      const original = fresh.prepareCart(repaired.lines, 'original-cart-key-conc-2', repaired.decision.decisionId);
+      expect(original.cartCreated).toBe(true);
+      const mutatedLines = repaired.lines.map((line) => line.productId === 'v_g_inv_001_1' ? { ...line, quantity: line.quantity + 1 } : line);
+      let thrown: unknown;
+      try { fresh.prepareCart(mutatedLines, 'conflicting-cart-key-conc-2', repaired.decision.decisionId); } catch (error) { thrown = error; }
+      expect(thrown).toBeInstanceOf(ShowcaseInputError);
+      expect((thrown as InstanceType<typeof ShowcaseInputError>).code).toBe('DECISION_MISMATCH');
+      // The original cart must be exactly as it was — re-fetched by its original idempotency key.
+      const stillOriginal = fresh.prepareCart(repaired.lines, 'original-cart-key-conc-2', repaired.decision.decisionId);
+      expect(stillOriginal).toEqual(original);
+    });
+
+    it('the decision-scoped cart layer itself rejects a fingerprint mismatch for the same decisionId with a bounded CART_PREPARATION_CONFLICT — a defense-in-depth integrity check on `cartsByDecision`, independent of the pre-existing per-decision lines guard above', () => {
+      // Because decisionId already 1:1 encodes the evaluated lines, `requireDecision` makes a
+      // mismatched-lines request for a real decisionId unreachable in the ordinary flow (proven by
+      // the test above). This test exercises the decision-scoped layer's own integrity check
+      // directly, by constructing a gateway over a `stores` object (the same shape `fixture.ts`
+      // wires up) that already holds an inconsistent `cartsByDecision` entry for a decisionId —
+      // e.g. as would result from a future decisionId-construction change that loses that 1:1
+      // property. The guard must still refuse to silently serve the wrong cart.
+      const fresh = createShowcaseGateway(now, 'fresh-corner', 'concurrency-session-3');
+      const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });
+      const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', 'repair-key-conc-3', decision.decisionId);
+      const decisionId = repaired.decision.decisionId;
+      const decisionScopedKey = `fresh-corner:concurrency-session-3:cart-by-decision:${decisionId}`;
+      const conflictingFingerprint = JSON.stringify([{ productId: 'v_g_inv_001_1', quantity: 99 }]);
+      (fresh as unknown as { stores: { cartsByDecision: Map<string, { fingerprint: string; result: unknown }> } }).stores.cartsByDecision.set(decisionScopedKey, { fingerprint: conflictingFingerprint, result: { cart: { reference: 'demo-cart-preexisting' } } });
+      expect(() => fresh.prepareCart(repaired.lines, 'fresh-cart-key-conc-3', decisionId)).toThrow(ShowcaseInputError);
+      let thrown: unknown;
+      try { fresh.prepareCart(repaired.lines, 'fresh-cart-key-conc-3-b', decisionId); } catch (error) { thrown = error; }
+      expect((thrown as InstanceType<typeof ShowcaseInputError>).code).toBe('CART_PREPARATION_CONFLICT');
+    });
+  });
+
   describe('reviseCart — optional post-cart revision extension', () => {
     function prepareRevisableCart(sessionId = 'fresh-session') {
       const fresh = createShowcaseGateway(now, 'fresh-corner', sessionId);

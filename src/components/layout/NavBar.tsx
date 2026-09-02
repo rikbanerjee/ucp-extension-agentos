@@ -124,7 +124,7 @@ export function NavBar() {
         </Link>
 
         {/* Desktop nav — hidden on mobile */}
-        <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-slate-600">
+        <nav className="hidden lg:flex items-center gap-1 text-sm font-medium text-slate-600">
           {navEntries.map((entry) => {
             if (entry.kind === 'link') {
               const active = isActiveHref(pathname, entry.href);
@@ -196,14 +196,14 @@ export function NavBar() {
         {/* Primary CTA — desktop only, mirrored inside the mobile drawer below */}
         <Link
           href="/see-it-work"
-          className="hidden md:inline-flex ml-auto items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+          className="hidden lg:inline-flex ml-auto items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
         >
           See it work
         </Link>
 
         {/* Hamburger — visible on mobile only */}
         <button
-          className="flex md:hidden ml-auto items-center justify-center w-11 h-11 rounded-md text-slate-600 hover:bg-slate-50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+          className="flex lg:hidden ml-auto items-center justify-center w-11 h-11 rounded-md text-slate-600 hover:bg-slate-50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
           onClick={() => setMenuOpen(o => !o)}
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen}
@@ -215,7 +215,7 @@ export function NavBar() {
       {/* Backdrop for desktop dropdown — closes menu on outside click */}
       {openGroup && (
         <div
-          className="fixed inset-0 z-40 hidden md:block"
+          className="fixed inset-0 z-40 hidden lg:block"
           onClick={closeGroup}
           aria-hidden="true"
         />
@@ -225,7 +225,7 @@ export function NavBar() {
           same Product / Solutions / Developers / Evidence / About hierarchy
           as desktop, so mobile visitors see the identical information order. */}
       {menuOpen && (
-        <div className="absolute top-full left-0 right-0 bg-white border-b border-slate-200 shadow-md md:hidden z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 bg-white border-b border-slate-200 shadow-md lg:hidden z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
           <nav className="flex flex-col px-4 pt-2 pb-3">
             <Link
               href="/see-it-work"
@@ -287,7 +287,7 @@ export function NavBar() {
       {/* Backdrop — closes mobile menu on outside tap */}
       {menuOpen && (
         <div
-          className="fixed inset-0 -z-10 md:hidden"
+          className="fixed inset-0 -z-10 lg:hidden"
           onClick={close}
           aria-hidden="true"
         />
