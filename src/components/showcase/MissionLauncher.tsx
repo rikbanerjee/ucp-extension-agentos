@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Bot, Copy, PlayCircle, Radio } from 'lucide-react';
+import { SHOWCASE_ANCHORS } from '@/lib/content/showcaseChrome';
 
 interface MissionLauncherProps {
   registering: boolean;
@@ -39,8 +40,20 @@ export function MissionLauncher({ registering, native, registrationError, prompt
     }
   }
 
+  // The single canonical mission anchor (`webmcp-mission`), renamed from the earlier
+  // `mission-launcher` id rather than duplicated, so the header's "Run Demo", the hero's
+  // "Start the 90-second demo", and this section can never point at different targets.
+  // Arriving here only scrolls and focuses the region — it never invokes a WebMCP tool.
   return (
-    <section id="mission-launcher" className="mx-auto max-w-7xl px-4 pb-6 sm:px-6">
+    <section
+      id={SHOWCASE_ANCHORS.mission}
+      tabIndex={-1}
+      aria-labelledby="webmcp-mission-heading"
+      className="showcase-anchor mx-auto max-w-7xl px-4 pb-6 outline-none sm:px-6"
+    >
+      <h2 id="webmcp-mission-heading" className="sr-only">
+        Run the WebMCP demo
+      </h2>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
           <div className="flex items-center gap-2">

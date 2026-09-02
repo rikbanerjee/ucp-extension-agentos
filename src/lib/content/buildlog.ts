@@ -20,10 +20,32 @@ export interface BuildLogEntry {
 
 export const buildLog: BuildLogEntry[] = [
   {
+    id: 'webmcp-judge-navigation-identity-2026',
+    week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
+    date: 'Sep 2, 2026',
+    current: true,
+    title: 'Focused challenge navigation, page identity, and persistent demo discoverability',
+    shipped: 'Route-specific challenge chrome on the WebMCP Live Demo, a business-first page identity, a compact challenge footer, canonical metadata shared with the compatibility route, judge anchors with accessible focus, a global WebMCP Live Demo link, and optional video-link configuration',
+    narrative:
+      'A judge landing on the demo met the whole company website: a five-dropdown Product / Solutions / Developers / Evidence / About header and a four-column corporate footer whose loudest message was UCP. The page\'s own identity was a single eyebrow line, its only in-page anchor was unreferenced by any navigation, and there was no compact business comparison a retail executive could read in under a minute. A judge who browsed anywhere else had no visible route back — the demo was buried in the Developers dropdown as "WebMCP implementation". None of the WebMCP behavior was wrong; the framing was. AppShell.tsx, already the single place route shape is decided, now also selects the chrome: the canonical /webmcp-showcase and compatibility /agent-ready-storefront routes get a focused challenge header and compact footer, every other route keeps the normal platform navigation and footer, and because exactly one header and one footer component is chosen the two systems can never both render. There is no route group, no nested layout, and no second showcase component — both routes still render the one storefront-client instance, so nothing in the WebMCP registration lifecycle moved. The page now leads with the OpenAI WebMCP Challenge eyebrow, the "RetailAgentOS WebMCP Agent Storefront" product label, and the outcome headline, followed by a compact action group whose primary CTA only scrolls to the mission launcher — it never starts native WebMCP or guided replay. A new "Why the storefront becomes meaningfully better with WebMCP" section sits between the live mission and Developer Evidence. Along the way one real layout bug surfaced: body is a fixed-height column flex container, so AppShell\'s wrapper was being shrunk back to one viewport while its content overflowed, and that capped wrapper was the sticky header\'s containing block — the header stopped sticking about one viewport down the page until the wrapper was allowed to grow to its content height.',
+    bullets: [
+      'src/components/layout/AppShell.tsx swaps NavBar/Footer for a new ShowcaseHeader/ShowcaseFooter on /webmcp-showcase and /agent-ready-storefront only — one header and one footer per route, so the company and challenge navigation systems are never both present, and every other route is unchanged.',
+      'The focused header carries RetailAgentOS identity, a text-only "OpenAI WebMCP Challenge" badge (no endorsement claim, no OpenAI mark), and Run Demo / How It Works / Developer Evidence / GitHub / Back to RetailAgentOS, collapsing to one accessible menu button at the same lg breakpoint NavBar uses — with aria-expanded, Escape-to-close, close-on-selection, and no horizontal overflow at 320px.',
+      'Judge anchors #webmcp-mission (renamed from mission-launcher rather than duplicated), #why-webmcp, and #developer-evidence are focusable, aria-labelledby-named, and scroll-margin-offset for the sticky header; navigation is plain fragment navigation with no timers, no scripted scrolling, and nothing conflated with WebMCP invocation telemetry. Smooth scrolling is scoped to the showcase routes and disabled under prefers-reduced-motion.',
+      'Both routes share one metadata object — title "RetailAgentOS WebMCP Agent Storefront | OpenAI WebMCP Challenge", the canonical description, canonical URL https://www.retailagentos.com/webmcp-showcase, and the repository\'s existing verified og-image — so the compatibility route can never present a competing canonical or a divergent title.',
+      'The Developers navigation item is renamed "WebMCP implementation" → "WebMCP Live Demo" and a compact WebMCP Live Demo pill sits beside (never instead of) the "See it work" CTA; measured at the lg breakpoint the desktop bar is 930px of content in 960px of available width — no wrap, no overflow.',
+      'The optional demo video is read once from NEXT_PUBLIC_WEBMCP_VIDEO_URL through a validating helper: anything that is not an absolute https URL yields null and the "Watch video" button is simply absent — never a placeholder, a # link, or an unactionable "coming soon".',
+    ],
+    proves:
+      'A challenge judge can identify, run, understand, and leave the WebMCP demo without meeting the whole company information architecture — and can always find it again from any other page — while the broader RetailAgentOS platform navigation, the business-first story, and every native and guided WebMCP behavior stay exactly as they were.',
+    next:
+      'Deploy and run the deployed-origin acceptance walkthrough at https://www.retailagentos.com/webmcp-showcase, including a native browser-agent run. After that native production QA passes, record and publish the WebMCP demo video and configure its public URL. This pass is uncommitted as of Sep 2, 2026.',
+  },
+  {
     id: 'webmcp-correctness-gap-closure-2026',
     week: 'Challenge-period work · Official window: Aug 25–Sep 3, 2026',
     date: 'Sep 1, 2026',
-    current: true,
+    current: false,
     title: 'Server-side cart-idempotency, dispose-during-cleanup, and recoverable fallback failure',
     shipped: 'A second, decision-scoped server-side idempotency layer for cart preparation, dispose() that always aborts every controller (even a still-pending superseded one), a replaced stale-cleanup test against a real REPAIRABLE→ELIGIBLE→REPAIRABLE transition, and an explicit, never-automatic retry path for a failed guided-fallback cart preparation',
     narrative:

@@ -30,8 +30,11 @@ Do not describe the current button-driven fallback as a native WebMCP invocation
 
 ## Recommended submission identity
 
-- **Name:** RetailAgentOS — The Agent-Ready Storefront
+- **Name:** RetailAgentOS WebMCP Agent Storefront
 - **Tagline:** Let shopping agents use a retailer's real catalog and selling rules—without guessing or taking control from the shopper.
+- **Navigation label (site-wide):** WebMCP Live Demo
+- **Canonical route:** `/webmcp-showcase` (compatibility route: `/agent-ready-storefront`)
+- **Route chrome:** both routes render focused challenge chrome — RetailAgentOS identity, an "OpenAI WebMCP Challenge" badge, and Run Demo / How It Works / Developer Evidence / GitHub / Back to RetailAgentOS — plus a compact challenge footer. Every other route keeps the normal RetailAgentOS platform navigation and footer.
 - **Primary audience:** Independent and mid-market retailers with owned storefronts.
 - **Demonstrated merchant:** A clearly labelled TheCustomHub-style local fixture, not a claimed live TheCustomHub integration.
 - **Core proof:** One positive purchase-preparation path, one policy block, and one call-for-price quote path.

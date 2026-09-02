@@ -4,6 +4,8 @@
 // edit here (AGENTS.md: avoid duplicating audience/content between nav,
 // homepage and solution pages).
 
+import { SHOWCASE_CANONICAL_PATH, SHOWCASE_NAV_LABEL } from '@/lib/content/showcaseChrome';
+
 export interface DeveloperLink {
   label: string;
   href: string;
@@ -12,7 +14,9 @@ export interface DeveloperLink {
 
 export const DEVELOPER_LINKS: DeveloperLink[] = [
   { label: 'Developer Overview', href: '/developers', description: 'The technical gateway: architecture, pipeline, specs, playground.' },
-  { label: 'WebMCP implementation', href: '/webmcp-showcase', description: 'Native browser-tool registration, deterministic decisions, and the interactive fallback.' },
+  // Labelled from the shared showcase content module so the Developers menu, the footer, the
+  // homepage gateway, and the global challenge pill all say "WebMCP Live Demo".
+  { label: SHOWCASE_NAV_LABEL, href: SHOWCASE_CANONICAL_PATH, description: 'Native browser-tool registration, deterministic decisions, and the guided replay.' },
   { label: 'Specifications', href: '/specs', description: 'Open RAOS specs — eligibility, pricing, inventory, quote integrity, trust.' },
   { label: 'Live Playground', href: '/demo', description: 'Run real buyer contexts against the reference engine.' },
   { label: 'Adoption Guide', href: '/adopt', description: 'The tiered adoption ladder, from discoverable to fully integrated.' },

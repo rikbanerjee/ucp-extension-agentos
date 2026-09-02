@@ -1,5 +1,15 @@
 import type { Metadata } from 'next';
 import AgentReadyStorefront from './storefront-client';
+import { showcaseMetadata } from '@/lib/content/showcaseMetadata';
 
-export const metadata: Metadata = { title: 'Agent-ready storefront | RetailAgentOS', description: 'See how a retailer can let AI agents search, evaluate, prepare a cart, and hand checkout back to the shopper.' };
-export default function AgentReadyStorefrontPage() { return <AgentReadyStorefront />; }
+/**
+ * Compatibility entry point. It renders the exact same showcase component as the canonical
+ * `/webmcp-showcase` route — one implementation, never a second divergent copy — and reuses the
+ * canonical metadata, so its canonical URL points at `/webmcp-showcase` rather than competing
+ * with it.
+ */
+export const metadata: Metadata = showcaseMetadata;
+
+export default function AgentReadyStorefrontPage() {
+  return <AgentReadyStorefront />;
+}

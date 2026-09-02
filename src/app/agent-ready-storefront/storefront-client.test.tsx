@@ -358,3 +358,104 @@ describe('AgentReadyStorefront — fake modelContext integration harness', () =>
     expect(screen.queryByText(/Cart preparation failed/i)).not.toBeInTheDocument();
   }, 15000);
 });
+
+/**
+ * The focused challenge chrome (header/footer) lives in AppShell and is covered by
+ * `src/components/layout/showcase-chrome.test.tsx`. These cases cover the page's own judge-facing
+ * identity, its anchor targets, and that neither survives a change to the WebMCP lifecycle.
+ */
+describe('judge-facing page identity and anchors', () => {
+  afterEach(() => { cleanup(); removeFakeModelContext(); vi.restoreAllMocks(); });
+
+  it('states the challenge identity, product label, and business outcome before any protocol detail', () => {
+    render(<AgentReadyStorefront />);
+
+    expect(screen.getByText('OPENAI WEBMCP CHALLENGE · LIVE IMPLEMENTATION')).toBeInTheDocument();
+    expect(screen.getByText('RetailAgentOS WebMCP Agent Storefront')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'The browser agent asks. RetailAgentOS checks what the retailer can actually promise.',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/WebMCP exposes only the next safe browser action/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/StoreFront/);
+  });
+
+  it('offers a hero action group that scrolls rather than invoking WebMCP, and hides Watch video until configured', async () => {
+    const { registered } = installFakeModelContext();
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+
+    const start = screen.getByRole('link', { name: /Start the 90-second demo/ });
+    expect(start).toHaveAttribute('href', '#webmcp-mission');
+    expect(screen.getByText('Choose a native browser-agent mission or the guided replay.')).toBeInTheDocument();
+
+    const source = screen.getByRole('link', { name: /View source/ });
+    expect(source).toHaveAttribute('href', 'https://github.com/rikbanerjee/ucp-extension-agentos');
+    expect(source).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // No configured public video URL in this environment: the action is absent entirely — never a
+    // placeholder, a `#` link, or an unactionable "coming soon".
+    expect(screen.queryByRole('link', { name: /Watch video/ })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\[VIDEO LINK\]|coming soon/i);
+    for (const link of screen.getAllByRole('link')) expect(link.getAttribute('href')).not.toBe('#');
+
+    // Following the hero CTA is navigation, not a tool call: the registered descriptor set is
+    // untouched and no invocation telemetry is produced.
+    const toolsBefore = [...registered.keys()];
+    await userEvent.setup().click(start);
+    expect([...registered.keys()]).toEqual(toolsBefore);
+    expect(screen.queryByText(/Guided replay · Same RetailAgentOS handlers/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Validated cart prepared/i)).not.toBeInTheDocument();
+  });
+
+  it('exposes focusable, scroll-margin-aware anchor targets for every header destination', () => {
+    const { container } = render(<AgentReadyStorefront />);
+
+    for (const id of ['webmcp-mission', 'why-webmcp', 'developer-evidence']) {
+      const target = container.ownerDocument.getElementById(id);
+      expect(target, `#${id} anchor target`).not.toBeNull();
+      expect(target).toHaveAttribute('tabindex', '-1');
+      expect(target?.className).toContain('showcase-anchor');
+      // Each target names itself, so focus lands on a meaningful, announced region.
+      expect(target?.getAttribute('aria-labelledby')).toBeTruthy();
+      expect(container.ownerDocument.querySelectorAll(`#${id}`)).toHaveLength(1);
+    }
+  });
+
+  it('keeps the business comparison compact, business-readable, and above Developer Evidence', () => {
+    const { container } = render(<AgentReadyStorefront />);
+
+    expect(
+      screen.getByRole('heading', { name: 'Why the storefront becomes meaningfully better with WebMCP' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('May act on stale inventory')).toBeInTheDocument();
+    expect(screen.getByText('Never receives a checkout capability in this showcase')).toBeInTheDocument();
+
+    const why = container.ownerDocument.getElementById('why-webmcp')!;
+    const evidence = container.ownerDocument.getElementById('developer-evidence')!;
+    // Node.DOCUMENT_POSITION_FOLLOWING — the evidence section comes after the comparison.
+    expect(why.compareDocumentPosition(evidence) & 4).toBeTruthy();
+  });
+
+  it('renders exactly one showcase instance with no nested main landmark', () => {
+    const { container } = render(<AgentReadyStorefront />);
+
+    expect(container.querySelectorAll('main')).toHaveLength(0);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(container.ownerDocument.querySelectorAll('#webmcp-mission')).toHaveLength(1);
+  });
+
+  it('still registers natively, keeps guided replay available, and never exposes checkout', async () => {
+    const { registered } = installFakeModelContext();
+    render(<AgentReadyStorefront />);
+    await waitForRegistration();
+
+    expect(screen.getByRole('status').textContent).toMatch(/Native WebMCP detected/);
+    expect([...registered.keys()]).toEqual(['get_storefront_capabilities', 'search_catalog', 'evaluate_shopping_plan']);
+    // Guided replay is never gated on the absence of a native modelContext.
+    expect(screen.getByRole('button', { name: /Watch guided WebMCP mission/ })).toBeEnabled();
+    expect([...registered.keys()]).not.toContain('checkout');
+  });
+});

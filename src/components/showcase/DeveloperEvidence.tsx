@@ -2,6 +2,7 @@
 
 import type { ReviseCartResult, WebMcpTelemetryEvent, WebMcpToolName } from '../../../packages/webmcp/src';
 import { getWebMcpToolSchema } from '../../../packages/webmcp/src';
+import { SHOWCASE_ANCHORS } from '@/lib/content/showcaseChrome';
 
 interface DeveloperEvidenceProps {
   scenario: 'fresh' | 'custom';
@@ -20,7 +21,15 @@ interface DeveloperEvidenceProps {
 export function DeveloperEvidence({ scenario, storefrontId, storefrontSessionId, native, activeTools, browserTools, parity, events, customHubDisclosure, cartRevision }: DeveloperEvidenceProps) {
   const revisionEvents = events.filter((event) => event.tool === 'revise_validated_cart');
   return (
-    <div className="mt-5 space-y-3">
+    <section
+      id={SHOWCASE_ANCHORS.developerEvidence}
+      tabIndex={-1}
+      aria-labelledby="developer-evidence-heading"
+      className="showcase-anchor mt-5 space-y-3 outline-none"
+    >
+      <h2 id="developer-evidence-heading" className="sr-only">
+        Developer evidence
+      </h2>
       <details className="rounded-xl border border-slate-200 bg-white p-4">
         <summary className="cursor-pointer font-semibold text-slate-900">Developer evidence</summary>
         <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
@@ -87,7 +96,7 @@ export function DeveloperEvidence({ scenario, storefrontId, storefrontSessionId,
       )}
 
       <ProtocolChannels />
-    </div>
+    </section>
   );
 }
 

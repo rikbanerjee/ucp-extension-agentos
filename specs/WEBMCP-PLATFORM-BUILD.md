@@ -642,3 +642,114 @@ clicks "Retry guided cart preparation" (succeeds against the real route handler)
    this file's "Current submission status" section with the real commit hash once committed.
 3. Repeat the deployed-origin acceptance walkthrough from the prior pass's next-action list once this
    pass is committed and deployed.
+
+## Judge-facing navigation and page-identity pass (2026-09-02)
+
+**Problem.** The showcase carried the whole company IA. A judge landing on `/webmcp-showcase` met a
+five-dropdown Product / Solutions / Developers / Evidence / About header and a four-column corporate
+footer whose dominant message was UCP; the page's own identity was a one-line eyebrow, its only
+in-page anchor was `#mission-launcher` (unreferenced by any navigation), and there was no compact
+business comparison a retail executive could read in under a minute. Conversely a judge who browsed
+anywhere else on the site had no visible way back: the demo was buried in the Developers dropdown as
+"WebMCP implementation". No behavior was wrong — the *framing* was.
+
+**What changed (chrome).** `src/components/layout/AppShell.tsx` — already the single place route
+shape is decided — now also chooses the chrome: `isShowcaseRoute(pathname)` swaps `NavBar`/`Footer`
+for a new `ShowcaseHeader`/`ShowcaseFooter` on `/webmcp-showcase` and `/agent-ready-storefront`.
+Because exactly one header and one footer component is selected, the two systems can never both
+render; every other route is byte-for-byte unchanged. No route group, no nested layout, and no
+second showcase component: both routes still render the one `storefront-client.tsx` instance, so
+nothing in the WebMCP registration lifecycle moved. The focused header carries RetailAgentOS
+identity, a text-only "OpenAI WebMCP Challenge" badge (no endorsement claim, no OpenAI mark), Run
+Demo / How It Works / Developer Evidence / GitHub, and Back to RetailAgentOS; it switches to a
+single accessible menu button at the same `lg` breakpoint `NavBar` uses. The compact footer states
+"RetailAgentOS is the merchant reasoning layer. WebMCP is the browser action surface." and links
+WebMCP Live Demo, Source Code, Build Log, Technical Evidence, `/agents.md`, and Back to
+RetailAgentOS — UCP stays available in developer documentation and on the rest of the site.
+
+**What changed (identity and sequence).** The hero now reads eyebrow ("OPENAI WEBMCP CHALLENGE ·
+LIVE IMPLEMENTATION") → product label ("RetailAgentOS WebMCP Agent Storefront") → outcome headline →
+supporting copy → a compact action group ("Start the 90-second demo", "View source", and a
+conditional "Watch video"). The primary CTA only scrolls to the mission launcher; it never starts
+native WebMCP or guided replay. A new `WhyWebMcp.tsx` section sits between the live mission and
+Developer Evidence, contrasting ordinary browser automation with RetailAgentOS + WebMCP in two
+short columns. The redundant "RetailAgentOS · WebMCP retail mission" strip lost its duplicate
+identity line (the header carries it now) and keeps the Reset control.
+
+**Global discoverability.** `developerLinks.ts` renames "WebMCP implementation" to "WebMCP Live
+Demo" (sourced from `showcaseChrome.ts`, so the Developers dropdown, the footer Developers column,
+and the homepage gateway all follow), and `NavBar.tsx` gains a compact "WebMCP Live Demo" pill
+beside — never instead of — the existing "See it work" CTA, mirrored in the mobile drawer. Measured
+at the `lg` breakpoint the desktop bar is 930px of content in 960px of available width: no wrap, no
+overflow.
+
+**Anchors, metadata, video.** Judge anchors are `#webmcp-mission` (renamed from `mission-launcher`
+rather than duplicated), `#why-webmcp`, and `#developer-evidence` — each `tabIndex={-1}`,
+`aria-labelledby`-named, and carrying `.showcase-anchor` (`scroll-margin-top: 5rem`) so the sticky
+header cannot cover it. Navigation is plain fragment navigation: no timers, no scripted scrolling,
+and nothing that could be mistaken for a WebMCP invocation. Smooth scrolling is scoped to
+`:root:has(.showcase-header)` and disabled under `prefers-reduced-motion`; the root layout gains
+`<html data-scroll-behavior="smooth">`, required by Next.js 16 (it no longer suspends smooth
+scrolling during route transitions without it — this was an actual console warning). Both routes
+share one `showcaseMetadata` object: title "RetailAgentOS WebMCP Agent Storefront | OpenAI WebMCP
+Challenge" (`title.absolute`), the canonical description, `alternates.canonical` =
+`https://www.retailagentos.com/webmcp-showcase`, and the repository's existing verified
+`/og-image.png` — no invented image, and the compatibility route cannot present a competing
+canonical. The optional demo video is read once through `getShowcaseVideoUrl()` from
+`NEXT_PUBLIC_WEBMCP_VIDEO_URL`; anything that is not an absolute `https:` URL (blank, `#`,
+`[VIDEO LINK]`, "coming soon", `http:`) yields `null` and the button is simply absent.
+
+**One real layout bug found and fixed.** The sticky header stopped sticking roughly one viewport
+down the page. `body` is a fixed-height (`h-full`) column flex container, so AppShell's wrapper — a
+flex item — was being shrunk back to exactly one viewport while its content overflowed, and that
+capped wrapper was the sticky header's containing block. Adding `shrink-0` grows the wrapper to its
+content height; nothing moves visually (the overflow was already painted) and the header now stays
+pinned through the full scroll, verified in Chrome at the bottom of the page.
+
+**Verification.**
+- `npm test`: **610/610 passing** (32 files), up from 576/576 — 34 new tests across
+  `src/components/layout/showcase-chrome.test.tsx` (18: route chrome on both showcase routes and on
+  normal routes, exactly one banner/contentinfo, mutually exclusive navigation systems, focused-link
+  destinations, safe external links, mobile menu accessible name / `aria-expanded` / Escape /
+  link-close / keyboard operation / distinguishable landmark names, global "WebMCP Live Demo"
+  discoverability, preserved product CTA), `src/lib/content/showcaseChrome.test.ts` (7: route
+  identity, naming with an explicit "StoreFront" guard, developer-link rename, canonical metadata
+  with no invented image, video-URL validation), `src/components/showcase/ShowcaseHero.test.tsx` (3:
+  video action absent / placeholder-rejecting / present-and-safe), and 6 in
+  `storefront-client.test.tsx` (page identity, hero actions that scroll rather than invoke, focusable
+  scroll-margin anchors, business comparison above Developer Evidence, single instance with no
+  nested `main`, and a native-registration/guided-availability/no-checkout regression).
+- `npx tsc --noEmit`: clean.
+- Targeted ESLint on all 18 changed/new source files: clean.
+- Full `npm run lint`: 14 errors / 59 warnings — identical to the correctness-gap-closure pass's
+  baseline and in the same pre-existing files; none in any file this pass touched. Not clean
+  overall, and not claimed to be.
+- `npm run build -w @retailagentos/engine`, `-w @retailagentos/platform-contracts`,
+  `-w @retailagentos/webmcp`: clean. Root `npm run build`: clean, all 39 routes.
+- Browser acceptance (Chrome with a real `document.modelContext`, against the **production** build
+  served locally): three base tools register natively on both routes; the full guided Fresh Corner
+  flow runs to approval → capability registered → invoked by guided replay → `CART_PREPARED` $15.99
+  with checkout never exposed; scenario switch to TheCustomHub resets cleanly to the three base
+  tools and produces the quote with `fixedPrice: null`, no cart, no checkout; client-side navigation
+  showcase → home → showcase re-registers exactly three tools with "Native WebMCP detected" and no
+  duplicate registration; the compatibility route shows identical chrome, one `main`, one `h1`, one
+  `#webmcp-mission`, and canonical `/webmcp-showcase`. Responsive probes at 320/375/768/1024/1280/
+  1440 show zero horizontal overflow, a single 64px header row, the mobile menu at ≤768 and the
+  desktop row at ≥1024 (never both), and the badge hidden rather than clipped below 640px. No
+  console errors or hydration warnings.
+- **Not verified:** deployment to `https://www.retailagentos.com` — unchanged from prior passes.
+  A separate `next dev` server was already running during this pass; its React Strict Mode
+  double-invoked effect made the showcase briefly report "Registration failed — guided mission
+  available" after a soft navigation. That did **not** reproduce on the production build, which is
+  what the acceptance above was run against.
+
+## Exact next action for a future agent (navigation and page-identity pass)
+
+1. Commit this pass (uncommitted as of 2026-09-02) and update the evidence commit lists in
+   `README.md`, `src/lib/content/buildlog.ts`, and the "Current submission status" section above
+   with the real hash once committed. Do not invent a SHA.
+2. Deploy and run the deployed-origin acceptance walkthrough at
+   `https://www.retailagentos.com/webmcp-showcase`, including a native browser-agent run.
+3. After that native production QA passes, record and publish the WebMCP demo video and set
+   `NEXT_PUBLIC_WEBMCP_VIDEO_URL` to its public URL — the "Watch video" action then appears with no
+   further structural change.

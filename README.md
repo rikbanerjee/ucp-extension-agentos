@@ -3,8 +3,13 @@
 **RetailAgentOS lets a shopping AI act safely on a real store — WebMCP exposes only the next safe
 browser action, and RetailAgentOS's deterministic engine decides what that action is allowed to be.**
 
-- **Live demo:** [www.retailagentos.com/webmcp-showcase](https://www.retailagentos.com/webmcp-showcase)
-- **Video:** published after the final native WebMCP recording; no placeholder link is rendered.
+- **WebMCP Live Demo:** [www.retailagentos.com/webmcp-showcase](https://www.retailagentos.com/webmcp-showcase)
+  — the RetailAgentOS WebMCP Agent Storefront, built for the OpenAI WebMCP Challenge.
+  `/agent-ready-storefront` is a compatibility route that renders the identical page and points its
+  canonical identity at `/webmcp-showcase`.
+- **Video:** published after the final native WebMCP recording. The "Watch video" action is hidden
+  until a real public URL is configured through `NEXT_PUBLIC_WEBMCP_VIDEO_URL`; no placeholder link
+  is ever rendered.
 
 ## Test prompt
 
@@ -147,6 +152,17 @@ await document.modelContext?.registerTool(tool, { signal: controller.signal });
 
 The standalone package is [`packages/webmcp`](./packages/webmcp), with emitted ESM, CommonJS, and declaration artifacts. Browser deployment verification is documented in [`specs/WEBMCP-CHROME-VERIFICATION.md`](./specs/WEBMCP-CHROME-VERIFICATION.md).
 
+### Route chrome
+
+The canonical `/webmcp-showcase` and compatibility `/agent-ready-storefront` routes use focused
+challenge chrome: RetailAgentOS identity, an "OpenAI WebMCP Challenge" badge, and Run Demo · How It
+Works · Developer Evidence · GitHub · Back to RetailAgentOS. They do not render the normal
+dropdown-heavy company navigation or the large multi-column footer; every other route keeps the
+normal platform navigation and footer. `src/components/layout/AppShell.tsx` picks exactly one
+header and one footer per route, so the two systems are never both present. Judge anchors are
+`#webmcp-mission`, `#why-webmcp`, and `#developer-evidence`; shared naming, links, and the optional
+video URL live in [`src/lib/content/showcaseChrome.ts`](./src/lib/content/showcaseChrome.ts).
+
 ## The demo (Playground)
 
 Three mock merchant archetypes prove one protocol surface supports radically different
@@ -165,7 +181,7 @@ npm run dev
 
 Then open `http://localhost:3000` (or the port `npm run dev` reports) — `/demo` is the
 Playground (context simulator, cart validation, payload inspector with human/JSON toggle),
-`/specs` hosts the spec pages, `/webmcp-showcase` is the WebMCP demo above, and
+`/specs` hosts the spec pages, `/webmcp-showcase` is the WebMCP Live Demo above, and
 `src/app/sandbox/reference/` holds a runnable per-spec cookbook.
 
 > **Note for coding agents:** this repo runs Next.js 16 with breaking changes vs. your

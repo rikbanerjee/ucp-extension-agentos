@@ -47,7 +47,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full bg-slate-50 antialiased`}>
+    // `data-scroll-behavior="smooth"` is required in Next.js 16 for any document that enables
+    // `scroll-behavior: smooth` — the showcase routes do, via `:root:has(.showcase-header)` in
+    // globals.css. Without it Next no longer suspends smooth scrolling during route transitions,
+    // so navigating to or from the demo would animate its jump to the top instead of being instant.
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${geistSans.variable} ${geistMono.variable} h-full bg-slate-50 antialiased`}
+    >
       <body className="flex h-full flex-col font-sans text-slate-900 bg-slate-50">
         <ViewProvider>
           <AppShell>{children}</AppShell>

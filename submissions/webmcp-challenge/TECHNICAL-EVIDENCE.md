@@ -1,6 +1,8 @@
 # Technical evidence
 
-RetailAgentOS is the deterministic merchant-reasoning layer. WebMCP is its native browser action surface at `/webmcp-showcase`; `/agent-ready-storefront` is compatibility-only.
+RetailAgentOS is the deterministic merchant-reasoning layer. WebMCP is its native browser action surface. The judge-facing page is the **RetailAgentOS WebMCP Agent Storefront** at the canonical `/webmcp-showcase` route (navigation label: **WebMCP Live Demo**); `/agent-ready-storefront` is compatibility-only, renders the same single showcase component, and points its canonical metadata at `/webmcp-showcase`.
+
+Both routes use focused challenge chrome instead of the site's normal dropdown navigation and multi-column footer — chosen in one place, `src/components/layout/AppShell.tsx`, so exactly one header and one footer render per route. Judge anchors (`#webmcp-mission`, `#why-webmcp`, `#developer-evidence`) are plain fragment targets: focusable, offset for the sticky header, reduced-motion aware, and never conflated with WebMCP invocation telemetry.
 
 Three planning descriptors register initially through `document.modelContext`: `get_storefront_capabilities`, `search_catalog`, and `evaluate_shopping_plan`. Decision-specific tools are registered and withdrawn dynamically from the seven canonical Phase 1 descriptors; `revise_validated_cart` is an optional post-cart extension, never an eighth Phase 1 tool.
 

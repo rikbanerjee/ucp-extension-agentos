@@ -1,6 +1,8 @@
 # Judge and recording runbook
 
-Open `/webmcp-showcase` on the public HTTPS origin. `/agent-ready-storefront` is compatibility-only.
+Open the **WebMCP Live Demo** at `/webmcp-showcase` on the public HTTPS origin — the RetailAgentOS WebMCP Agent Storefront. `/agent-ready-storefront` is compatibility-only and renders the identical page with the identical focused challenge chrome.
+
+The route's header carries RetailAgentOS identity, an "OpenAI WebMCP Challenge" badge, and Run Demo (`#webmcp-mission`), How It Works (`#why-webmcp`), Developer Evidence (`#developer-evidence`), GitHub, and Back to RetailAgentOS. The hero's "Start the 90-second demo" scrolls to the mission launcher; it never starts native WebMCP or guided replay on its own.
 
 1. Confirm three initial native planning tools register through `document.modelContext` when the browser supports WebMCP.
 2. Use the canonical Fresh Corner weekend-breakfast prompt shown on the page. Search named Farm Eggs and Artisan Sourdough, evaluate the Farm Eggs plan with $30/local delivery, and confirm `STOCK_STALE` / `REPAIRABLE`.

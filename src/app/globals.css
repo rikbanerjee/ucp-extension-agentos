@@ -27,6 +27,35 @@ body {
   z-index: 1;
 }
 
+/* Focused WebMCP-challenge chrome (see src/components/layout/ShowcaseHeader.tsx).
+   Written as plain CSS rather than Tailwind utilities because this build does not
+   reliably emit every position/z-index utility (see the hero note above), and a
+   judge must never lose the Run Demo / Developer Evidence links while scrolling. */
+.showcase-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Anchor targets referenced from the sticky header. `scroll-margin-top` clears the
+   64px header band so a fragment link never parks its heading underneath it. */
+.showcase-anchor {
+  scroll-margin-top: 5rem;
+}
+
+/* Fragment navigation on the showcase routes scrolls smoothly, and only there —
+   `:has()` scopes it to documents that actually render the sticky challenge header,
+   leaving the rest of the site's scrolling behavior untouched. */
+:root:has(.showcase-header) {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:has(.showcase-header) {
+    scroll-behavior: auto;
+  }
+}
+
 @media print {
   nav, footer, .no-print, [aria-label="Readiness Studio steps"] { display: none !important; }
   .print-result { max-width: none !important; }

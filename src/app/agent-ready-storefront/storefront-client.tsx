@@ -12,6 +12,7 @@ import { ShopperApprovalCard, type Approval } from '@/components/showcase/Shoppe
 import { MissionTimeline } from '@/components/showcase/MissionTimeline';
 import { DecisionSummary } from '@/components/showcase/DecisionSummary';
 import { DeveloperEvidence } from '@/components/showcase/DeveloperEvidence';
+import { WhyWebMcp } from '@/components/showcase/WhyWebMcp';
 import { CartRevisionPanel, type DisplayCart, type RevisionState } from '@/components/showcase/CartRevisionPanel';
 import { formatCartLineDisplay } from '@/lib/showcase/cartLineDisplay';
 
@@ -353,11 +354,12 @@ export default function AgentReadyStorefront() {
   const storefrontId = scenario === 'fresh' ? 'fresh-corner' : 'thecustomhub';
   const storefrontSessionId = `${storefrontId}-${generation + 1}`;
 
+  // A plain <div>, not a <main>: AppShell already renders the page's single `main` landmark
+  // around this component, on both the canonical and compatibility routes.
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-sm sm:px-6">
-          <strong>RetailAgentOS · WebMCP retail mission</strong>
           <span>Scenario: <b>{scenario === 'fresh' ? 'Fresh Corner Market' : 'TheCustomHub'}</b></span>
           <button onClick={reset} className="ml-auto inline-flex min-h-9 items-center gap-1 rounded-md border border-slate-300 px-3 font-medium">
             <RefreshCw size={14} /> Reset
@@ -469,6 +471,10 @@ export default function AgentReadyStorefront() {
           </div>
         </div>
 
+        {/* Judge sequence: the business comparison sits after the live mission and before the
+            technical evidence — never above the demo, and never below Developer Evidence. */}
+        <WhyWebMcp />
+
         <DeveloperEvidence
           scenario={scenario}
           storefrontId={storefrontId}
@@ -482,6 +488,6 @@ export default function AgentReadyStorefront() {
           cartRevision={revisionResult}
         />
       </section>
-    </main>
+    </div>
   );
 }

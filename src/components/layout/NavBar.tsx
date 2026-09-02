@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { AUDIENCES } from '@/lib/content/audiences';
 import { DEVELOPER_LINKS, EVIDENCE_LINKS } from '@/lib/content/developerLinks';
+import { SHOWCASE_CANONICAL_PATH, SHOWCASE_NAV_LABEL } from '@/lib/content/showcaseChrome';
 
 type NavLink = { href: string; label: string };
 type NavDropdown = { id: string; label: string; items: NavLink[] };
@@ -193,13 +194,23 @@ export function NavBar() {
           })}
         </nav>
 
-        {/* Primary CTA — desktop only, mirrored inside the mobile drawer below */}
-        <Link
-          href="/see-it-work"
-          className="hidden lg:inline-flex ml-auto items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-        >
-          See it work
-        </Link>
+        {/* Desktop actions — mirrored inside the mobile drawer below. The compact challenge pill
+            sits beside (never instead of) the primary product CTA, so a judge who wanders onto
+            any other page of the site can always get back to the demo in one click. */}
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <Link
+            href={SHOWCASE_CANONICAL_PATH}
+            className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+          >
+            {SHOWCASE_NAV_LABEL}
+          </Link>
+          <Link
+            href="/see-it-work"
+            className="inline-flex items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+          >
+            See it work
+          </Link>
+        </div>
 
         {/* Hamburger — visible on mobile only */}
         <button
@@ -233,6 +244,14 @@ export function NavBar() {
               className="flex items-center justify-center min-h-[44px] mt-1 mb-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
             >
               See it work
+            </Link>
+
+            <Link
+              href={SHOWCASE_CANONICAL_PATH}
+              onClick={close}
+              className="flex items-center justify-center min-h-[44px] mb-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800"
+            >
+              {SHOWCASE_NAV_LABEL}
             </Link>
 
             {navEntries.map((entry) => {
