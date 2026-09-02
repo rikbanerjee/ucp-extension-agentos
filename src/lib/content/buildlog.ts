@@ -39,7 +39,10 @@ export const buildLog: BuildLogEntry[] = [
     proves:
       'A challenge judge can identify, run, understand, and leave the WebMCP demo without meeting the whole company information architecture — and can always find it again from any other page — while the broader RetailAgentOS platform navigation, the business-first story, and every native and guided WebMCP behavior stay exactly as they were.',
     next:
-      'Deploy and run the deployed-origin acceptance walkthrough at https://www.retailagentos.com/webmcp-showcase, including a native browser-agent run. After that native production QA passes, record and publish the WebMCP demo video and configure its public URL. This pass is uncommitted as of Sep 2, 2026.',
+      'Deploy and run the deployed-origin acceptance walkthrough at https://www.retailagentos.com/webmcp-showcase, including a native browser-agent run. After that native production QA passes, record and publish the WebMCP demo video and configure its public URL.',
+    evidence: [
+      { label: '4790f74', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/4790f74', description: 'Focused challenge navigation and page identity (merged to main).' },
+    ],
   },
   {
     id: 'webmcp-correctness-gap-closure-2026',

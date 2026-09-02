@@ -87,6 +87,7 @@ RetailAgentOS's UCP manifest, deterministic engine, external/client adapter seam
 | [`0228160`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/0228160) | Optional `revise_validated_cart` cart-revision extension. |
 | [`5b1603e`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/5b1603e) | Submission-hardening pass: grouped Mission Control telemetry, a completed shopper-approval sequence with correct actor attribution, `CART_PREPARED`/`CART_REVISED`-aware Decision Summary copy, a canonical Farm Eggs title/unit, unit×line-total display in the revised cart, and a 320px layout fix. |
 | [`12f8ba0`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0) | Deterministic native approval-to-cart handoff and lifecycle correctness hardening. |
+| [`4790f74`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/4790f74) | Focused challenge navigation and page identity: route-specific chrome on both showcase routes, a compact challenge footer, canonical shared metadata, judge anchors with accessible focus, a global WebMCP Live Demo link, and optional video-link configuration. |
 
 Native browser WebMCP is shipped for this controlled showcase. A generalized remote/server MCP,
 production authentication, persistence, multi-tenancy, payments, and real merchant control remain

@@ -30,9 +30,10 @@ describe('WebMCP delivery documentation', () => {
       current: true,
       date: 'Sep 2, 2026',
     });
-    // Uncommitted as of Sep 2, 2026 — no evidence commit is claimed, and no SHA is invented.
-    expect(latest.evidence).toBeUndefined();
-    expect(latest.next).toMatch(/uncommitted as of Sep 2, 2026/);
+    expect(latest.evidence?.map(({ label }) => label)).toEqual(['4790f74']);
+    // The remaining work is deployment and the video, not the commit itself.
+    expect(latest.next).toMatch(/deployed-origin acceptance walkthrough/);
+    expect(latest.next).not.toMatch(/uncommitted/);
 
     // The prior correctness-gap-closure pass stays in the log, just no longer marked current.
     const correctnessGap = buildLog.find((entry) => entry.id === 'webmcp-correctness-gap-closure-2026');

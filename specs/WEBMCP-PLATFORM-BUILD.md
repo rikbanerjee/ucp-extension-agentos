@@ -745,9 +745,11 @@ pinned through the full scroll, verified in Chrome at the bottom of the page.
 
 ## Exact next action for a future agent (navigation and page-identity pass)
 
-1. Commit this pass (uncommitted as of 2026-09-02) and update the evidence commit lists in
-   `README.md`, `src/lib/content/buildlog.ts`, and the "Current submission status" section above
-   with the real hash once committed. Do not invent a SHA.
+1. ~~Commit this pass and record its real hash.~~ Done: committed and pushed to `main` as
+   [`4790f74`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/4790f74) on 2026-09-02;
+   `README.md`'s challenge-commit table and `src/lib/content/buildlog.ts`'s evidence list carry that
+   hash. The "Current submission status" section above still predates this pass — fold `4790f74`
+   into it on the next pass that touches it.
 2. Deploy and run the deployed-origin acceptance walkthrough at
    `https://www.retailagentos.com/webmcp-showcase`, including a native browser-agent run.
 3. After that native production QA passes, record and publish the WebMCP demo video and set
