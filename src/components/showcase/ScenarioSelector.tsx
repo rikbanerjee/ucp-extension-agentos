@@ -51,7 +51,7 @@ export function ScenarioProducts({ scenario }: { scenario: Scenario }) {
       </>
     );
   }
-  return <Product title="Custom Robotics Team Shirt" detail="25 shirts · mixed adult sizes · personalized" price="Merchant quote required" warning />;
+  return <Product title="Custom Robotics Team Shirt" detail="25 black shirts · 6 Youth Small · 11 Youth Medium · 8 Youth Large · one-color front logo · Brooklyn delivery requested within 15 days · budget ceiling $500" price="Merchant quote required" warning />;
 }
 
 function Product({ title, detail, price, warning }: { title: string; detail: string; price: string; warning?: boolean }) {

@@ -24,7 +24,7 @@ const freshBudget = { amount: 30, currency: 'USD' } as const;
 const revisedFreshLines = [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }];
 const prompts = {
   fresh: `Build a weekend breakfast cart under $${freshBudget.amount} from Fresh Corner Market using local delivery. Include one dozen Farm Eggs and one Artisan Sourdough Bread loaf. If the Farm Eggs inventory cannot be trusted, show me one merchant-valid substitute, explain the price difference, and wait for my approval. After I approve, prepare the cart for review, but do not check out.`,
-  custom: 'I need 25 customized robotics-team shirts in mixed adult sizes, delivered to Brooklyn within 15 days, with a budget under $500. Use valid merchant pricing, but do not invent a fixed price or place an order if merchant review is required.',
+  custom: 'Request a price quote for 25 black customized robotics-team shirts: 6 Youth Small, 11 Youth Medium, and 8 Youth Large, with a one-color robotics-team logo on the front. Delivery to Brooklyn is requested within 15 days, and the shopper’s budget ceiling is $500. Submit the complete requirements for merchant review, but do not invent a fixed price or delivery promise, create a cart, place an order, initiate payment, or start checkout.',
 };
 
 export default function AgentReadyStorefront() {
@@ -313,7 +313,7 @@ export default function AgentReadyStorefront() {
         await current.invoke('search_catalog', { query: 'robotics', limit: 4 }, controller.signal);
         const evaluated = await current.invoke('evaluate_shopping_plan', { lines: customLines, budget: { amount: 500, currency: 'USD' }, requestedDeliveryWindow: 'Brooklyn within 15 days' }, controller.signal) as unknown as PlanDecision;
         if (evaluated.status === 'QUOTE_REQUIRED') {
-          await current.invoke('request_quote', { productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Mixed adult sizes, robotics-team personalization, delivery to Brooklyn within 15 days (unconfirmed — requires merchant review).', idempotencyKey: `custom-quote-${generation + 1}-${Date.now()}` }, controller.signal);
+          await current.invoke('request_quote', { productId: 'v_customhub_quote_001', quantity: 25, configuration: { color: 'Black', sizeBreakdown: [{ size: 'Youth Small', quantity: 6 }, { size: 'Youth Medium', quantity: 11 }, { size: 'Youth Large', quantity: 8 }], personalization: { placement: 'Front', method: 'One-color robotics-team logo' }, artworkStatus: 'To be supplied after quote request' }, requestedDelivery: { destination: 'Brooklyn, New York', requestedWithinDays: 15 }, budget: { amount: 500, currency: 'USD', isMaximum: true }, requirements: 'Artwork will be supplied after the quote request. Merchant must confirm price, production feasibility, and delivery timing.', idempotencyKey: `custom-quote-${generation + 1}-${Date.now()}` }, controller.signal);
         }
       }
     } finally { setBusy(false); executionRef.current = null; }
@@ -440,9 +440,15 @@ export default function AgentReadyStorefront() {
             )}
             {quote && (
               <div aria-live="polite" className="mt-4 rounded-lg bg-slate-950 p-3 text-white">
-                <b>Merchant quote requested</b>
+                <b>Quote request prepared for merchant review</b>
                 <p className="mt-1 text-sm break-all">Reference: {quote.requestReference}</p>
-                <p className="text-sm">fixedPrice: null · No cart · No order · No checkout</p>
+                <p className="mt-2 text-sm">25 shirts · Black · 6 Youth Small · 11 Youth Medium · 8 Youth Large</p>
+                <p className="text-sm">One-color robotics-team logo · Front · Artwork supplied after quote request</p>
+                <p className="text-sm">Brooklyn, New York · Delivery within 15 days requested — merchant confirmation required</p>
+                <p className="text-sm">Budget ceiling: $500 USD · Fixed price: Not available</p>
+                <p className="mt-2 text-sm font-semibold">fixedPrice: null · No cart · No order · No payment · No checkout</p>
+                <p className="mt-2 text-xs text-slate-300">The $500 amount is the shopper’s budget ceiling, not a merchant quote. The 15-day delivery window is a shopper request, not a merchant promise.</p>
+                <p className="mt-2 text-xs text-slate-300">Authorized controlled fixture. No live TheCustomHub catalog, quote, cart, order, payment, or checkout API is called.</p>
               </div>
             )}
           </section>

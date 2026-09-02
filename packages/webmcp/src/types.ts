@@ -15,7 +15,13 @@ export interface PlanDecision { status: 'ELIGIBLE' | 'REPAIRABLE' | 'BLOCKED' | 
 export interface ReviseCartLine extends PlanLine { title?: string; unitPrice?: number; lineTotal?: number; }
 export interface ReviseCartCart { reference: string; revision: number; lines: ReviseCartLine[]; total: number; currency: string; budget?: { amount: number; currency: string }; remainingBudget?: number; fulfillment?: string; }
 export interface CartResult { storefrontId?: string; storefrontSessionId?: string; cart: { reference: string; revision?: number; lines: Array<PlanLine & { title?: string; price?: number }>; total?: number; currency?: string } | null; code: string; nextAction: string; decision?: PlanDecision; cartCreated?: boolean; orderPlaced?: false; checkoutAvailable: false; checkoutStarted: false; }
-export interface QuoteResult { storefrontId?: string; storefrontSessionId?: string; requestReference: string; status: 'QUOTE_REQUESTED'; code: string; nextAction: string; fixedPrice: null; cartCreated: false; checkoutStarted: false; orderPlaced: false; merchantReviewRequired: true; }
+export interface QuoteSizeLine { size: string; quantity: number; }
+export interface QuotePersonalization { placement: string; method: string; }
+export interface QuoteConfiguration { color: string; sizeBreakdown: QuoteSizeLine[]; personalization: QuotePersonalization; artworkStatus: string; }
+export interface QuoteRequestedDelivery { destination: string; requestedWithinDays: number; }
+export interface QuoteBudget { amount: number; currency: string; isMaximum: boolean; }
+export interface QuoteRequest { productId?: string; quantity: number; configuration?: QuoteConfiguration; requestedDelivery?: QuoteRequestedDelivery; budget?: QuoteBudget; requirements: string; idempotencyKey: string; }
+export interface QuoteResult { storefrontId?: string; storefrontSessionId?: string; requestReference: string; status: 'QUOTE_REQUESTED'; code: string; nextAction: string; fixedPrice: null; deliveryPromise: null; configuration?: QuoteConfiguration; requestedDelivery?: QuoteRequestedDelivery; budget?: QuoteBudget; configuredQuantity?: number; cartCreated: false; checkoutStarted: false; orderPlaced: false; paymentInitiated: false; merchantReviewRequired: true; }
 /** Result of the optional `revise_validated_cart` extension tool. Never a checkout/order/payment result. */
 export interface ReviseCartResult { status: 'REVISED' | 'WITHHELD' | 'REPAIR_REQUIRED' | 'QUOTE_REQUIRED'; code: string; previousCartReference?: string; cart: ReviseCartCart | null; cartCreated: boolean; cartRevised: boolean; checkoutAvailable: false; checkoutStarted: false; orderPlaced: false; paymentInitiated: false; nextAction: string; decision?: PlanDecision; }
 
@@ -26,7 +32,7 @@ export interface RetailAgentGateway {
   findValidAlternatives(input: { decisionId: string; lines: PlanLine[] }, options?: { signal?: AbortSignal }): Promise<{ alternatives: RepairProposal[]; decisionId: string; provenance?: DecisionProvenance }>;
   applyPlanRepair(input: { decisionId: string; repairId: string; lines: PlanLine[]; idempotencyKey: string }, options?: { signal?: AbortSignal }): Promise<{ status: 'APPLIED'; repair: RepairProposal; decision: PlanDecision; lines: PlanLine[] }>;
   prepareValidatedCart(input: { decisionId: string; lines: PlanLine[]; idempotencyKey: string }, options?: { signal?: AbortSignal }): Promise<CartResult>;
-  requestQuote(input: { productId?: string; quantity: number; requirements: string; idempotencyKey: string }, options?: { signal?: AbortSignal }): Promise<QuoteResult>;
+  requestQuote(input: QuoteRequest, options?: { signal?: AbortSignal }): Promise<QuoteResult>;
   /** Optional post-cart revision extension. Absent/unimplemented for storefronts that never expose it (e.g. TheCustomHub). */
   reviseValidatedCart?(input: { cartReference: string; expectedRevision: number; lines: PlanLine[]; idempotencyKey: string }, options?: { signal?: AbortSignal }): Promise<ReviseCartResult>;
 }

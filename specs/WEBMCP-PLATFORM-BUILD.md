@@ -225,7 +225,7 @@ DevTools, while preserving every invariant above.
 - **TheCustomHub delivery-window fix (`src/lib/showcase/gateway.ts`)**: `evaluatePurchasePlan()`
   previously blocked *every* non-empty `requestedDeliveryWindow` with `DELIVERY_WINDOW_UNSUPPORTED`
   before checking whether the line needed a quote — so a correctly-behaving agent asking for
-  TheCustomHub's September 15 delivery got an incorrect dead end instead of `QUOTE_REQUIRED`. The
+  TheCustomHub's requested-within-15-days delivery requirement got an incorrect dead end instead of `QUOTE_REQUIRED`. The
   gateway now evaluates lines first: a quote-only line lets `QUOTE_REQUIRED` win, and the requested
   date is carried forward as a `DELIVERY_WINDOW_MERCHANT_CONFIRMATION_REQUIRED` (`CONDITION`)
   reason — never converted into a promised date or a fabricated price. A fixed-price line with an

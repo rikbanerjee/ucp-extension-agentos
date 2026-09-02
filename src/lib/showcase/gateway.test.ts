@@ -4,6 +4,7 @@ import { ShowcaseInputError } from './gateway';
 
 const now = 1760000000000;
 const freshLines = [{ productId: 'v_g_inv_002_1', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 1 }];
+const customQuote = (idempotencyKey: string) => ({ productId: 'v_customhub_quote_001', quantity: 25, configuration: { color: 'Black', sizeBreakdown: [{ size: 'Youth Small', quantity: 6 }, { size: 'Youth Medium', quantity: 11 }, { size: 'Youth Large', quantity: 8 }], personalization: { placement: 'Front', method: 'One-color robotics-team logo' }, artworkStatus: 'To be supplied after quote request' }, requestedDelivery: { destination: 'Brooklyn, New York', requestedWithinDays: 15 }, budget: { amount: 500, currency: 'USD', isMaximum: true }, requirements: 'Artwork will be supplied after the quote request.', idempotencyKey });
 
 describe('showcase gateway', () => {
   it('keeps controlled storefront capabilities, catalogs, and versions isolated', () => {
@@ -63,15 +64,25 @@ describe('showcase gateway', () => {
     expect(fresh.evaluatePurchasePlan(freshLines, undefined, { requestedDeliveryWindow: 'before 9:15 p.m.' }).code).toBe('DELIVERY_WINDOW_UNSUPPORTED');
   });
   it('never fabricates a custom-order price, cart, order, or checkout', () => {
-    const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session'); const quote = custom.requestQuote({ productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Robotics team shirts', idempotencyKey: 'quote-key-1' });
-    expect(quote).toMatchObject({ fixedPrice: null, cartCreated: false, orderPlaced: false, checkoutStarted: false, merchantReviewRequired: true });
+    const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session'); const quote = custom.requestQuote(customQuote('quote-key-1'));
+    expect(quote).toMatchObject({ fixedPrice: null, deliveryPromise: null, configuredQuantity: 25, cartCreated: false, orderPlaced: false, paymentInitiated: false, checkoutStarted: false, merchantReviewRequired: true });
+  });
+  it('validates the structured custom-apparel configuration and detects changed-payload idempotency reuse', () => {
+    const custom = createShowcaseGateway(now, 'thecustomhub', 'structured-quote');
+    const request = customQuote('structured-quote-key');
+    const first = custom.requestQuote(request); expect(custom.requestQuote(request)).toEqual(first);
+    expect(() => custom.requestQuote({ ...request, configuration: { ...request.configuration, sizeBreakdown: [{ size: 'Youth Small', quantity: 6 }, { size: 'Youth Medium', quantity: 10 }, { size: 'Youth Large', quantity: 8 }] } })).toThrow(ShowcaseInputError);
+    const badColor = { ...customQuote('bad-color-key'), configuration: { ...request.configuration, color: 'Blue' } };
+    expect(() => custom.requestQuote(badColor)).toThrow(ShowcaseInputError);
+    const duplicateSize = { ...customQuote('duplicate-size-key'), configuration: { ...request.configuration, sizeBreakdown: [{ size: 'Youth Small', quantity: 6 }, { size: 'Youth Small', quantity: 11 }, { size: 'Youth Large', quantity: 8 }] } };
+    expect(() => custom.requestQuote(duplicateSize)).toThrow(ShowcaseInputError);
   });
   it('reaches QUOTE_REQUIRED for a quote-only product with a requested delivery date instead of dead-ending on an unsupported window', () => {
     const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session');
     const decision = custom.evaluatePurchasePlan([{ productId: 'v_customhub_quote_001', quantity: 25 }], undefined, { budget: { amount: 500, currency: 'USD' }, requestedDeliveryWindow: 'Brooklyn within 15 days' });
     expect(decision.status).toBe('QUOTE_REQUIRED'); expect(decision.code).toBe('QUOTE_REQUIRED'); expect(decision.allowedNextActions).toEqual(['request_quote']);
     expect(decision.reasons).toContainEqual(expect.objectContaining({ code: 'DELIVERY_WINDOW_MERCHANT_CONFIRMATION_REQUIRED', severity: 'CONDITION' }));
-    const quote = custom.requestQuote({ productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Mixed adult sizes, delivered to Brooklyn within 15 days.', idempotencyKey: 'quote-key-delivery-1' });
+    const quote = custom.requestQuote(customQuote('quote-key-delivery-1'));
     expect(quote).toMatchObject({ fixedPrice: null, cartCreated: false, orderPlaced: false, checkoutStarted: false, merchantReviewRequired: true });
   });
   it('still blocks an unverifiable prose delivery window for a fixed-price product', () => {

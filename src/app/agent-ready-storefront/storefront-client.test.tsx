@@ -178,7 +178,7 @@ describe('AgentReadyStorefront — fake modelContext integration harness', () =>
     await user.click(screen.getByRole('button', { name: /TheCustomHub/i }));
     await waitForRegistration();
     await user.click(screen.getByRole('button', { name: /Watch guided WebMCP mission/i }));
-    await waitFor(() => expect(screen.getByText(/Merchant quote requested/i)).toBeInTheDocument(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByText(/Quote request prepared for merchant review/i)).toBeInTheDocument(), { timeout: 5000 });
     expect(screen.getByText(/fixedPrice: null/i)).toBeInTheDocument();
   });
 
@@ -254,7 +254,7 @@ describe('AgentReadyStorefront — fake modelContext integration harness', () =>
     await user.click(screen.getByRole('button', { name: /TheCustomHub/i }));
     await waitForRegistration();
     await user.click(screen.getByRole('button', { name: /Watch guided WebMCP mission/i }));
-    await waitFor(() => expect(screen.getByText(/Merchant quote requested/i)).toBeInTheDocument(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByText(/Quote request prepared for merchant review/i)).toBeInTheDocument(), { timeout: 5000 });
     expect(registered.has('revise_validated_cart')).toBe(false);
     expect(screen.queryByText(/Optional: See RetailAgentOS govern a cart revision/i)).not.toBeInTheDocument();
   });

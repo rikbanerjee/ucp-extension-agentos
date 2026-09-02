@@ -54,7 +54,8 @@ function Checks({ decision, quote, cart, approvedOnce }: Required<Omit<DecisionS
     <div className="mt-4 space-y-2 text-sm">
       <Check label="Shopper approval" value={approvalText(decision, quote, approvedOnce)} />
       <Check label="Valid price" value={quote ? 'Merchant review required' : eligible ? 'Engine evaluated' : 'Pending'} />
-      <Check label="Current inventory" value={repair ? 'Repair required' : eligible ? 'Current at evaluation' : 'Pending'} />
+      <Check label="Current inventory" value={quote ? 'Pending merchant review' : repair ? 'Repair required' : eligible ? 'Current at evaluation' : 'Pending'} />
+      {quote && <><Check label="Configuration" value="Complete" /><Check label="Requested delivery" value="Merchant confirmation required" /></>}
       <Check label="Cart for review" value={cartText(decision, quote, cart)} />
     </div>
   );
@@ -71,7 +72,7 @@ function Check({ label, value }: { label: string; value: string }) {
 
 function approvalText(decision: PlanDecision | null, quote: QuoteResult | null, approvedOnce: boolean) {
   if (approvedOnce) return 'Approved';
-  if (quote) return 'Not required (merchant review)';
+  if (quote) return 'Not required; merchant review required';
   if (decision) return 'Pending';
   return 'Pending';
 }

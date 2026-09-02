@@ -16,7 +16,7 @@ The canonical demo is at `/webmcp-showcase`; `/agent-ready-storefront` is a comp
 
 Fresh Corner is a controlled fixture. The shopper asks for a weekend breakfast cart under $30 with named Farm Eggs and Artisan Sourdough Bread. Farm Eggs returns `STOCK_STALE`, so cart preparation is withheld. RetailAgentOS offers Cage-Free Eggs, $0.50 more with equivalent local delivery. Only after explicit approval and re-evaluation does `prepare_validated_cart` register; it returns a $15.99 review cart. The optional bread revision returns $24.49 against the $30 budget, with $5.51 remaining. Checkout is never exposed.
 
-TheCustomHub is an authorized controlled quote fixture, not a live backend. Twenty-five custom robotics-team shirts reach `QUOTE_REQUIRED`, dynamically exposing `request_quote`. Its result is `QUOTE_REQUESTED` with `fixedPrice: null`; no cart, order, payment, or checkout is created.
+TheCustomHub is an authorized controlled quote fixture, not a live backend. Twenty-five black robotics-team shirts (6 Youth Small, 11 Youth Medium, 8 Youth Large) with a one-color front logo reach `QUOTE_REQUIRED`, dynamically exposing `request_quote`. The typed request preserves the $500 shopper budget ceiling and delivery request within 15 days, but returns `fixedPrice: null` and `deliveryPromise: null`; no cart, order, payment, or checkout is created.
 
 Native registration is AbortSignal-owned and cleaned up on reset, scenario switch, and unmount. Guided replay uses the exact same descriptors and gateway handlers; its invocation telemetry is `replay`, while browser execution is `native`. A generalized remote/server MCP is designed, not shipped.
 

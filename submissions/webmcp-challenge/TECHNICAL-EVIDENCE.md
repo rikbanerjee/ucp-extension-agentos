@@ -8,4 +8,4 @@ The shared descriptor catalog is `packages/webmcp/src/index.ts`; the controlled 
 
 Fresh Corner's named Farm Eggs plan reaches `STOCK_STALE` / `REPAIRABLE`; shopper approval is outside the engine; the repaired plan reaches a $15.99 review cart. The optional revision is $24.49 of $30 with $5.51 remaining. Checkout, payment, and order placement are never registered.
 
-TheCustomHub is an authorized controlled fixture, not a live merchant backend. It reaches `QUOTE_REQUIRED` and `QUOTE_REQUESTED` with `fixedPrice: null`; no cart, order, payment, or checkout exists. A generalized remote/server MCP remains designed, not shipped.
+TheCustomHub is an authorized controlled fixture, not a live merchant backend. Its structured 25-shirt request preserves black color, youth-size mix, front logo, artwork status, a $500 shopper budget ceiling, and delivery within 15 days requested. It reaches `QUOTE_REQUIRED` / `QUOTE_REQUESTED` with `fixedPrice: null` and `deliveryPromise: null`; no cart, order, payment, or checkout exists. A generalized remote/server MCP remains designed, not shipped.

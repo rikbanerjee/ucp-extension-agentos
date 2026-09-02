@@ -114,7 +114,7 @@ export const buildLog: BuildLogEntry[] = [
       'One seven-tool descriptor catalog drives native registration and replay; phase tools register dynamically and registrations abort on reset, scenario change, and unmount.',
       'A judge-facing Mission Control timeline translates real registration/invocation/decision telemetry into plain retail language, with technical detail progressively disclosed — no hard-coded success sequence.',
       'Guided replay is explicit per invocation (never inferred from browser capability): a guided call is always labelled replay, even when a native model context is present, so the two paths can never be mislabeled as each other.',
-      'TheCustomHub with a requested September 15 delivery date now reaches QUOTE_REQUIRED with the date carried forward as an explicit merchant-confirmation requirement, instead of incorrectly blocking on an unsupported delivery window.',
+      'TheCustomHub with a delivery request within 15 days now reaches QUOTE_REQUIRED with the request carried forward as merchant confirmation required, instead of incorrectly blocking on an unsupported delivery window.',
       'Fresh Corner and TheCustomHub are controlled fixtures. TheCustomHub is quote-only; checkout, payment, order placement, authentication, and marketplace control are not exposed.',
       'The generalized remote/server MCP design remains a separate, unshipped architecture.',
     ],
