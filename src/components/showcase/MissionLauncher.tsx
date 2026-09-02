@@ -40,7 +40,7 @@ export function MissionLauncher({ registering, native, registrationError, prompt
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6">
+    <section id="mission-launcher" className="mx-auto max-w-7xl px-4 pb-6 sm:px-6">
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
           <div className="flex items-center gap-2">

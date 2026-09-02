@@ -16,7 +16,7 @@ export function ScenarioSelector({ scenario, onSelect }: ScenarioSelectorProps) 
       <ScenarioCard
         active={scenario === 'fresh'}
         title="Fresh Corner Market"
-        description="Repair-and-approve mission · Build a valid dinner cart when inventory can't be trusted."
+        description="Breakfast repair-and-approve mission · Recover a safe cart when a named item has stale inventory."
         onClick={() => onSelect('fresh')}
       />
       <ScenarioCard

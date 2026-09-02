@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { RefreshCw, ShoppingCart } from 'lucide-react';
 import { createRetailAgentWebMcp, type PlanDecision, type QuoteResult, type RegistrationSource, type RepairProposal, type ReviseCartResult, type WebMcpRegistration, type WebMcpTelemetryEvent, type WebMcpToolName } from '../../../packages/webmcp/src';
 import { createShowcaseBrowserGateway } from '@/lib/showcase/browser-gateway';
@@ -20,11 +20,11 @@ type MissionMode = 'idle' | 'native' | 'guided';
 
 const freshLines = [{ productId: 'v_g_inv_002_1', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 1 }];
 const customLines = [{ productId: 'v_customhub_quote_001', quantity: 25 }];
-const freshBudget = { amount: 25, currency: 'USD' } as const;
+const freshBudget = { amount: 30, currency: 'USD' } as const;
 const revisedFreshLines = [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }];
 const prompts = {
-  fresh: `Build a dinner-and-lunch cart under $${freshBudget.amount} using Fresh Corner's available local-delivery mode. If inventory cannot be trusted, show me a valid substitute and wait for my approval. Prepare a cart for review, but do not check out.`,
-  custom: 'I need 25 customized robotics-team shirts in mixed adult sizes, delivered to Brooklyn by September 15, with a budget under $500. Use valid merchant pricing, but do not invent a fixed price or place an order if merchant review is required.',
+  fresh: `Build a weekend breakfast cart under $${freshBudget.amount} from Fresh Corner Market using local delivery. Include one dozen Farm Eggs and one Artisan Sourdough Bread loaf. If the Farm Eggs inventory cannot be trusted, show me one merchant-valid substitute, explain the price difference, and wait for my approval. After I approve, prepare the cart for review, but do not check out.`,
+  custom: 'I need 25 customized robotics-team shirts in mixed adult sizes, delivered to Brooklyn within 15 days, with a budget under $500. Use valid merchant pricing, but do not invent a fixed price or place an order if merchant review is required.',
 };
 
 export default function AgentReadyStorefront() {
@@ -91,7 +91,28 @@ export default function AgentReadyStorefront() {
   // scoped to this mission's registration/generation, cleared on reset/scenario change, and released
   // on a failed/cancelled attempt that produced no cart so an explicit retry is possible.
   const cartPreparationInFlightRef = useRef(false);
+  const missionControlRef = useRef<HTMLDivElement>(null);
+  const approvalRef = useRef<HTMLDivElement>(null);
+  const approvalHeadingRef = useRef<HTMLHeadingElement>(null);
+  const cartRefElement = useRef<HTMLDivElement>(null);
+  const scrollWorkRef = useRef<number | null>(null);
   useEffect(() => { cartRef.current = cart; }, [cart]);
+
+  const guideViewport = useCallback((target: RefObject<HTMLElement | null>) => {
+    if (typeof window === 'undefined' || !target.current) return;
+    if (scrollWorkRef.current !== null) window.cancelAnimationFrame(scrollWorkRef.current);
+    scrollWorkRef.current = window.requestAnimationFrame(() => {
+      const element = target.current;
+      if (!element) return;
+      const bounds = element.getBoundingClientRect();
+      const outside = bounds.bottom < 0 || bounds.top > window.innerHeight;
+      if (outside) element.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      element.focus({ preventScroll: true });
+      scrollWorkRef.current = null;
+    });
+  }, []);
+
+  useEffect(() => () => { if (scrollWorkRef.current !== null) window.cancelAnimationFrame(scrollWorkRef.current); }, []);
 
   const reset = useCallback(() => {
     executionRef.current?.abort();
@@ -107,6 +128,20 @@ export default function AgentReadyStorefront() {
     setGeneration((value) => value + 1);
   }, [approval]);
   const switchScenario = (next: Scenario) => { if (next === scenario) return; setScenario(next); reset(); };
+
+  useEffect(() => {
+    if (mode === 'guided' && busy) guideViewport(missionControlRef);
+  }, [busy, guideViewport, mode]);
+  useEffect(() => {
+    if (approval) {
+      guideViewport(approvalRef);
+      const focusWork = window.requestAnimationFrame(() => approvalHeadingRef.current?.focus({ preventScroll: true }));
+      return () => window.cancelAnimationFrame(focusWork);
+    }
+  }, [approval, guideViewport]);
+  useEffect(() => {
+    if (cart) guideViewport(cartRefElement);
+  }, [cart, guideViewport]);
 
   useEffect(() => {
     let disposed = false;
@@ -257,14 +292,14 @@ export default function AgentReadyStorefront() {
   async function runGuidedMission() {
     const current = registrationRef.current;
     if (!current) return;
-    setBusy(true); setDecision(null); setCart(null); setQuote(null);
+    setMode('guided'); setBusy(true); setDecision(null); setCart(null); setQuote(null);
     setRevisionState('idle'); setRevisionResult(null); setPreviousCart(null);
     setApprovedProposal(null); setCartInvocationSource(null); setCartOutcome(null);
     const controller = new AbortController(); executionRef.current = controller;
     try {
       await current.invoke('get_storefront_capabilities', {}, controller.signal);
       if (scenario === 'fresh') {
-        await current.invoke('search_catalog', { query: 'eggs', limit: 4 }, controller.signal);
+        await current.invoke('search_catalog', { query: 'Farm Eggs', limit: 4 }, controller.signal);
         const evaluated = await current.invoke('evaluate_shopping_plan', { lines: freshLines, budget: freshBudget, fulfillmentMode: 'local_delivery', substitutionsAllowed: true }, controller.signal) as unknown as PlanDecision;
         if (evaluated.status === 'REPAIRABLE') await current.invoke('find_valid_alternatives', { decisionId: evaluated.decisionId, lines: freshLines }, controller.signal);
         const repair = evaluated.alternatives[0];
@@ -276,9 +311,9 @@ export default function AgentReadyStorefront() {
         }
       } else {
         await current.invoke('search_catalog', { query: 'robotics', limit: 4 }, controller.signal);
-        const evaluated = await current.invoke('evaluate_shopping_plan', { lines: customLines, budget: { amount: 500, currency: 'USD' }, requestedDeliveryWindow: 'Brooklyn by September 15' }, controller.signal) as unknown as PlanDecision;
+        const evaluated = await current.invoke('evaluate_shopping_plan', { lines: customLines, budget: { amount: 500, currency: 'USD' }, requestedDeliveryWindow: 'Brooklyn within 15 days' }, controller.signal) as unknown as PlanDecision;
         if (evaluated.status === 'QUOTE_REQUIRED') {
-          await current.invoke('request_quote', { productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Mixed adult sizes, robotics-team personalization, delivery to Brooklyn by September 15 (unconfirmed — requires merchant review).', idempotencyKey: `custom-quote-${generation + 1}-${Date.now()}` }, controller.signal);
+          await current.invoke('request_quote', { productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Mixed adult sizes, robotics-team personalization, delivery to Brooklyn within 15 days (unconfirmed — requires merchant review).', idempotencyKey: `custom-quote-${generation + 1}-${Date.now()}` }, controller.signal);
         }
       }
     } finally { setBusy(false); executionRef.current = null; }
@@ -347,28 +382,32 @@ export default function AgentReadyStorefront() {
       />
 
       <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6">
+        {mode === 'guided' && busy && <p aria-live="polite" className="mb-3 rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-900">Reading storefront capabilities · Searching the catalog · Evaluating merchant rules</p>}
         <div className="grid gap-4 lg:grid-cols-12">
           <section className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-4">
             <h2 className="font-bold text-slate-900">Shopper & storefront</h2>
             <div className="mt-3 space-y-2">
               <ScenarioProducts scenario={scenario} />
             </div>
-            <ShopperApprovalCard
-              approval={approval}
-              approvedProposal={approvedProposal}
-              cartCapabilityUnlocked={cartCapabilityUnlocked}
-              cartPrepared={Boolean(cart)}
-              invocationSource={cartInvocationSource}
-              recoveryPhase={recoveryPhase}
-              onCopyContinuationPrompt={copyContinuationPrompt}
-              onGuidedFallback={runGuidedFallback}
-              guidedFallbackDisabled={fallbackBusy || cartPreparationState === 'invoking' || Boolean(cart)}
-              cartPreparationState={cartPreparationState}
-              fallbackError={fallbackError}
-            />
+            <div ref={approvalRef} tabIndex={-1} className="outline-none">
+              <ShopperApprovalCard
+                approval={approval}
+                approvalHeadingRef={approvalHeadingRef}
+                approvedProposal={approvedProposal}
+                cartCapabilityUnlocked={cartCapabilityUnlocked}
+                cartPrepared={Boolean(cart)}
+                invocationSource={cartInvocationSource}
+                recoveryPhase={recoveryPhase}
+                onCopyContinuationPrompt={copyContinuationPrompt}
+                onGuidedFallback={runGuidedFallback}
+                guidedFallbackDisabled={fallbackBusy || cartPreparationState === 'invoking' || Boolean(cart)}
+                cartPreparationState={cartPreparationState}
+                fallbackError={fallbackError}
+              />
+            </div>
             {cart && (
-              <div aria-live="polite" data-cart-reference={cart.reference} data-cart-revision={cart.revision ?? 1} className="mt-4 rounded-lg bg-emerald-50 p-3">
-                <b className="flex items-center gap-1 text-emerald-900"><ShoppingCart size={16} /> Validated cart prepared</b>
+              <div ref={cartRefElement} tabIndex={-1} aria-live="polite" data-cart-reference={cart.reference} data-cart-revision={cart.revision ?? 1} className="mt-4 rounded-lg bg-emerald-50 p-3 outline-none">
+                <h2 className="flex items-center gap-1 font-bold text-emerald-900"><ShoppingCart size={16} /> Validated cart prepared</h2>
                 {cart.lines.map((line) => {
                   const { unitPriceLabel, totalLabel, showLineTotal } = formatCartLineDisplay(line);
                   return (
@@ -379,21 +418,25 @@ export default function AgentReadyStorefront() {
                 })}
                 <p className="mt-2 text-sm font-semibold text-emerald-900">Total: ${cart.total?.toFixed(2)} {cart.currency}</p>
                 <p className="mt-1 text-xs text-emerald-800">Checkout is unavailable.</p>
+                <p className="mt-3 text-sm text-emerald-900">Stale inventory blocked the original Farm Eggs. The shopper approved a $0.50 merchant-valid substitute. RetailAgentOS prepared a validated ${cart.total?.toFixed(2)} breakfast cart. Checkout remains unavailable.</p>
               </div>
             )}
             {scenario === 'fresh' && cart && (
-              <CartRevisionPanel
-                visible
-                native={native}
-                registering={registering}
-                revisionState={revisionState}
-                revisionGuidedActive={mode === 'guided' && (revisionBusy || revisionState === 'revised' || revisionState === 'withheld' || revisionState === 'requires_approval')}
-                revisionBusy={revisionBusy}
-                cart={cart}
-                previousCart={previousCart}
-                withheldReason={revisionResult && revisionResult.status !== 'REVISED' ? revisionResult.nextAction : null}
-                onRunGuidedRevision={runGuidedCartRevision}
-              />
+              <>
+                <button type="button" onClick={() => switchScenario('custom')} className="mt-4 text-left text-sm font-semibold text-emerald-800 underline underline-offset-2">Next: See why custom retail cannot always use a normal cart</button>
+                <CartRevisionPanel
+                  visible
+                  native={native}
+                  registering={registering}
+                  revisionState={revisionState}
+                  revisionGuidedActive={mode === 'guided' && (revisionBusy || revisionState === 'revised' || revisionState === 'withheld' || revisionState === 'requires_approval')}
+                  revisionBusy={revisionBusy}
+                  cart={cart}
+                  previousCart={previousCart}
+                  withheldReason={revisionResult && revisionResult.status !== 'REVISED' ? revisionResult.nextAction : null}
+                  onRunGuidedRevision={runGuidedCartRevision}
+                />
+              </>
             )}
             {quote && (
               <div aria-live="polite" className="mt-4 rounded-lg bg-slate-950 p-3 text-white">
@@ -404,7 +447,7 @@ export default function AgentReadyStorefront() {
             )}
           </section>
 
-          <div className="lg:col-span-5">
+          <div ref={missionControlRef} tabIndex={-1} className="outline-none lg:col-span-5">
             <MissionTimeline
               events={events}
               native={native}

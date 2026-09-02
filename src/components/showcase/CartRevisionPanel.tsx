@@ -8,7 +8,7 @@ export interface DisplayCartLine { productId: string; quantity: number; title?: 
 export interface DisplayCart { reference: string; revision?: number; lines: DisplayCartLine[]; total?: number; currency?: string; budget?: { amount: number; currency: string }; remainingBudget?: number; fulfillment?: string; }
 export type RevisionState = 'idle' | 'available' | 'revising' | 'revised' | 'withheld' | 'requires_approval' | 'error';
 
-export const CART_REVISION_PROMPT = 'Using the registered WebMCP tools, revise the prepared Fresh Corner cart to contain two Artisan Sourdough Bread loaves. Keep the Cage-Free Eggs, stay under $25, preserve local delivery, and do not check out.';
+export const CART_REVISION_PROMPT = 'Using the registered WebMCP tools, revise the prepared Fresh Corner cart to contain two Artisan Sourdough Bread loaves. Keep the Cage-Free Eggs, stay under $30, preserve local delivery, and do not check out.';
 
 interface CartRevisionPanelProps {
   visible: boolean;
@@ -48,7 +48,7 @@ export function CartRevisionPanel({ visible, native, registering, revisionState,
       <h2 id="cart-revision-heading" className="font-bold text-slate-800">Optional: See RetailAgentOS govern a cart revision</h2>
       <p className="mt-2 text-sm text-slate-600">
         Ask the browser agent to increase the bread quantity. WebMCP proposes the revised cart;
-        RetailAgentOS checks inventory, price, fulfillment, and the original $25 budget before
+        RetailAgentOS checks inventory, price, fulfillment, and the original $30 budget before
         allowing the change.
       </p>
 

@@ -4,16 +4,14 @@
 browser action, and RetailAgentOS's deterministic engine decides what that action is allowed to be.**
 
 - **Live demo:** [www.retailagentos.com/webmcp-showcase](https://www.retailagentos.com/webmcp-showcase)
-- **Video:** `[VIDEO LINK]`
+- **Video:** published after the final native WebMCP recording; no placeholder link is rendered.
 
 ## Test prompt
 
 Paste this into the browser agent (or use the page's own "Watch guided mission" button if no
 WebMCP-capable agent is connected):
 
-> Build a dinner-and-lunch cart under $25 using Fresh Corner's available local-delivery mode. If
-> inventory cannot be trusted, show me a valid substitute and wait for my approval. Prepare a cart
-> for review, but do not check out.
+> Build a weekend breakfast cart under $30 from Fresh Corner Market using local delivery. Include one dozen Farm Eggs and one Artisan Sourdough Bread loaf. If the Farm Eggs inventory cannot be trusted, show me one merchant-valid substitute, explain the price difference, and wait for my approval. After I approve, prepare the cart for review, but do not check out.
 
 ## What the human and the agent do together
 
@@ -22,7 +20,7 @@ RetailAgentOS to evaluate the shopping plan. When the engine finds the eggs' inv
 it doesn't fail — it proposes a merchant-valid substitute (Cage-Free Eggs) and pauses. **The human
 shopper approves or declines that substitute** — a real click, never auto-approved and never
 inferred. Only after approval does the agent invoke `prepare_validated_cart`, and only because
-RetailAgentOS revalidated inventory, price, fulfillment, and the $25 budget does a cart actually
+RetailAgentOS revalidated inventory, price, fulfillment, and the $30 budget does a cart actually
 appear. The agent can optionally ask RetailAgentOS to revise that cart (e.g. "make it two loaves of
 bread"); the engine re-checks everything again before replacing it. Checkout is never registered as
 a tool — the mission stops at a prepared cart.
@@ -82,7 +80,8 @@ RetailAgentOS's UCP manifest, deterministic engine, external/client adapter seam
 | [`e464bb8`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/e464bb8) | Showcase hardening and explicit lifecycle evidence. |
 | [`d9a5eb5`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/d9a5eb5) | Judge-facing UX rework and native-vs-replay telemetry truthfulness fixes. |
 | [`0228160`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/0228160) | Optional `revise_validated_cart` cart-revision extension. |
-| *pending/uncommitted* | Submission-hardening pass: grouped Mission Control telemetry, a completed shopper-approval sequence with correct actor attribution, `CART_PREPARED`/`CART_REVISED`-aware Decision Summary copy, a canonical Farm Eggs title/unit, unit×line-total display in the revised cart, and a 320px layout fix. See `specs/WEBMCP-PLATFORM-BUILD.md`'s "Submission-hardening pass" section for the full record. |
+| [`5b1603e`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/5b1603e) | Submission-hardening pass: grouped Mission Control telemetry, a completed shopper-approval sequence with correct actor attribution, `CART_PREPARED`/`CART_REVISED`-aware Decision Summary copy, a canonical Farm Eggs title/unit, unit×line-total display in the revised cart, and a 320px layout fix. |
+| [`12f8ba0`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0) | Deterministic native approval-to-cart handoff and lifecycle correctness hardening. |
 
 Native browser WebMCP is shipped for this controlled showcase. A generalized remote/server MCP,
 production authentication, persistence, multi-tenancy, payments, and real merchant control remain

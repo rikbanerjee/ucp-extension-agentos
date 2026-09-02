@@ -194,7 +194,7 @@ function describeMissionEvent(event: WebMcpTelemetryEvent, groupSize = 1): strin
     if (tool === 'search_catalog') return 'Catalog search complete';
     if (tool === 'revise_validated_cart') {
       if (event.decisionCode === 'CART_REVISED') return 'RetailAgentOS reevaluated the proposed lines — revised cart prepared for review';
-      if (event.decisionCode === 'BUDGET_EXCEEDED') return 'The revision exceeded the $25 budget — revision withheld, existing cart kept';
+      if (event.decisionCode === 'BUDGET_EXCEEDED') return 'The revision exceeded the $30 budget — revision withheld, existing cart kept';
       if (event.decisionCode === 'STOCK_STALE') return 'The revision hit stale inventory — a new repair requires shopper approval';
       if (event.decisionCode === 'QUOTE_REQUIRED') return 'The revision requires a merchant quote — existing cart kept';
       return 'RetailAgentOS reevaluated the proposed cart revision';

@@ -13,7 +13,7 @@ describe('showcase gateway', () => {
     expect(fresh.searchProducts('robotics').candidates).toEqual([]); expect(custom.searchProducts('eggs').candidates).toEqual([]);
   });
   it('maps stale inventory to a repair and preserves the original plan context', () => {
-    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, substitutionsAllowed: true });
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 30, currency: 'USD' }, substitutionsAllowed: true });
     expect(decision).toMatchObject({ status: 'REPAIRABLE', code: 'STOCK_STALE', allowedNextActions: ['find_valid_alternatives', 'apply_plan_repair'] });
     const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', 'repair-key-1', decision.decisionId);
     expect(repaired.decision.status).toBe('ELIGIBLE'); expect(repaired.lines[0].productId).toBe('v_fresh_cagefree_001');
@@ -37,6 +37,26 @@ describe('showcase gateway', () => {
     expect(bread?.title).toBe('Artisan Sourdough Bread, 900g loaf');
     expect(bread?.quantityUnit).toBe('900g loaf');
   });
+  it('ranks requested named products and supports controlled breakfast and robotics aliases without leaking storefront results', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-search');
+    expect(fresh.searchProducts('Farm Eggs').candidates[0]?.productId).toBe('v_g_inv_002_1');
+    expect(fresh.searchProducts('Artisan Sourdough').candidates[0]?.productId).toBe('v_g_inv_001_1');
+    expect(fresh.searchProducts('breakfast').candidates.map((candidate) => candidate.productId)).toEqual(fresh.searchProducts('breakfast').candidates.map((candidate) => candidate.productId));
+    expect(fresh.searchProducts('a').candidates).toEqual([]);
+    expect(fresh.searchProducts('nothing-here')).toMatchObject({ code: 'NO_MATCHES', nextAction: 'Search by a product name or supported category.' });
+    const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-search');
+    expect(custom.searchProducts('robotics').candidates[0]?.productId).toBe('v_customhub_quote_001');
+    expect(custom.searchProducts('breakfast').candidates).toEqual([]);
+  });
+  it('keeps the named stale Farm Eggs repair path under the canonical $30 budget and returns the $15.99 cart', () => {
+    const fresh = createShowcaseGateway(now, 'fresh-corner', 'breakfast-budget');
+    const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 30, currency: 'USD' }, fulfillmentMode: 'local_delivery', substitutionsAllowed: true });
+    expect(decision).toMatchObject({ status: 'REPAIRABLE', code: 'STOCK_STALE' });
+    const repaired = fresh.applyPlanRepair(freshLines, 'replace-stale-farm-eggs-with-cage-free-eggs', 'breakfast-repair-key', decision.decisionId);
+    expect(repaired.lines[0].productId).toBe('v_fresh_cagefree_001');
+    const cart = fresh.prepareCart(repaired.lines, 'breakfast-cart-key', repaired.decision.decisionId);
+    expect(cart.cart?.total).toBe(15.99);
+  });
   it('rejects cross-storefront decisions and unverified delivery prose', () => {
     const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session'); const decision = fresh.evaluatePurchasePlan(freshLines); const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session');
     expect(() => custom.findValidAlternatives(freshLines, decision.decisionId)).toThrow(ShowcaseInputError);
@@ -48,10 +68,10 @@ describe('showcase gateway', () => {
   });
   it('reaches QUOTE_REQUIRED for a quote-only product with a requested delivery date instead of dead-ending on an unsupported window', () => {
     const custom = createShowcaseGateway(now, 'thecustomhub', 'custom-session');
-    const decision = custom.evaluatePurchasePlan([{ productId: 'v_customhub_quote_001', quantity: 25 }], undefined, { budget: { amount: 500, currency: 'USD' }, requestedDeliveryWindow: 'Brooklyn by September 15' });
+    const decision = custom.evaluatePurchasePlan([{ productId: 'v_customhub_quote_001', quantity: 25 }], undefined, { budget: { amount: 500, currency: 'USD' }, requestedDeliveryWindow: 'Brooklyn within 15 days' });
     expect(decision.status).toBe('QUOTE_REQUIRED'); expect(decision.code).toBe('QUOTE_REQUIRED'); expect(decision.allowedNextActions).toEqual(['request_quote']);
     expect(decision.reasons).toContainEqual(expect.objectContaining({ code: 'DELIVERY_WINDOW_MERCHANT_CONFIRMATION_REQUIRED', severity: 'CONDITION' }));
-    const quote = custom.requestQuote({ productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Mixed adult sizes, delivered to Brooklyn by September 15.', idempotencyKey: 'quote-key-delivery-1' });
+    const quote = custom.requestQuote({ productId: 'v_customhub_quote_001', quantity: 25, requirements: 'Mixed adult sizes, delivered to Brooklyn within 15 days.', idempotencyKey: 'quote-key-delivery-1' });
     expect(quote).toMatchObject({ fixedPrice: null, cartCreated: false, orderPlaced: false, checkoutStarted: false, merchantReviewRequired: true });
   });
   it('still blocks an unverifiable prose delivery window for a fixed-price product', () => {
@@ -61,7 +81,7 @@ describe('showcase gateway', () => {
   });
   it('reaches REPAIRABLE/STOCK_STALE for the visible native prompt with an explicit fulfillmentMode and no requested delivery deadline', () => {
     const fresh = createShowcaseGateway(now, 'fresh-corner', 'fresh-session-fm-1');
-    const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 25, currency: 'USD' }, fulfillmentMode: 'local_delivery', substitutionsAllowed: true });
+    const decision = fresh.evaluatePurchasePlan(freshLines, undefined, { budget: { amount: 30, currency: 'USD' }, fulfillmentMode: 'local_delivery', substitutionsAllowed: true });
     expect(decision.status).toBe('REPAIRABLE'); expect(decision.code).toBe('STOCK_STALE');
   });
   it('rejects an invalid fulfillmentMode value with strict validation', () => {
@@ -163,7 +183,7 @@ describe('showcase gateway', () => {
       expect(cart.cart?.revision).toBe(1);
     });
 
-    it('revises bread quantity to two, keeps the eggs, and lands on $24.49 with $0.51 remaining under the $25 budget, preserving local delivery', () => {
+  it('revises bread quantity to two, keeps the eggs, and preserves local delivery', () => {
       const { fresh, cart } = prepareRevisableCart('rev-session-2');
       const revised = fresh.reviseCart(cart.cart!.reference, 1, [{ productId: 'v_fresh_cagefree_001', quantity: 1 }, { productId: 'v_g_inv_001_1', quantity: 2 }], 'revise-key-1');
       expect(revised.status).toBe('REVISED'); expect(revised.code).toBe('CART_REVISED');

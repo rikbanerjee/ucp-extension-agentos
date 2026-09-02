@@ -297,7 +297,7 @@ back-compat alias of `CANONICAL_PHASE_1_TOOLS` so existing imports keep working 
   observed, previous/revised cart reference+revision, and the four false checkout/order/payment
   flags) that only appears once the extension has actually been registered or invoked.
 - **Verified controlled result.** Revising the $15.99 Fresh Corner cart to keep 1× Cage-Free Eggs and
-  raise Artisan Sourdough Bread to 2× lands on total $24.49, remaining budget $0.51 (of $25.00),
+  raise Artisan Sourdough Bread to 2× lands on total $24.49, remaining budget $5.51 (of $30.00),
   `fulfillment: LOCAL_DELIVERY`, cart revision 2, and `checkoutAvailable`/`checkoutStarted`/
   `orderPlaced`/`paymentInitiated` all `false` — confirmed both via a direct `/api/showcase/carts/revise`
   curl round trip through the running dev server and via a live Chrome walkthrough of the guided path
@@ -390,7 +390,7 @@ and `/agent-ready-storefront`): clean. Manual QA: no horizontal overflow at 320�
 this pass's scope) was found and is noted under "Known limitations" for a future pass. No console
 errors or hydration warnings during a full native `document.modelContext` walkthrough in Chrome
 (Fresh Corner: evaluate → stale-inventory repair → shopper approval → `CART_PREPARED` → `revise_validated_cart`
-→ `CART_REVISED`, $24.49 total, $0.51 remaining budget) against the local dev server — this was
+→ `CART_REVISED`, $24.49 total, $5.51 remaining budget) against the local dev server — this was
 **not** verified against the deployed `https://www.retailagentos.com` origin; that remains the exact
 next action below.
 
