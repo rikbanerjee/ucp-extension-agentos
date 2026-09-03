@@ -4,57 +4,113 @@
 
 Connect a store once so its catalog and selling rules are understandable and safely operable by AI agents across UCP, MCP, WebMCP, feeds, Schema.org, and a human storefront. Retailers should be able to prepare inputs and receive an implementation package without writing protocol code.
 
-## Current submission status (2026-09-01)
+## Current submission status (2026-09-02)
 
-This is the single authoritative summary of what is shipped, verified, and still unshipped as of the
-native-handoff-hardening pass. Every other document (`README.md`, `AGENTS.md`, `CLAUDE.md`,
-`src/lib/content/buildlog.ts`, `submissions/webmcp-challenge/*`) must agree with this section — if one
-of them contradicts this, this file wins and the other should be corrected.
+This is the single authoritative summary of what is shipped, verified, and still unshipped. Every
+other document (`README.md`, `AGENTS.md`, `CLAUDE.md`, `src/lib/content/buildlog.ts`,
+`submissions/webmcp-challenge/*`) must agree with this section — if one of them contradicts this,
+this file wins and the other should be corrected. The per-pass sections further down this file are
+**historical records**: each describes the state at the moment that pass was written, and several of
+them say "uncommitted" because that was true then. This section, not those sections, describes the
+current state.
 
-- **Shipped and verified, committed on `main` as `5b1603e`**: native browser WebMCP registration and
-  invocation at `/webmcp-showcase` (canonical route; `/agent-ready-storefront` is a compatibility
-  alias) — confirmed live against a real `document.modelContext` in Chrome (native
-  `registerTool`/`executeTool`), not feature detection alone. Guided replay of the identical seven
-  canonical descriptors plus the optional `revise_validated_cart` extension. Grouped, business-readable
-  Mission Control telemetry with the full raw event log preserved in Developer Evidence.
-  `CART_PREPARED`/`CART_REVISED`-aware Decision Summary copy. A single canonical Farm Eggs product
-  title/unit sourced from the showcase fixture. Unit-price × quantity = line-total display in the
-  revised cart. No horizontal overflow at 320px.
-- **Uncommitted, on branch `webmcp-native-handoff-hardening`**: the post-approval native handoff is
-  now deterministic by construction — `packages/webmcp/src/index.ts` fully registers and awaits every
-  next-phase tool before the triggering tool's `execute()` call returns, closing a registration race
-  that let one cross-agent (ChatGPT browser-agent) run stop right after shopper approval. The shopper
-  approval card's sequence is reordered to the true chronology (approval → capability registered →
-  `prepare_validated_cart` invocation → RetailAgentOS validation), `apply_plan_repair`'s result carries
-  a top-level continuation contract, and an explicit, truthfully-labelled ("Guided fallback · Same
-  RetailAgentOS handler · External browser agent paused", always `source: 'replay'`) cross-agent
-  recovery path appears if ~5s pass with no invocation. Also fixes the previously-failing
-  `@retailagentos/platform-contracts` standalone declaration build and a 768px tablet nav-overflow bug.
-  See "Native handoff hardening pass" below for the full detail and exact verification commands/results.
-- **Uncommitted, same branch — correctness-gap closure pass (2026-09-01, this section)**: closes four
-  gaps the native-handoff-hardening pass's own report left open — see "Correctness-gap closure pass"
-  below for full detail. In short: server-side cart-preparation idempotency now has a second, trusted
-  layer in `ShowcaseGateway.prepareCart` (keyed by decision, not just the caller's idempotency key);
-  `packages/webmcp`'s `dispose()` now always aborts every controller, including a still-pending
-  superseded-phase one, even mid-cleanup; the prior pass's weak stale-cleanup test is replaced with a
-  real REPAIRABLE → ELIGIBLE → REPAIRABLE transition against a fake registry that rejects duplicate
-  registrations; and a failed guided-fallback cart preparation is now explicitly retryable instead of
-  permanently stuck.
-- **Designed, not shipped**: a generalized remote/server MCP integration path.
-- **Not live**: TheCustomHub's live catalog/quote/cart/order backend — the scenario is a functionally
-  live, controlled WebMCP demonstration against a server-bound fixture, not a connection to a real
-  TheCustomHub system.
-- **Test baseline**: 573/573 passing as of the correctness-gap closure pass (up from 568/568 at the end
-  of the native-handoff-hardening pass, which itself started at 562/562 inherited from the committed
-  submission-hardening work). `npx tsc --noEmit`, targeted ESLint, `@retailagentos/engine`,
-  `@retailagentos/platform-contracts`, `@retailagentos/webmcp`, and `next build` all complete cleanly —
-  see "Correctness-gap closure pass" below for the exact commands and results.
-- **Historical note**: native browser WebMCP delivery is challenge-period work (commits `92753e5`,
-  `d094e12`, `e464bb8`, plus the judge-facing/truthfulness pass `d9a5eb5`, the optional cart-revision
-  extension `0228160`, and the submission-hardening pass `5b1603e`). The native-handoff-hardening pass
-  documented below builds on that committed work but is itself not yet committed. The UCP
-  manifest/specs, deterministic engine, and projections predate the challenge — see "Challenge
-  provenance" in `README.md`.
+### Shipped and committed on `main`
+
+Everything below is committed on `main` as of `b0550a8`. Nothing in the WebMCP delivery is sitting
+uncommitted in a working tree.
+
+- **Native `document.modelContext` registration and invocation at `/webmcp-showcase`** — the
+  canonical route — confirmed live against a real `document.modelContext` in Chrome (native
+  `registerTool`/`executeTool`), not feature detection alone.
+- **`/agent-ready-storefront` compatibility route** rendering the same single showcase component and
+  pointing its canonical metadata at `/webmcp-showcase`.
+- **Seven canonical Phase 1 WebMCP descriptors** — `get_storefront_capabilities`, `search_catalog`,
+  `evaluate_shopping_plan`, `find_valid_alternatives`, `apply_plan_repair`, `prepare_validated_cart`,
+  `request_quote` — with three planning tools registered initially and the rest registered
+  dynamically as the engine permits.
+- **Optional post-cart `revise_validated_cart` extension**, registered only after a Fresh Corner cart
+  exists. It is not part of the original seven-tool Phase 1 catalog.
+- **Native/replay handler parity**: guided replay calls the identical descriptors and gateway
+  handlers, with per-invocation `source` attribution (`native` for real browser execution, `replay`
+  for `registration.invoke()`).
+- **`AbortSignal`-owned registration lifecycle**, cleaned up on reset, scenario switch, and unmount.
+- **Deterministic post-approval handoff**: every next-phase tool is registered and awaited *before*
+  the triggering tool's `execute()` returns, with per-tool generation tokens so a deferred cleanup can
+  never remove a newer same-named registration.
+- **Cross-agent guided recovery**: explicit, shopper-click-only, always tagged `source: 'replay'`,
+  single-flight guarded, and never described as native WebMCP.
+- **Trusted server-side cart idempotency**: a second, decision-scoped layer (`cartsByDecision`) in
+  `ShowcaseGateway.prepareCart` with a canonical order-independent line fingerprint, independent of
+  the unchanged caller-supplied-idempotency-key cache.
+- **Recoverable failed cart preparation**: a failed or cancelled attempt that produced no cart
+  releases the single-flight lock and offers an explicit, never-automatic retry.
+- **Fresh Corner breakfast mission**: the $30 named Farm Eggs journey — `STOCK_STALE`, shopper
+  approval of Cage-Free Eggs, a $15.99 review cart, and an optional $24.49 revision leaving $5.51.
+- **Structured TheCustomHub quote workflow**: the typed 25-shirt configuration reaching
+  `QUOTE_REQUIRED` / `QUOTE_REQUESTED` with `fixedPrice: null` and `deliveryPromise: null`.
+- **Focused challenge navigation and page identity**: route-specific challenge header/footer chosen
+  once in `AppShell.tsx`, shared canonical metadata for both routes, judge anchors, and a global
+  "WebMCP Live Demo" link.
+- **Public YouTube demonstration video** (see below).
+
+### Published video
+
+- **URL**: https://youtu.be/aIScR90pSb0
+- The application reads the production video URL through `NEXT_PUBLIC_WEBMCP_VIDEO_URL`; the "Watch
+  video" action renders only when that variable holds a real absolute `https:` URL. No placeholder
+  remains anywhere in the submission surfaces.
+
+### Deployed, but final native acceptance still pending
+
+- The public application exists at https://www.retailagentos.com/webmcp-showcase.
+- The final clean **deployed-origin native browser-agent walkthrough is the owner's next step** and
+  has **not** been performed as part of this documentation pass. Nothing in this repository should be
+  read as claiming that walkthrough passed, and no specific browser execution is claimed here that
+  the author of this section did not personally perform.
+
+### Designed, not shipped
+
+- A generalized remote/server MCP integration path.
+- Production authentication.
+- General production persistence and multi-tenancy.
+- Rate limiting.
+- Real payment, checkout, and order placement — checkout is never registered as a tool.
+- Live TheCustomHub backend integration.
+
+### Controlled fixtures
+
+- **Fresh Corner** is a controlled fictional fixture.
+- **TheCustomHub** is an authorized controlled quote fixture, not a live backend. It returns
+  `fixedPrice: null` and never creates a cart, payment, order, or checkout. No live TheCustomHub
+  catalog, quote, cart, or order API is called.
+
+### Test baseline
+
+**610/610 passing across 32 test files**, measured on 2026-09-02 during this documentation
+reconciliation pass. `npx tsc --noEmit`, targeted ESLint on the changed files,
+`@retailagentos/engine`, `@retailagentos/platform-contracts`, `@retailagentos/webmcp`, and the root
+`next build` all complete cleanly. Earlier counts quoted in the per-pass sections below (562, 568,
+573, 576) are **historical** records of those passes, not the current baseline.
+
+### Provenance
+
+RetailAgentOS's UCP manifest and specs, its deterministic engine, the external/client adapter seams,
+and the channel projections all **predate** the WebMCP Challenge. The native browser WebMCP layer and
+the entire judge-facing experience were built during the challenge window (Aug 25–Sep 3, 2026):
+
+| Commit | What it added |
+|---|---|
+| `92753e5` | Browser adapter, canonical seven-tool descriptor catalog, `packages/webmcp`, controlled gateway. |
+| `d094e12` | Canonical `/webmcp-showcase` route and purchase-plan documentation. |
+| `e464bb8` | WebMCP lifecycle/showcase hardening and explicit lifecycle evidence. |
+| `d9a5eb5` | Judge-facing UX rework and native-vs-replay attribution truthfulness fixes. |
+| `0228160` | Optional post-cart `revise_validated_cart` extension. |
+| `5b1603e` | Submission-hardening pass (grouped Mission Control telemetry, completed approval sequence, cart-state-aware Decision Summary, canonical Farm Eggs title/unit, 320px layout fix) plus the root Apache-2.0 `LICENSE`. |
+| `12f8ba0` | Deterministic native approval-to-cart handoff. Also carries the trusted server-side cart idempotency (`cartsByDecision`), the unconditional `dispose()`/`performCleanup()` controller abort with proactive stale-generation cleanup, and the recoverable guided-fallback retry path — i.e. both the "native handoff hardening" and "correctness-gap closure" passes documented below were committed together in this commit. |
+| `0b0b71a` | WebMCP challenge showcase hardening: bounded catalog search ranking with fixture-supplied aliases, the named $30 Farm Eggs breakfast mission, guided-progress feedback, and submission-document consolidation. |
+| `6a57c09` | Structured TheCustomHub quote workflow. |
+| `4790f74` | Focused challenge navigation and page identity for the WebMCP Live Demo. |
+| `b0550a8` | Documentation/evidence reconciliation recording `4790f74` — not a product change. |
 
 ## Current repo baseline
 
@@ -407,6 +463,10 @@ next action below.
 
 ## Native handoff hardening pass (2026-09-01)
 
+*Historical record. At the time of writing this pass was uncommitted on the
+`webmcp-native-handoff-hardening` branch; it has since been **committed to `main` as `12f8ba0`**. See
+"Current submission status" for the present state.*
+
 **Root cause.** `packages/webmcp/src/index.ts`'s `apply_plan_repair` handler deferred its full state
 transition — `if (outcome.defer) void queueTransition(outcome.nextState);` — via a `setTimeout(0)`
 chain, so `execute()` returned the repair result to the calling browser agent *before*
@@ -503,16 +563,21 @@ repair returns" test) pass unmodified against the new implementation.
    against a real Codex Browser and/or ChatGPT in-app browser session — this pass could only verify the
    registration-timing fix at the unit-test level and via `claude-in-chrome`.
 2. Repeat the native `document.modelContext` acceptance walkthrough against the deployed
-   `https://www.retailagentos.com/webmcp-showcase` origin once this pass is committed and deployed.
-3. Commit this pass's changes on `webmcp-native-handoff-hardening` and update the evidence commit
-   lists in `README.md`, `src/lib/content/buildlog.ts`, and this file's "Current submission status"
-   section with the real commit hash once committed.
+   `https://www.retailagentos.com/webmcp-showcase` origin.
+3. ~~Commit this pass's changes and update the evidence commit lists in `README.md`,
+   `src/lib/content/buildlog.ts`, and this file's "Current submission status" section with the real
+   commit hash.~~ Done: committed to `main` as
+   [`12f8ba0`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0).
 
 ## Correctness-gap closure pass (2026-09-01)
 
-Still on `webmcp-native-handoff-hardening`, **uncommitted**. The native-handoff-hardening pass's own
-report flagged four items as incomplete; this pass closes all four. It does not change the successful
-registration-before-return architecture from that pass.
+*Historical record. At the time of writing this pass was still uncommitted on the
+`webmcp-native-handoff-hardening` branch; it has since been **committed to `main` as `12f8ba0`**,
+together with the native-handoff-hardening pass above. See "Current submission status" for the
+present state.*
+
+The native-handoff-hardening pass's own report flagged four items as incomplete; this pass closes all
+four. It does not change the successful registration-before-return architecture from that pass.
 
 **1. Server-side cart-preparation idempotency (was: client-side single-flight lock only).**
 `ShowcaseGateway.prepareCart` (`src/lib/showcase/gateway.ts`) now has two independent idempotency
@@ -637,11 +702,12 @@ clicks "Retry guided cart preparation" (succeeds against the real route handler)
 1. Independently verify items 1 and 4 (idempotency convergence, fallback-retry UX) against a real
    Codex Browser and/or ChatGPT in-app browser session — this pass verified them at the unit/
    integration-test level only.
-2. Commit this pass's changes on `webmcp-native-handoff-hardening` (still uncommitted as of this
-   writing) and update the evidence commit lists in `README.md`, `src/lib/content/buildlog.ts`, and
-   this file's "Current submission status" section with the real commit hash once committed.
-3. Repeat the deployed-origin acceptance walkthrough from the prior pass's next-action list once this
-   pass is committed and deployed.
+2. ~~Commit this pass's changes and update the evidence commit lists in `README.md`,
+   `src/lib/content/buildlog.ts`, and this file's "Current submission status" section with the real
+   commit hash.~~ Done: committed to `main` as
+   [`12f8ba0`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0), together with the
+   native-handoff-hardening pass; all three evidence lists carry that hash.
+3. Repeat the deployed-origin acceptance walkthrough from the prior pass's next-action list.
 
 ## Judge-facing navigation and page-identity pass (2026-09-02)
 
@@ -748,10 +814,12 @@ pinned through the full scroll, verified in Chrome at the bottom of the page.
 1. ~~Commit this pass and record its real hash.~~ Done: committed and pushed to `main` as
    [`4790f74`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/4790f74) on 2026-09-02;
    `README.md`'s challenge-commit table and `src/lib/content/buildlog.ts`'s evidence list carry that
-   hash. The "Current submission status" section above still predates this pass — fold `4790f74`
-   into it on the next pass that touches it.
-2. Deploy and run the deployed-origin acceptance walkthrough at
-   `https://www.retailagentos.com/webmcp-showcase`, including a native browser-agent run.
-3. After that native production QA passes, record and publish the WebMCP demo video and set
-   `NEXT_PUBLIC_WEBMCP_VIDEO_URL` to its public URL — the "Watch video" action then appears with no
-   further structural change.
+   hash. ~~The "Current submission status" section above still predates this pass — fold `4790f74`
+   into it on the next pass that touches it.~~ Done: the "Current submission status" section was
+   rewritten on 2026-09-02 and now covers every commit through `b0550a8`.
+2. **Remaining.** Run the deployed-origin acceptance walkthrough at
+   `https://www.retailagentos.com/webmcp-showcase`, including a native browser-agent run. This has
+   not been performed and must not be recorded as passed until it actually is.
+3. ~~Record and publish the WebMCP demo video.~~ Done: the public video is
+   https://youtu.be/aIScR90pSb0. Set `NEXT_PUBLIC_WEBMCP_VIDEO_URL` to that URL in the production
+   deployment and verify the "Watch video" action appears with no further structural change.

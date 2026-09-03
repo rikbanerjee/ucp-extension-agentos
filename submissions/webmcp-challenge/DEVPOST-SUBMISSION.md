@@ -20,10 +20,10 @@ TheCustomHub is an authorized controlled quote fixture, not a live backend. Twen
 
 Native registration is AbortSignal-owned and cleaned up on reset, scenario switch, and unmount. Guided replay uses the exact same descriptors and gateway handlers; its invocation telemetry is `replay`, while browser execution is `native`. A generalized remote/server MCP is designed, not shipped.
 
-Challenge delivery is recorded by `92753e5`, `d094e12`, `e464bb8`, `d9a5eb5`, `0228160`, `5b1603e`, and `12f8ba0`. This working-tree submission-readiness pass is uncommitted until its owner commits it.
+RetailAgentOS's UCP manifest, deterministic engine, adapter seams, and channel projections predate the challenge. The native browser WebMCP layer and the whole judge-facing experience were built inside the challenge window and are committed on `main`: `92753e5` (browser adapter, descriptor catalog, `packages/webmcp`, controlled gateway), `d094e12` (canonical `/webmcp-showcase` route), `e464bb8` (lifecycle/showcase hardening), `d9a5eb5` (judge-facing UX and native/replay attribution truthfulness), `0228160` (optional post-cart `revise_validated_cart` extension), `5b1603e` (submission-hardening pass and the root Apache-2.0 license), `12f8ba0` (deterministic native approval-to-cart handoff, trusted server-side cart idempotency, unconditional registration-controller cleanup, and recoverable cart-preparation retry), `0b0b71a` (challenge showcase hardening: bounded catalog search ranking and the named $30 breakfast mission), `6a57c09` (structured TheCustomHub quote workflow), and `4790f74` (focused challenge navigation and page identity). `b0550a8` and this pass are documentation/evidence reconciliation, not product changes.
 
 ## Links
 
 - Live app (WebMCP Live Demo): https://www.retailagentos.com/webmcp-showcase
 - Source: https://github.com/rikbanerjee/ucp-extension-agentos
-- Video: add the public native-demo URL after recording; do not submit a placeholder. The site's own "Watch video" action stays hidden until `NEXT_PUBLIC_WEBMCP_VIDEO_URL` holds a real public https URL.
+- Video: https://youtu.be/aIScR90pSb0

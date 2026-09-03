@@ -30,18 +30,28 @@ describe('WebMCP delivery documentation', () => {
       current: true,
       date: 'Sep 2, 2026',
     });
-    expect(latest.evidence?.map(({ label }) => label)).toEqual(['4790f74']);
-    // The remaining work is deployment and the video, not the commit itself.
+    // 4790f74 is the feature commit; b0550a8 is documentation/evidence provenance, not a product change.
+    expect(latest.evidence?.map(({ label }) => label)).toEqual(['4790f74', 'b0550a8']);
+    // The only remaining work is deployed-origin native acceptance. The video is published and the
+    // production site exists, so nothing here may describe the video or the commits as outstanding.
     expect(latest.next).toMatch(/deployed-origin acceptance walkthrough/);
+    expect(latest.next).toContain('https://youtu.be/aIScR90pSb0');
     expect(latest.next).not.toMatch(/uncommitted/);
+    expect(latest.next).not.toMatch(/record and publish/i);
 
-    // The prior correctness-gap-closure pass stays in the log, just no longer marked current.
+    // The prior correctness-gap-closure pass stays in the log, just no longer marked current. Its
+    // implementation is committed on main as 12f8ba0 (together with the native-handoff pass below);
+    // 0b0b71a is the follow-on showcase hardening. Neither is pending any longer.
     const correctnessGap = buildLog.find((entry) => entry.id === 'webmcp-correctness-gap-closure-2026');
     expect(correctnessGap).toMatchObject({ current: false, date: 'Sep 1, 2026' });
-    expect(correctnessGap?.evidence?.map(({ label }) => label)).toEqual(['5b1603e']);
-    // The prior native-handoff-hardening pass stays in the log, just no longer marked current — both
-    // it and the correctness-gap pass remain uncommitted/pending (see their own narrative/next fields).
-    expect(buildLog.find((entry) => entry.id === 'webmcp-native-handoff-hardening-2026')).toMatchObject({ current: false, date: 'Sep 1, 2026' });
+    expect(correctnessGap?.evidence?.map(({ label }) => label)).toEqual(['12f8ba0', '0b0b71a']);
+    expect(correctnessGap?.next).not.toMatch(/uncommitted/);
+    // The prior native-handoff-hardening pass stays in the log, just no longer marked current. Its
+    // own implementation commit on main is 12f8ba0, not the earlier submission-hardening 5b1603e.
+    const nativeHandoff = buildLog.find((entry) => entry.id === 'webmcp-native-handoff-hardening-2026');
+    expect(nativeHandoff).toMatchObject({ current: false, date: 'Sep 1, 2026' });
+    expect(nativeHandoff?.evidence?.map(({ label }) => label)).toEqual(['12f8ba0']);
+    expect(nativeHandoff?.next).not.toMatch(/uncommitted/);
     // The prior submission-hardening pass stays in the log, just no longer marked current — its own
     // work is committed as 5b1603e (see its evidence entry / narrative), not "pending".
     expect(buildLog.find((entry) => entry.id === 'webmcp-submission-hardening-2026')).toMatchObject({ current: false, date: 'Sep 1, 2026' });

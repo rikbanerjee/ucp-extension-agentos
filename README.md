@@ -7,9 +7,8 @@ browser action, and RetailAgentOS's deterministic engine decides what that actio
   — the RetailAgentOS WebMCP Agent Storefront, built for the OpenAI WebMCP Challenge.
   `/agent-ready-storefront` is a compatibility route that renders the identical page and points its
   canonical identity at `/webmcp-showcase`.
-- **Video:** published after the final native WebMCP recording. The "Watch video" action is hidden
-  until a real public URL is configured through `NEXT_PUBLIC_WEBMCP_VIDEO_URL`; no placeholder link
-  is ever rendered.
+- **Video:** [Watch the WebMCP demo on YouTube](https://youtu.be/aIScR90pSb0). The site reads this
+  public URL from `NEXT_PUBLIC_WEBMCP_VIDEO_URL`; no placeholder link is ever rendered.
 
 ## Test prompt
 
@@ -86,8 +85,13 @@ RetailAgentOS's UCP manifest, deterministic engine, external/client adapter seam
 | [`d9a5eb5`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/d9a5eb5) | Judge-facing UX rework and native-vs-replay telemetry truthfulness fixes. |
 | [`0228160`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/0228160) | Optional `revise_validated_cart` cart-revision extension. |
 | [`5b1603e`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/5b1603e) | Submission-hardening pass: grouped Mission Control telemetry, a completed shopper-approval sequence with correct actor attribution, `CART_PREPARED`/`CART_REVISED`-aware Decision Summary copy, a canonical Farm Eggs title/unit, unit×line-total display in the revised cart, and a 320px layout fix. |
-| [`12f8ba0`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0) | Deterministic native approval-to-cart handoff and lifecycle correctness hardening. |
+| [`12f8ba0`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0) | Deterministic native approval-to-cart handoff and lifecycle correctness hardening: registration-before-return, trusted decision-scoped server-side cart idempotency, unconditional registration-controller cleanup, and an explicit retry path for a failed guided-fallback cart preparation. |
+| [`0b0b71a`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/0b0b71a) | Correctness-gap closure and further showcase hardening: bounded catalog search ranking with fixture-supplied aliases, the named $30 Farm Eggs breakfast mission, guided-progress feedback, and submission-document consolidation. |
+| [`6a57c09`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/6a57c09) | Structured TheCustomHub quote workflow — the typed 25-shirt configuration, budget ceiling, and delivery request, still returning `fixedPrice: null` with no cart, order, payment, or checkout. |
 | [`4790f74`](https://github.com/rikbanerjee/ucp-extension-agentos/commit/4790f74) | Focused challenge navigation and page identity: route-specific chrome on both showcase routes, a compact challenge footer, canonical shared metadata, judge anchors with accessible focus, a global WebMCP Live Demo link, and optional video-link configuration. |
+
+Later commits on `main` (`b0550a8` and the submission-package reconciliation that follows it) are
+documentation and evidence corrections, not product implementation.
 
 Native browser WebMCP is shipped for this controlled showcase. A generalized remote/server MCP,
 production authentication, persistence, multi-tenancy, payments, and real merchant control remain

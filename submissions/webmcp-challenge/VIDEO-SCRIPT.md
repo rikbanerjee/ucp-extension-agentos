@@ -1,5 +1,8 @@
 # Native WebMCP demo script — target 2:50
 
+> **Status: recorded and published.** The final video is public at https://youtu.be/aIScR90pSb0.
+> This page is kept as the historical recording plan behind that video, not as outstanding work.
+
 Record native browser invocation as the primary proof. Guided replay is only a labelled fallback.
 
 - **0:00–0:15:** Open the WebMCP Live Demo at `/webmcp-showcase` — the RetailAgentOS WebMCP Agent Storefront. “Shopping agents often guess inventory, prices, fulfillment, and merchant policy. RetailAgentOS is the reasoning layer; WebMCP is the browser action surface.”
@@ -13,4 +16,4 @@ Record native browser invocation as the primary proof. Guided replay is only a l
 - **2:15–2:35:** Use the header's Developer Evidence link to show dynamic registration, registry parity, and native/replay handler parity.
 - **2:35–2:50:** “The agent sees only the next action the retailer can safely honor.”
 
-Keep the export below 2:55. Do not imply a live TheCustomHub backend, remote MCP, payment, order, or checkout. Publish the final recording before inserting its public URL into submission fields.
+Keep the export below 2:55. Do not imply a live TheCustomHub backend, remote MCP, payment, order, or checkout. The published recording's public URL is already carried in the submission fields.

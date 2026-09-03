@@ -39,9 +39,10 @@ export const buildLog: BuildLogEntry[] = [
     proves:
       'A challenge judge can identify, run, understand, and leave the WebMCP demo without meeting the whole company information architecture — and can always find it again from any other page — while the broader RetailAgentOS platform navigation, the business-first story, and every native and guided WebMCP behavior stay exactly as they were.',
     next:
-      'Deploy and run the deployed-origin acceptance walkthrough at https://www.retailagentos.com/webmcp-showcase, including a native browser-agent run. After that native production QA passes, record and publish the WebMCP demo video and configure its public URL.',
+      'The production site is live at https://www.retailagentos.com/webmcp-showcase and the public WebMCP demo video is published at https://youtu.be/aIScR90pSb0. The one remaining verification step is the deployed-origin acceptance walkthrough on that production site, including a native browser-agent run and a check that the Watch video action renders from NEXT_PUBLIC_WEBMCP_VIDEO_URL. That walkthrough has not been run yet and is not claimed as passed.',
     evidence: [
       { label: '4790f74', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/4790f74', description: 'Focused challenge navigation and page identity (merged to main).' },
+      { label: 'b0550a8', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/b0550a8', description: 'Documentation provenance recording 4790f74 as this pass\'s evidence commit — not a product change.' },
     ],
   },
   {
@@ -62,9 +63,10 @@ export const buildLog: BuildLogEntry[] = [
     proves:
       'Cart preparation is idempotent and conflict-safe at the trusted server boundary (not just a client-side lock), every WebMCP registration controller is guaranteed aborted even when dispose races a pending cleanup tick, the registration-before-return handoff cannot present a real host with a duplicate tool-name registration during a rapid re-transition, and a shopper is never left staring at a permanently broken recovery button after one transient failure.',
     next:
-      'Independent verification of the idempotency-convergence and fallback-retry UX against a real Codex Browser or ChatGPT in-app browser session remains outstanding — this pass verified them at the unit/integration-test level only. This pass is uncommitted on the webmcp-native-handoff-hardening branch as of Sep 1, 2026, on top of the also-uncommitted native-handoff-hardening pass below.',
+      'Independent verification of the idempotency-convergence and fallback-retry UX against a real Codex Browser or ChatGPT in-app browser session remains outstanding — this pass verified them at the unit/integration-test level only.',
     evidence: [
-      { label: '5b1603e', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/5b1603e', description: 'WebMCP Challenge submission hardening pass (merged to main).' },
+      { label: '12f8ba0', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0', description: 'The commit on main that carries this pass — server-side cart idempotency, unconditional registration-controller cleanup, and the explicit cart-preparation retry path — alongside the native-handoff-hardening pass below.' },
+      { label: '0b0b71a', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/0b0b71a', description: 'The follow-on WebMCP challenge showcase hardening on main: bounded catalog search ranking, the named $30 breakfast mission, and submission-document consolidation.' },
     ],
   },
   {
@@ -88,9 +90,9 @@ export const buildLog: BuildLogEntry[] = [
     proves:
       'A registration-before-return handoff, verified by a controllable-timing unit test, makes the native post-approval journey deterministic for any compliant browser agent — without weakening RetailAgentOS policy enforcement, the human approval gate, or native/guided attribution truthfulness, and while fixing two unrelated build/layout defects surfaced during the same pass.',
     next:
-      'Independent verification against a real Codex Browser or ChatGPT in-app browser session (only claude-in-chrome-based testing was available in this environment), and deployment to the live origin, remain outstanding — see specs/WEBMCP-PLATFORM-BUILD.md for exact status. This pass is uncommitted on the webmcp-native-handoff-hardening branch as of Sep 1, 2026; it builds on the already-merged 5b1603e submission-hardening pass below.',
+      'Independent verification against a real Codex Browser or ChatGPT in-app browser session (only claude-in-chrome-based testing was available in this environment), and acceptance against the deployed origin, remain outstanding — see specs/WEBMCP-PLATFORM-BUILD.md for exact status.',
     evidence: [
-      { label: '5b1603e', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/5b1603e', description: 'WebMCP Challenge submission hardening pass (merged to main).' },
+      { label: '12f8ba0', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0', description: 'Deterministic native WebMCP approval-to-cart handoff (merged to main).' },
     ],
   },
   {

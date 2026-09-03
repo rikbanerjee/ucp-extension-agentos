@@ -10,23 +10,27 @@ RetailAgentOS turns a retailer-owned website into a safe, agent-operable storefr
 
 Submit by **September 3, 2026 at 1:00 p.m. Pacific / 4:00 p.m. Eastern**. Do not plan to upload at the deadline; target a final Devpost draft and public video by September 2.
 
-## Honest readiness status — August 30, 2026
+## Readiness status — September 2, 2026
 
-The concept, deterministic commerce engine, four-tool WebMCP SDK, local gateway, API routes, and interactive storefront showcase exist in the working tree. The submission itself is **not ready to send yet**.
+The WebMCP delivery is committed on `main`, the application is deployed, the repository is public
+under Apache-2.0, and the demo video is published. What remains is the owner's final production
+acceptance run and the Devpost form itself.
 
 | Gate | Current evidence | Status |
 |---|---|---|
-| Non-trivial WebMCP implementation | `@retailagentos/webmcp` defines and registers four tools | In progress |
-| Native tools on showcase page | Page detects `document.modelContext`, but does not call the SDK registration lifecycle | **Blocking** |
-| Agent-driven visible UI update | SDK has storefront bridge callbacks; showcase has not wired them to page state | **Blocking** |
-| Working live URL | No judge-accessible URL is recorded in this repository | **Blocking** |
-| Public source repository | Configured GitHub URL returned 404 to an unauthenticated request on August 30 | **Blocking** |
-| Root open-source license | No root `LICENSE` file found | **Blocking** |
-| Under-three-minute public YouTube demo | Script and runbook are prepared; recording is not | **Blocking** |
-| Existing-versus-new evidence | WebMCP changes are visible locally but currently uncommitted | **Blocking** |
-| Paste-ready submission narrative | Included in this package | Ready after links are filled |
+| Non-trivial WebMCP implementation | Seven canonical Phase 1 descriptors plus the optional post-cart `revise_validated_cart` extension, with dynamic capability registration driven by the deterministic engine | **Ready** |
+| Native tools on showcase page | `document.modelContext` registration lifecycle is connected on `/webmcp-showcase` (`AbortSignal`-owned, cleaned up on reset/scenario switch/unmount) | **Ready in implementation** — the final clean deployed-origin native acceptance run remains the owner's next step |
+| Agent-driven visible UI update | Native and guided calls use the same descriptors and gateway handlers; cart and quote results update the visible storefront | **Ready** |
+| Working live URL | https://www.retailagentos.com/webmcp-showcase | **Ready** |
+| Public source repository | https://github.com/rikbanerjee/ucp-extension-agentos | **Ready** |
+| Root open-source license | Apache-2.0 root `LICENSE` | **Ready** |
+| Under-three-minute public YouTube demo | Published at https://youtu.be/aIScR90pSb0 | **Ready** |
+| Existing-versus-new evidence | Dated challenge-period commits (`92753e5` → `4790f74`) distinguish pre-existing UCP/engine work from the WebMCP additions | **Ready** |
+| Paste-ready submission narrative | Included in this package with final public links | **Ready** |
+| Final production-native acceptance | The deployed-origin native browser-agent walkthrough has not been run yet — **this is the owner's next step, not a missing implementation** | **Pending** |
+| Devpost form submission | Happens after production acceptance | **Pending** |
 
-Do not describe the current button-driven fallback as a native WebMCP invocation. It is useful for ordinary browsers, but the challenge demo must show an agent discovering and invoking the registered tools.
+Do not describe the guided button-driven fallback as a native WebMCP invocation. It is useful for ordinary browsers, but the challenge demo must show an agent discovering and invoking the registered tools.
 
 ## Recommended submission identity
 
@@ -41,8 +45,8 @@ Do not describe the current button-driven fallback as a native WebMCP invocation
 
 ## Package map
 
-1. [`DEVPOST-SUBMISSION.md`](./DEVPOST-SUBMISSION.md) — paste-ready title, tagline, description, implementation story, and link placeholders.
-2. [`IMPLEMENTATION-GATES.md`](./IMPLEMENTATION-GATES.md) — exact work required before this can be submitted truthfully.
+1. [`DEVPOST-SUBMISSION.md`](./DEVPOST-SUBMISSION.md) — paste-ready title, tagline, description, implementation story, and final public links.
+2. [`IMPLEMENTATION-GATES.md`](./IMPLEMENTATION-GATES.md) — the gates this submission must satisfy to be described truthfully, and their current state.
 3. [`DEMO-RUNBOOK.md`](./DEMO-RUNBOOK.md) — test prompts, expected calls, expected UI behavior, and failure policy.
 4. [`VIDEO-SCRIPT.md`](./VIDEO-SCRIPT.md) — a timed 2:50 narration and shot list.
 5. [`JUDGING-MAP.md`](./JUDGING-MAP.md) — evidence mapped to all four equally weighted criteria.
@@ -51,14 +55,21 @@ Do not describe the current button-driven fallback as a native WebMCP invocation
 
 ## Final assembly order
 
-1. Wire and verify native WebMCP registration on the showcase route.
-2. Make an explicit open-source license choice and add it at repository root.
-3. Commit the post-August-25 WebMCP work with a clear history and create a public repository.
-4. Deploy the exact commit and keep it available through the judging period.
-5. Run the three demo scenarios in ChatGPT's in-app browser and Chrome with WebMCP enabled.
-6. Record the 2:50 video from a clean session, add captions, and publish it on YouTube.
-7. Add the real URLs and commit SHA to the Devpost copy.
-8. Save a Devpost draft, test every link in a signed-out browser, then submit.
+Completed:
+
+1. ✅ Native WebMCP registration is wired on the showcase route.
+2. ✅ Apache-2.0 license added at repository root.
+3. ✅ The post-August-25 WebMCP work is committed with a clear, dated history in a public repository.
+4. ✅ The application is deployed at https://www.retailagentos.com/webmcp-showcase.
+5. ✅ The under-three-minute demo video is published at https://youtu.be/aIScR90pSb0.
+
+Remaining actions:
+
+1. Commit and push this final documentation reconciliation.
+2. Owner runs the final production-native acceptance walkthrough at
+   https://www.retailagentos.com/webmcp-showcase, including a native browser-agent run.
+3. Owner completes and submits the Devpost form, testing every link in a signed-out browser.
+4. Freeze the repository, the production application, the video, and the Devpost submission.
 
 ## Source-of-truth warning
 

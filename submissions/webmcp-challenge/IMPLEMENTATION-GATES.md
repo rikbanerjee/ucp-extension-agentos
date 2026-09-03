@@ -6,6 +6,9 @@
 - Three planning tools are initially registered; the seven canonical Phase 1 descriptors are exposed only as the engine permits. `revise_validated_cart` is optional and post-cart only.
 - Fresh Corner is the $30 named Farm Eggs breakfast repair journey: stale stock, explicit approval, $15.99 review cart, optional $24.49 revision, no checkout.
 - TheCustomHub is an authorized controlled quote fixture with `fixedPrice: null`; no live merchant backend, cart, order, payment, or checkout is claimed.
-- Generalized remote/server MCP, deployment-specific Chrome verification, and final video publication are outside this repository change.
+- All of the above is committed on `main`; none of the WebMCP delivery is sitting uncommitted in a working tree.
+- The application is deployed at https://www.retailagentos.com/webmcp-showcase, the repository is public under Apache-2.0, and the final WebMCP demo video is published publicly at https://youtu.be/aIScR90pSb0.
+- The one gate still open is the final production-native acceptance walkthrough on the deployed origin. It is the owner's next step, not a missing implementation, and it must not be recorded as passed until it actually is.
+- Generalized remote/server MCP remains designed, not shipped.
 
 The recording gate is a genuine native browser run of the current `/webmcp-showcase` route. Guided replay remains a labelled fallback and is not native proof.

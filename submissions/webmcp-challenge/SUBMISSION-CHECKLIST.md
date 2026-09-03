@@ -9,4 +9,4 @@
 - [x] Public source link is present.
 - [x] Showcase routes use focused challenge chrome and the "RetailAgentOS WebMCP Agent Storefront" identity; other routes keep the normal platform navigation and footer.
 - [x] "WebMCP Live Demo" is discoverable from the global navigation on every other page.
-- [ ] Record and publish the final native WebMCP demo video, then insert its public URL into the prepared submission fields.
+- [x] Final native WebMCP demo video published publicly on YouTube: https://youtu.be/aIScR90pSb0
