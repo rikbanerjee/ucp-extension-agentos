@@ -52,6 +52,7 @@ Do not describe the guided button-driven fallback as a native WebMCP invocation.
 5. [`JUDGING-MAP.md`](./JUDGING-MAP.md) — evidence mapped to all four equally weighted criteria.
 6. [`TECHNICAL-EVIDENCE.md`](./TECHNICAL-EVIDENCE.md) — architecture, tool inventory, safety model, code evidence, and honest limitations.
 7. [`SUBMISSION-CHECKLIST.md`](./SUBMISSION-CHECKLIST.md) — rules, assets, testing, ownership, and final form checks.
+8. [`assets/webmcp-thumbnail.png`](./assets/webmcp-thumbnail.png) — the Devpost project thumbnail, 2400×1600 (exactly 3:2, as Devpost recommends). Purpose-built for this submission because the site's `public/og-image.png` is 1.91:1 and leads with UCP rather than WebMCP. [`assets/webmcp-thumbnail.html`](./assets/webmcp-thumbnail.html) is its source; re-render with `chrome --headless --force-device-scale-factor=2 --screenshot --window-size=1200,800`. The badge is text-only ("Built for the OpenAI WebMCP Challenge") and uses no OpenAI mark, claiming no endorsement.
 
 ## Final assembly order
 
