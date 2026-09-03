@@ -12,9 +12,9 @@ export interface VerificationSnapshot {
  * verification commands; product claims must not infer live-service status.
  */
 export const VERIFICATION_SNAPSHOT: VerificationSnapshot = {
-  verifiedAt: '2026-08-31',
-  testsPassed: 503,
-  testsTotal: 503,
+  verifiedAt: '2026-09-02',
+  testsPassed: 610,
+  testsTotal: 610,
   buildStatus: 'passing',
   typecheckStatus: 'passing',
   knownLimitations: [

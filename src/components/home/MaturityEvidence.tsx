@@ -52,7 +52,8 @@ export function MaturityEvidence() {
           </h2>
           {testStat && (
             <p className="mt-3 text-slate-500 max-w-xl mx-auto leading-relaxed">
-              {testStat.value} automated tests currently pass against the reference engine.
+              {testStat.value} automated tests currently pass across the reference implementation —
+              the engine, the specs it runs, and the WebMCP surfaces built on top of it.
               Every claim on this page is checked against that same evidence.
             </p>
           )}
