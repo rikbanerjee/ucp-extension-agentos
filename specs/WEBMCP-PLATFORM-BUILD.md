@@ -56,9 +56,15 @@ uncommitted in a working tree.
 ### Published video
 
 - **URL**: https://youtu.be/aIScR90pSb0
+- **Runtime**: 2:56, manually verified on YouTube — inside the challenge's "less than three minutes"
+  limit.
 - The application reads the production video URL through `NEXT_PUBLIC_WEBMCP_VIDEO_URL`; the "Watch
   video" action renders only when that variable holds a real absolute `https:` URL. No placeholder
   remains anywhere in the submission surfaces.
+- **Configured and live**: as of 2026-09-02 the deployed
+  `https://www.retailagentos.com/webmcp-showcase` page renders the "Watch video" action pointing at
+  the URL above, so `NEXT_PUBLIC_WEBMCP_VIDEO_URL` is already set in the production deployment.
+  Configuring it is no longer outstanding work.
 
 ### Deployed, but final native acceptance still pending
 
@@ -820,6 +826,8 @@ pinned through the full scroll, verified in Chrome at the bottom of the page.
 2. **Remaining.** Run the deployed-origin acceptance walkthrough at
    `https://www.retailagentos.com/webmcp-showcase`, including a native browser-agent run. This has
    not been performed and must not be recorded as passed until it actually is.
-3. ~~Record and publish the WebMCP demo video.~~ Done: the public video is
-   https://youtu.be/aIScR90pSb0. Set `NEXT_PUBLIC_WEBMCP_VIDEO_URL` to that URL in the production
-   deployment and verify the "Watch video" action appears with no further structural change.
+3. ~~Record and publish the WebMCP demo video, then set `NEXT_PUBLIC_WEBMCP_VIDEO_URL` to its public
+   URL in the production deployment and verify the "Watch video" action appears.~~ Done: the public
+   video is https://youtu.be/aIScR90pSb0 (2:56, manually verified). The production deployment already
+   carries the environment variable, and the live page renders the "Watch video" action — confirmed
+   2026-09-02 against `https://www.retailagentos.com/webmcp-showcase`.

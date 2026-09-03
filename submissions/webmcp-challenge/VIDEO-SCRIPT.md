@@ -1,7 +1,8 @@
 # Native WebMCP demo script — target 2:50
 
-> **Status: recorded and published.** The final video is public at https://youtu.be/aIScR90pSb0.
-> This page is kept as the historical recording plan behind that video, not as outstanding work.
+> **Status: recorded and published.** The final video is public at https://youtu.be/aIScR90pSb0 and
+> runs 2:56, manually verified as under the challenge's three-minute limit. This page is kept as the
+> historical recording plan behind that video, not as outstanding work.
 
 Record native browser invocation as the primary proof. Guided replay is only a labelled fallback.
 

@@ -24,7 +24,7 @@ acceptance run and the Devpost form itself.
 | Working live URL | https://www.retailagentos.com/webmcp-showcase | **Ready** |
 | Public source repository | https://github.com/rikbanerjee/ucp-extension-agentos | **Ready** |
 | Root open-source license | Apache-2.0 root `LICENSE` | **Ready** |
-| Under-three-minute public YouTube demo | Published at https://youtu.be/aIScR90pSb0 | **Ready** |
+| Under-three-minute public YouTube demo | Published at https://youtu.be/aIScR90pSb0 — 2:56, manually verified on YouTube against the "less than three minutes" limit | **Ready** |
 | Existing-versus-new evidence | Dated challenge-period commits (`92753e5` → `4790f74`) distinguish pre-existing UCP/engine work from the WebMCP additions | **Ready** |
 | Paste-ready submission narrative | Included in this package with final public links | **Ready** |
 | Final production-native acceptance | The deployed-origin native browser-agent walkthrough has not been run yet — **this is the owner's next step, not a missing implementation** | **Pending** |
@@ -61,7 +61,9 @@ Completed:
 2. ✅ Apache-2.0 license added at repository root.
 3. ✅ The post-August-25 WebMCP work is committed with a clear, dated history in a public repository.
 4. ✅ The application is deployed at https://www.retailagentos.com/webmcp-showcase.
-5. ✅ The under-three-minute demo video is published at https://youtu.be/aIScR90pSb0.
+5. ✅ The demo video is published at https://youtu.be/aIScR90pSb0 (2:56, under the three-minute limit).
+6. ✅ `NEXT_PUBLIC_WEBMCP_VIDEO_URL` is configured in production; the live page renders the "Watch
+   video" action.
 
 Remaining actions:
 

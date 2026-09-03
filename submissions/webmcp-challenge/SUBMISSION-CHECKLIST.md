@@ -10,3 +10,5 @@
 - [x] Showcase routes use focused challenge chrome and the "RetailAgentOS WebMCP Agent Storefront" identity; other routes keep the normal platform navigation and footer.
 - [x] "WebMCP Live Demo" is discoverable from the global navigation on every other page.
 - [x] Final native WebMCP demo video published publicly on YouTube: https://youtu.be/aIScR90pSb0
+- [x] Video runtime is 2:56 — manually verified on YouTube against the "less than three minutes" rule.
+- [x] `NEXT_PUBLIC_WEBMCP_VIDEO_URL` is configured in production and the live page renders the "Watch video" action.
