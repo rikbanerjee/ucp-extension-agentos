@@ -12,3 +12,4 @@
 - [x] Final native WebMCP demo video published publicly on YouTube: https://youtu.be/aIScR90pSb0
 - [x] Video runtime is 2:56 — manually verified on YouTube against the "less than three minutes" rule.
 - [x] `NEXT_PUBLIC_WEBMCP_VIDEO_URL` is configured in production and the live page renders the "Watch video" action.
+- [x] Deployed-origin native acceptance walkthrough run in ChatGPT's in-app browser on September 2, 2026 against build `5257759`.

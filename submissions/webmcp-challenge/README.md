@@ -19,7 +19,7 @@ acceptance run and the Devpost form itself.
 | Gate | Current evidence | Status |
 |---|---|---|
 | Non-trivial WebMCP implementation | Seven canonical Phase 1 descriptors plus the optional post-cart `revise_validated_cart` extension, with dynamic capability registration driven by the deterministic engine | **Ready** |
-| Native tools on showcase page | `document.modelContext` registration lifecycle is connected on `/webmcp-showcase` (`AbortSignal`-owned, cleaned up on reset/scenario switch/unmount) | **Ready in implementation** — the final clean deployed-origin native acceptance run remains the owner's next step |
+| Native tools on showcase page | `document.modelContext` registration lifecycle is connected on `/webmcp-showcase` (`AbortSignal`-owned, cleaned up on reset/scenario switch/unmount), and the deployed origin was walked through natively in ChatGPT's in-app browser on September 2, 2026 | **Ready** |
 | Agent-driven visible UI update | Native and guided calls use the same descriptors and gateway handlers; cart and quote results update the visible storefront | **Ready** |
 | Working live URL | https://www.retailagentos.com/webmcp-showcase | **Ready** |
 | Public source repository | https://github.com/rikbanerjee/ucp-extension-agentos | **Ready** |
@@ -27,8 +27,8 @@ acceptance run and the Devpost form itself.
 | Under-three-minute public YouTube demo | Published at https://youtu.be/aIScR90pSb0 — 2:56, manually verified on YouTube against the "less than three minutes" limit | **Ready** |
 | Existing-versus-new evidence | Dated challenge-period commits (`92753e5` → `4790f74`) distinguish pre-existing UCP/engine work from the WebMCP additions | **Ready** |
 | Paste-ready submission narrative | Included in this package with final public links | **Ready** |
-| Final production-native acceptance | The deployed-origin native browser-agent walkthrough has not been run yet — **this is the owner's next step, not a missing implementation** | **Pending** |
-| Devpost form submission | Happens after production acceptance | **Pending** |
+| Final production-native acceptance | Run by the maintainer on September 2, 2026 in ChatGPT's in-app browser against the deployed origin (build `5257759`); reported working as designed | **Passed** |
+| Devpost form submission | The only step left before the September 3, 1:00 p.m. PDT deadline | **Pending** |
 
 Do not describe the guided button-driven fallback as a native WebMCP invocation. It is useful for ordinary browsers, but the challenge demo must show an agent discovering and invoking the registered tools.
 
@@ -65,13 +65,13 @@ Completed:
 6. ✅ `NEXT_PUBLIC_WEBMCP_VIDEO_URL` is configured in production; the live page renders the "Watch
    video" action.
 
+7. ✅ The final production-native acceptance walkthrough was run against the deployed origin in
+   ChatGPT's in-app browser on September 2, 2026.
+
 Remaining actions:
 
-1. Commit and push this final documentation reconciliation.
-2. Owner runs the final production-native acceptance walkthrough at
-   https://www.retailagentos.com/webmcp-showcase, including a native browser-agent run.
-3. Owner completes and submits the Devpost form, testing every link in a signed-out browser.
-4. Freeze the repository, the production application, the video, and the Devpost submission.
+1. Complete and submit the Devpost form, testing every link in a signed-out browser.
+2. Freeze the repository, the production application, the video, and the Devpost submission.
 
 ## Source-of-truth warning
 

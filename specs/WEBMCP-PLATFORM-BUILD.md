@@ -66,13 +66,17 @@ uncommitted in a working tree.
   the URL above, so `NEXT_PUBLIC_WEBMCP_VIDEO_URL` is already set in the production deployment.
   Configuring it is no longer outstanding work.
 
-### Deployed, but final native acceptance still pending
+### Deployed and natively accepted
 
-- The public application exists at https://www.retailagentos.com/webmcp-showcase.
-- The final clean **deployed-origin native browser-agent walkthrough is the owner's next step** and
-  has **not** been performed as part of this documentation pass. Nothing in this repository should be
-  read as claiming that walkthrough passed, and no specific browser execution is claimed here that
-  the author of this section did not personally perform.
+- The public application is live at https://www.retailagentos.com/webmcp-showcase.
+- **Deployed-origin native acceptance: passed.** On 2026-09-02 the maintainer ran the full
+  walkthrough against the deployed origin in **ChatGPT's in-app browser** and reported the journey
+  completing as designed. The production deployment under test was `5257759`.
+- This is a maintainer-reported result, recorded here on their report rather than re-derived by a
+  tool: the browser run happened outside this repository and cannot be reproduced from it. Anyone
+  restating it should attribute it the same way, and should re-run the walkthrough after any change
+  to the registration lifecycle, the gateway, or the showcase route rather than relying on this
+  record indefinitely.
 
 ### Designed, not shipped
 
@@ -823,9 +827,11 @@ pinned through the full scroll, verified in Chrome at the bottom of the page.
    hash. ~~The "Current submission status" section above still predates this pass — fold `4790f74`
    into it on the next pass that touches it.~~ Done: the "Current submission status" section was
    rewritten on 2026-09-02 and now covers every commit through `b0550a8`.
-2. **Remaining.** Run the deployed-origin acceptance walkthrough at
-   `https://www.retailagentos.com/webmcp-showcase`, including a native browser-agent run. This has
-   not been performed and must not be recorded as passed until it actually is.
+2. ~~Run the deployed-origin acceptance walkthrough at
+   `https://www.retailagentos.com/webmcp-showcase`, including a native browser-agent run.~~ Done: the
+   maintainer ran it in ChatGPT's in-app browser against the deployed origin on 2026-09-02 (build
+   `5257759`) and reported it working as designed. See "Deployed and natively accepted" in the
+   current submission status above for how that result is scoped and attributed.
 3. ~~Record and publish the WebMCP demo video, then set `NEXT_PUBLIC_WEBMCP_VIDEO_URL` to its public
    URL in the production deployment and verify the "Watch video" action appears.~~ Done: the public
    video is https://youtu.be/aIScR90pSb0 (2:56, manually verified). The production deployment already

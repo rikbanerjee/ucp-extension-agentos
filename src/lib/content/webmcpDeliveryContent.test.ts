@@ -32,12 +32,18 @@ describe('WebMCP delivery documentation', () => {
     });
     // 4790f74 is the feature commit; b0550a8 is documentation/evidence provenance, not a product change.
     expect(latest.evidence?.map(({ label }) => label)).toEqual(['4790f74', 'b0550a8']);
-    // The only remaining work is deployed-origin native acceptance. The video is published and the
-    // production site exists, so nothing here may describe the video or the commits as outstanding.
-    expect(latest.next).toMatch(/deployed-origin acceptance walkthrough/);
+    // The video is published, the production site is live, and the deployed-origin native
+    // acceptance walkthrough has been run — so nothing here may describe any of those as
+    // outstanding. The remaining work is the Devpost submission and the freeze.
+    expect(latest.next).toMatch(/deployed-origin acceptance walkthrough was run/);
     expect(latest.next).toContain('https://youtu.be/aIScR90pSb0');
+    expect(latest.next).toMatch(/Devpost/);
     expect(latest.next).not.toMatch(/uncommitted/);
     expect(latest.next).not.toMatch(/record and publish/i);
+    expect(latest.next).not.toMatch(/has not been run|not claimed as passed/i);
+    // The native run is attributed to the maintainer, never asserted as self-verified: a browser
+    // run outside this repository cannot be reproduced from it.
+    expect(latest.next).toMatch(/by the maintainer/);
 
     // The prior correctness-gap-closure pass stays in the log, just no longer marked current. Its
     // implementation is committed on main as 12f8ba0 (together with the native-handoff pass below);

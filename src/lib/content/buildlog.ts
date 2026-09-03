@@ -39,7 +39,7 @@ export const buildLog: BuildLogEntry[] = [
     proves:
       'A challenge judge can identify, run, understand, and leave the WebMCP demo without meeting the whole company information architecture — and can always find it again from any other page — while the broader RetailAgentOS platform navigation, the business-first story, and every native and guided WebMCP behavior stay exactly as they were.',
     next:
-      'The production site is live at https://www.retailagentos.com/webmcp-showcase, the public WebMCP demo video is published at https://youtu.be/aIScR90pSb0 (2:56, inside the challenge three-minute limit), and NEXT_PUBLIC_WEBMCP_VIDEO_URL is configured in the production deployment — the Watch video action is confirmed rendering on the live page. The one remaining verification step is the deployed-origin acceptance walkthrough with a native browser agent, which has not been run yet and is not claimed as passed.',
+      'The production site is live at https://www.retailagentos.com/webmcp-showcase, the public WebMCP demo video is published at https://youtu.be/aIScR90pSb0 (2:56, inside the challenge three-minute limit), and NEXT_PUBLIC_WEBMCP_VIDEO_URL is configured in the production deployment — the Watch video action renders on the live page. The deployed-origin acceptance walkthrough was run by the maintainer in ChatGPT\'s in-app browser on Sep 2, 2026 against build 5257759 and completed as designed; it is recorded on that report, since a browser run outside this repository cannot be reproduced from it. What remains is the Devpost submission itself, then freezing the repository, the production application, the video, and the submission.',
     evidence: [
       { label: '4790f74', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/4790f74', description: 'Focused challenge navigation and page identity (merged to main).' },
       { label: 'b0550a8', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/b0550a8', description: 'Documentation provenance recording 4790f74 as this pass\'s evidence commit — not a product change.' },
@@ -90,7 +90,7 @@ export const buildLog: BuildLogEntry[] = [
     proves:
       'A registration-before-return handoff, verified by a controllable-timing unit test, makes the native post-approval journey deterministic for any compliant browser agent — without weakening RetailAgentOS policy enforcement, the human approval gate, or native/guided attribution truthfulness, and while fixing two unrelated build/layout defects surfaced during the same pass.',
     next:
-      'Independent verification against a real Codex Browser or ChatGPT in-app browser session (only claude-in-chrome-based testing was available in this environment), and acceptance against the deployed origin, remain outstanding — see specs/WEBMCP-PLATFORM-BUILD.md for exact status.',
+      'At the time of this pass, independent verification against a real Codex Browser or ChatGPT in-app browser session (only claude-in-chrome-based testing was available in this environment) and acceptance against the deployed origin both remained outstanding. Both have since been satisfied: the maintainer completed the full journey in ChatGPT\'s in-app browser against the deployed origin on Sep 2, 2026. See specs/WEBMCP-PLATFORM-BUILD.md for exact status.',
     evidence: [
       { label: '12f8ba0', href: 'https://github.com/rikbanerjee/ucp-extension-agentos/commit/12f8ba0', description: 'Deterministic native WebMCP approval-to-cart handoff (merged to main).' },
     ],
