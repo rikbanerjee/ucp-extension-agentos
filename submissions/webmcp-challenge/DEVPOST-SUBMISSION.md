@@ -2,7 +2,17 @@
 
 ## Tagline
 
-RetailAgentOS turns merchant policy into a dynamic WebMCP capability boundary, so shopping agents can invoke only the next action a retailer can safely honor.
+Merchant policy becomes a live WebMCP boundary: agents invoke only the next action a retailer can safely honor.
+
+<!-- 111 characters. Devpost's tagline/elevator-pitch field is capped per hackathon (80–140 seen on
+     other challenges) and the WebMCP Challenge does not publish its cap, so this is kept under 120.
+     If the form rejects it, the 92-character fallback is: "WebMCP exposes only the next safe action;
+     the merchant's engine decides what that action is." Keep this in sync with the Tagline line in
+     this package's README.md. -->
+
+## Fallback tagline (if the form caps below 111 characters)
+
+WebMCP exposes only the next safe action; the merchant's engine decides what that action is.
 
 ## Short pitch
 

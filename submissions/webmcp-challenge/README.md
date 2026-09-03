@@ -35,7 +35,7 @@ Do not describe the guided button-driven fallback as a native WebMCP invocation.
 ## Recommended submission identity
 
 - **Name:** RetailAgentOS WebMCP Agent Storefront
-- **Tagline:** Let shopping agents use a retailer's real catalog and selling rules—without guessing or taking control from the shopper.
+- **Tagline:** Merchant policy becomes a live WebMCP boundary: agents invoke only the next action a retailer can safely honor. *(111 characters — Devpost caps the tagline per hackathon and this challenge does not publish its cap, so it is kept under 120. Fallback under 100: "WebMCP exposes only the next safe action; the merchant's engine decides what that action is." Canonical copy lives in [`DEVPOST-SUBMISSION.md`](./DEVPOST-SUBMISSION.md).)*
 - **Navigation label (site-wide):** WebMCP Live Demo
 - **Canonical route:** `/webmcp-showcase` (compatibility route: `/agent-ready-storefront`)
 - **Route chrome:** both routes render focused challenge chrome — RetailAgentOS identity, an "OpenAI WebMCP Challenge" badge, and Run Demo / How It Works / Developer Evidence / GitHub / Back to RetailAgentOS — plus a compact challenge footer. Every other route keeps the normal RetailAgentOS platform navigation and footer.
